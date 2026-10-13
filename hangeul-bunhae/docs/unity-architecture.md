@@ -44,12 +44,12 @@
 
 | asmdef | 포함 | 참조 허용 |
 |---|---|---|
-| `Hangeul.Domain` | Hangul, 표, Card, GridMath | 없음 (noEngineReferences) |
-| `Hangeul.App` | InventoryModel, Ops, Services | Domain |
-| `Hangeul.UI` | View, Controller, 테마 | Domain, App, Unity |
+| `Hangeul.Domain` | Hangul, 표, Card, GridMath. 위치: `Assets/Scripts/Domain` (M0 구현: `Hangul`, `JamoTables`, `RotationTable`, `SyllableLayout` — 표는 정적 클래스에 내장, 데이터 분리는 추후) | 없음 (noEngineReferences) |
+| `Hangeul.App` | InventoryModel, Ops, Services. 위치: `Assets/Scripts/App` (M1 구현: `InventoryModel` — AddWord/Detach/SplitJamo/Transform/TryMerge/Move/Resize/Discard). Domain 쪽 M1: `Card`, `GridModel`, `CardOps`(결합), `DetachRules`, `ForbiddenSyllables` | Domain |
+| `Hangeul.UI` | View, Controller, 테마. 위치: `Assets/Scripts/UI` (M2 구현: `InventoryView`, `CardView`, `WordInputView` — 글자는 uGUI `Text` + Nanum Myeongjo TTF, TMP 전환은 M8) | Domain, App, Unity |
 | `Hangeul.Game` | 플레이어 캐릭터, FSM, 상호작용(§13). 위치: `Assets/Scripts/Game` | Unity.InputSystem |
 | `Hangeul.Game.Editor` | 에디터 전용 생성 메뉴 | Hangeul.Game |
-| `Hangeul.Tests` | EditMode/PlayMode 테스트 | 전부 |
+| `Hangeul.Tests` | EditMode/PlayMode 테스트. 위치: `Assets/Tests/EditMode` | 전부 |
 
 ---
 

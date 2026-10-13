@@ -3,6 +3,7 @@
     "rootNamespace": "Hangeul.Game.Editor",
     "references": [
         "Hangeul.Game",
+        "Hangeul.UI",
         "Unity.InputSystem",
         "UnityEngine.UI"
     ],

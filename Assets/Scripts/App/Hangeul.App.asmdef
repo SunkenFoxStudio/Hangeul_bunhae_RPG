@@ -1,0 +1,16 @@
+{
+    "name": "Hangeul.App",
+    "rootNamespace": "Hangeul.App",
+    "references": [
+        "Hangeul.Domain"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

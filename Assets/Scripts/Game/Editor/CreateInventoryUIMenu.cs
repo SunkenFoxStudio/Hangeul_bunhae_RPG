@@ -1,4 +1,5 @@
 using Hangeul.Game.Inventory;
+using Hangeul.UI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -72,8 +73,116 @@ namespace Hangeul.Game.Editor
             so.FindProperty("toggle").objectReferenceValue = Object.FindFirstObjectByType<InventoryToggle>();
             so.ApplyModifiedPropertiesWithoutUndo();
 
+            AddCardGrid(grid);
+            AddWordDock(panel);
             EnsureEventSystem();
             Selection.activeGameObject = panel.gameObject;
+        }
+
+        /// <summary>이미 만들어 둔 인벤토리 UI(직접 조절한 값 유지)에 카드 격자와 단어 입력창만 추가한다.</summary>
+        [MenuItem("GameObject/Hangeul/Inventory Cards (기존 UI에 추가)", false, 12)]
+        static void AddToExisting()
+        {
+            var panelView = Object.FindFirstObjectByType<InventoryPanelView>();
+            if (panelView == null) { Debug.LogWarning("InventoryPanelView가 없습니다. 먼저 Hangeul ▸ Inventory UI를 만드세요."); return; }
+
+            var panel = (RectTransform)panelView.transform;
+            RectTransform grid = null;
+            foreach (var rt in panel.GetComponentsInChildren<RectTransform>(true))
+                if (rt.name == "GridArea") { grid = rt; break; }
+            if (grid == null) { Debug.LogWarning("Panel 아래에 'GridArea'가 없습니다."); return; }
+
+            AddCardGrid(grid);
+            if (panel.GetComponentInChildren<WordInputView>(true) == null) AddWordDock(panel);
+            EnsureEventSystem();
+            Selection.activeGameObject = grid.gameObject;
+        }
+
+        static Font LoadFont() => AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/NanumMyeongjo-ExtraBold.ttf");
+
+        // GridArea에 InventoryView를 붙이고 CardLayer/AspectRatioFitter/폰트를 연결한다
+        static void AddCardGrid(RectTransform grid)
+        {
+            var view = grid.GetComponent<InventoryView>();
+            if (view == null) view = Undo.AddComponent<InventoryView>(grid.gameObject);
+
+            var layer = grid.Find("CardLayer") as RectTransform;
+            if (layer == null)
+            {
+                layer = NewRect("CardLayer", grid);
+                Stretch(layer, 0f, 0f, 0f, 0f);
+            }
+
+            var so = new SerializedObject(view);
+            so.FindProperty("cardLayer").objectReferenceValue = layer;
+            so.FindProperty("fitter").objectReferenceValue = grid.GetComponent<AspectRatioFitter>();
+            so.FindProperty("font").objectReferenceValue = LoadFont();
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // 하단 디버그 단어 입력창 (HTML의 #dock). 패널 맨 아래에 놓는다.
+        static void AddWordDock(RectTransform panel)
+        {
+            var font = LoadFont();
+            var dock = NewRect("WordDock", panel);
+            dock.anchorMin = new Vector2(0f, 0f);
+            dock.anchorMax = new Vector2(1f, 0f);
+            dock.pivot = new Vector2(0.5f, 0f);
+            dock.offsetMin = new Vector2(40f, 3f);
+            dock.offsetMax = new Vector2(-40f, 37f);
+
+            var inputRt = NewRect("Input", dock);
+            inputRt.anchorMin = Vector2.zero;
+            inputRt.anchorMax = new Vector2(0.78f, 1f);
+            inputRt.offsetMin = inputRt.offsetMax = Vector2.zero;
+            AddImage(inputRt, new Color(0.95f, 0.9f, 0.78f, 1f));
+            var field = inputRt.gameObject.AddComponent<InputField>();
+            var text = NewText("Text", inputRt, font, 20, new Color(0.17f, 0.11f, 0.07f), "");
+            var placeholder = NewText("Placeholder", inputRt, font, 20, new Color(0.17f, 0.11f, 0.07f, 0.45f), "단어 입력 후 Enter (예: 가방)");
+            placeholder.fontStyle = FontStyle.Italic;
+            foreach (var t in new[] { text, placeholder })
+            {
+                var r = t.rectTransform;
+                r.offsetMin = new Vector2(10f, 2f);
+                r.offsetMax = new Vector2(-10f, -2f);
+                t.alignment = TextAnchor.MiddleLeft;
+            }
+            field.textComponent = text;
+            field.placeholder = placeholder;
+            field.targetGraphic = inputRt.GetComponent<Image>();
+
+            var btnRt = NewRect("AddButton", dock);
+            btnRt.anchorMin = new Vector2(0.8f, 0f);
+            btnRt.anchorMax = Vector2.one;
+            btnRt.offsetMin = btnRt.offsetMax = Vector2.zero;
+            var btnImg = btnRt.gameObject.AddComponent<Image>();
+            btnImg.color = new Color(0.55f, 0.39f, 0.19f, 1f);
+            var button = btnRt.gameObject.AddComponent<Button>();
+            button.targetGraphic = btnImg;
+            var label = NewText("Label", btnRt, font, 20, new Color(0.97f, 0.9f, 0.76f), "추가");
+            label.alignment = TextAnchor.MiddleCenter;
+
+            var wordInput = Undo.AddComponent<WordInputView>(dock.gameObject);
+            var so = new SerializedObject(wordInput);
+            so.FindProperty("inventory").objectReferenceValue = panel.GetComponentInChildren<InventoryView>(true);
+            so.FindProperty("input").objectReferenceValue = field;
+            so.FindProperty("addButton").objectReferenceValue = button;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static Text NewText(string name, RectTransform parent, Font font, int size, Color color, string content)
+        {
+            var rt = NewRect(name, parent);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+            var t = rt.gameObject.AddComponent<Text>();
+            t.font = font;
+            t.fontSize = size;
+            t.color = color;
+            t.text = content;
+            t.raycastTarget = false;
+            return t;
         }
 
         static RectTransform NewRect(string name, Transform parent)
