@@ -28,6 +28,19 @@ namespace Hangeul.UI
         [SerializeField] Font font;
         [SerializeField, Range(1, 20)] int cols = 5;
         [SerializeField, Range(1, 20)] int rows = 5;
+        [Header("테마 (스프라이트)")]
+        [Tooltip("격자 칸/카드 배경 스프라이트 모음. 비우면 코드로 그린 기본 모양을 쓴다.")]
+        [SerializeField] InventoryTheme theme;
+
+        [Header("격자 표시 (코드로 그리는 기본 모양 — 테마에 Cell 스프라이트가 있으면 쓰지 않는다)")]
+        [SerializeField] bool showGrid = true;
+        [Tooltip("칸 구분선 색")]
+        [SerializeField] Color gridLineColor = new Color(0.25f, 0.16f, 0.08f, 0.55f);
+        [Tooltip("칸 구분선 굵기 (캔버스 단위)")]
+        [SerializeField, Min(0f)] float gridLineWidth = 2f;
+        [Tooltip("한 칸 걸러 깔리는 체커 무늬 색. 투명(알파 0)이면 끈다.")]
+        [SerializeField] Color gridAlternateColor = new Color(0.25f, 0.16f, 0.08f, 0.10f);
+
         [Header("단어 / 쓰레기통")]
         [Tooltip("아이템 단어 목록(item_words.json). 비워 두면 Resources/item_words를 찾는다.")]
         [SerializeField] TextAsset itemWords;
@@ -63,6 +76,9 @@ namespace Hangeul.UI
         readonly Dictionary<int, CardView> _views = new Dictionary<int, CardView>();
         readonly HoHoldTracker _hold = new HoHoldTracker();
         Image _highlight;
+        GridLinesGraphic _gridLines;
+        RectTransform _cellRoot;
+        readonly List<Image> _cellImages = new List<Image>();
         DragState _drag;
         CardView _last;
         CardView _mergeTarget;
@@ -88,6 +104,17 @@ namespace Hangeul.UI
             if (trashZone != null) trashZone.transform.SetAsFirstSibling();
             LoadWords();
             if (persist) LoadSaved();
+
+            // 칸 구분선: 카드 뒤(맨 아래)에 깐다
+            var lines = new GameObject("GridLines", typeof(RectTransform), typeof(CanvasRenderer), typeof(GridLinesGraphic));
+            lines.transform.SetParent(cardLayer, false);
+            var lrt = (RectTransform)lines.transform;
+            lrt.anchorMin = Vector2.zero;
+            lrt.anchorMax = Vector2.one;
+            lrt.offsetMin = lrt.offsetMax = Vector2.zero;
+            _gridLines = lines.GetComponent<GridLinesGraphic>();
+            _gridLines.raycastTarget = false;
+            lines.transform.SetAsFirstSibling();
 
             var hl = new GameObject("CellHighlight", typeof(RectTransform), typeof(Image));
             hl.transform.SetParent(cardLayer, false);
@@ -194,6 +221,7 @@ namespace Hangeul.UI
         {
             _dirty = false;
             if (fitter != null) fitter.aspectRatio = (float)Model.Grid.Cols / Model.Grid.Rows;
+            RefreshGridLines();
 
             float cell = ComputeCell();
             if (cell <= 0f) return;
@@ -206,6 +234,68 @@ namespace Hangeul.UI
                 Place(v);
             }
             if (_drag != null) UpdateFeedback(0f);
+        }
+
+        void RefreshGridLines()
+        {
+            bool sprites = theme != null && theme.cell != null;
+            if (_gridLines != null) _gridLines.gameObject.SetActive(showGrid && !sprites);
+            if (_gridLines != null && !sprites)
+                _gridLines.Set(Model.Grid.Cols, Model.Grid.Rows, gridLineWidth, gridLineColor, gridAlternateColor);
+            RefreshCellImages(sprites);
+        }
+
+        // 테마에 칸 스프라이트가 있으면 칸마다 Image 하나를 깐다(한 칸 걸러 Alt). 칸 수만큼만 만들어 재사용한다.
+        void RefreshCellImages(bool sprites)
+        {
+            if (_cellRoot == null)
+            {
+                var go = new GameObject("GridCells", typeof(RectTransform));
+                go.transform.SetParent(cardLayer, false);
+                _cellRoot = (RectTransform)go.transform;
+                _cellRoot.anchorMin = Vector2.zero;
+                _cellRoot.anchorMax = Vector2.one;
+                _cellRoot.offsetMin = _cellRoot.offsetMax = Vector2.zero;
+                _cellRoot.SetAsFirstSibling();
+            }
+            _cellRoot.gameObject.SetActive(sprites);
+            if (!sprites) return;
+
+            var grid = Model.Grid;
+            int need = grid.Cols * grid.Rows;
+            while (_cellImages.Count < need)
+            {
+                var go = new GameObject("Cell", typeof(RectTransform), typeof(Image));
+                go.transform.SetParent(_cellRoot, false);
+                var rt = (RectTransform)go.transform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0f, 1f);
+                var img = go.GetComponent<Image>();
+                img.raycastTarget = false;
+                _cellImages.Add(img);
+            }
+
+            float cell = ComputeCell();
+            for (int i = 0; i < _cellImages.Count; i++)
+            {
+                var img = _cellImages[i];
+                bool used = i < need;
+                img.gameObject.SetActive(used);
+                if (!used) continue;
+
+                int col = i % grid.Cols, row = i / grid.Cols;
+                var rt = (RectTransform)img.transform;
+                rt.sizeDelta = new Vector2(cell, cell);
+                rt.anchoredPosition = new Vector2(col * cell, -row * cell);
+                bool alt = ((col + row) & 1) == 1 && theme.cellAlt != null;
+                img.sprite = alt ? theme.cellAlt : theme.cell;
+                img.type = img.sprite.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
+            }
+        }
+
+        // 인스펙터에서 색/굵기를 바꾸면 Play 중에도 바로 반영한다
+        void OnValidate()
+        {
+            if (Application.isPlaying && Model != null) _dirty = true;
         }
 
         void LateUpdate()
@@ -257,7 +347,7 @@ namespace Hangeul.UI
             var go = new GameObject("Card " + card.Id, typeof(RectTransform));
             go.transform.SetParent(cardLayer, false);
             var v = go.AddComponent<CardView>();
-            v.Init(this, card, font);
+            v.Init(this, card, font, theme);
             _views[card.Id] = v;
             v.SetCell(Mathf.Max(_cell, 1f));
             Place(v);

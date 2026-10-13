@@ -2,8 +2,12 @@
     "name": "Hangeul.Game",
     "rootNamespace": "Hangeul.Game",
     "references": [
+        "Hangeul.Domain",
+        "Hangeul.App",
+        "Hangeul.UI",
         "Unity.InputSystem",
-        "Unity.Cinemachine"
+        "Unity.Cinemachine",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

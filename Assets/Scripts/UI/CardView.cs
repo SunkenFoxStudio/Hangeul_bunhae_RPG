@@ -25,6 +25,7 @@ namespace Hangeul.UI
         enum Anim { None, Pop, Shake, Rotate }
 
         InventoryView _owner;
+        InventoryTheme _theme;
         Font _font;
         RectTransform _rect;
         RectTransform _face;
@@ -38,11 +39,12 @@ namespace Hangeul.UI
         public Card Card { get; private set; }
         public RectTransform Rect => _rect;
 
-        public void Init(InventoryView owner, Card card, Font font)
+        public void Init(InventoryView owner, Card card, Font font, InventoryTheme theme = null)
         {
             _owner = owner;
             Card = card;
             _font = font;
+            _theme = theme;
 
             _rect = (RectTransform)transform;
             _rect.anchorMin = _rect.anchorMax = _rect.pivot = new Vector2(0f, 1f);
@@ -134,10 +136,17 @@ namespace Hangeul.UI
 
         void ApplyColor()
         {
-            if (_target) { _bg.color = TargetColor; return; }
-            if (Card.Kind == CardKind.Syllable) _bg.color = SylColor;
-            else if (_holdOn || !Hangul.IsJung(Card.Jamo)) _bg.color = _holdOn ? HoldColor : ConsColor;
-            else _bg.color = VowelColor;
+            // 종류별 배경: 스프라이트가 있으면 그것을(색은 흰색으로 곱하기 없음), 없으면 색 칸
+            bool vowelLook = Card.Kind == CardKind.Jamo && Hangul.IsJung(Card.Jamo) && !_holdOn;   // 홀드가 성립한 ㅗ는 자음 카드처럼 보인다
+            Color flat;
+            Sprite sprite = null;
+            if (Card.Kind == CardKind.Syllable) { flat = SylColor; sprite = _theme != null ? _theme.cardSyllable : null; }
+            else if (vowelLook) { flat = VowelColor; sprite = _theme != null ? _theme.cardVowel : null; }
+            else { flat = _holdOn ? HoldColor : ConsColor; sprite = _theme != null ? _theme.cardConsonant : null; }
+
+            _bg.sprite = sprite;
+            _bg.type = sprite != null && sprite.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
+            _bg.color = _target ? TargetColor : (sprite != null ? Color.white : flat);
         }
 
         // ───── 그리기 ─────

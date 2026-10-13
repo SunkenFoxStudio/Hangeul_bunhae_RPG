@@ -502,7 +502,7 @@ namespace Hangeul.Tests
             m.ApplyRotation(c, s, 1);
             Assert.IsFalse(m.FinishRotation(c, s));
             Assert.AreEqual('ㅁ', c.Jamo);
-            Assert.IsNull(m.BeginRotation(Card.NewSyllable(9, 'ㄱ', 'ㅏ', ' ', 0, 0)));
+            Assert.IsNull(m.BeginRotation(Card.NewSyllable(9, 'ㄱ', 'ㅏ', '\0', 0, 0)));
         }
 
         [Test]
@@ -513,6 +513,25 @@ namespace Hangeul.Tests
             Assert.IsFalse(RotationTable.TryRotate('ㄱ', 1, out r));
             Assert.AreEqual('ㄱ', r);
             Assert.IsFalse(RotationTable.TryRotate('ㅁ', 0, out _));
+        }
+    }
+    public class CanAddWordTests
+    {
+        [Test]
+        public void ChecksRoom_BannedAndNonHangul()
+        {
+            var m = new InventoryModel(2, 2);          // 칸 4개
+            Assert.IsTrue(m.CanAddWord("검"));
+            Assert.IsTrue(m.CanAddWord("가나다라"));
+            Assert.IsFalse(m.CanAddWord("가나다라마"));   // 칸이 모자람
+            Assert.IsFalse(m.CanAddWord(""));
+            Assert.IsFalse(m.CanAddWord(null));
+            Assert.IsFalse(m.CanAddWord("abc"));
+            Assert.IsFalse(m.CanAddWord("가됬"));         // 금지 음절이 섞이면 줍지 않는다
+
+            m.AddWord("가나");
+            Assert.IsTrue(m.CanAddWord("다라"));
+            Assert.IsFalse(m.CanAddWord("다라마"));       // 일부만 들어가지 않도록 전체로 판단
         }
     }
 }

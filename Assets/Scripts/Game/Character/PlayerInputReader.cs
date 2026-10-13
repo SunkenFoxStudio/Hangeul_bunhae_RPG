@@ -27,6 +27,20 @@ namespace Hangeul.Game.Character
         /// <summary>이번 프레임에 인벤토리 열기/닫기 키(Tab)를 눌렀는지.</summary>
         public bool InventoryPressed => _inventory != null && _inventory.WasPressedThisFrame();
 
+        /// <summary>안내 UI에 띄울 상호작용 키 이름(예: "E"). 키보드 바인딩을 우선하고, 없으면 첫 바인딩.</summary>
+        public string InteractKeyLabel
+        {
+            get
+            {
+                if (_interact == null || _interact.bindings.Count == 0) return "E";
+                int index = 0;
+                for (int i = 0; i < _interact.bindings.Count; i++)
+                    if (_interact.bindings[i].effectivePath.StartsWith("<Keyboard>")) { index = i; break; }
+                string label = _interact.GetBindingDisplayString(index);
+                return string.IsNullOrEmpty(label) ? "E" : label;
+            }
+        }
+
         void Awake()
         {
             if (actions == null) { Debug.LogError("PlayerInputReader: Input Actions 에셋이 지정되지 않았습니다.", this); return; }

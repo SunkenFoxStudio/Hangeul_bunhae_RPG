@@ -10,7 +10,7 @@ namespace Hangeul.Game.Editor
 {
     /// <summary>
     /// GameObject ▸ Hangeul ▸ Inventory UI : 오른쪽 인벤토리 패널의 뼈대를 만든다.
-    /// 구조: Canvas ▸ Panel(우측 40%) ▸ Header / BagFrame ▸ GridArea ▸ CardLayer
+    /// 구조: Canvas ▸ Panel(우측 40%) ▸ BagFrame ▸ GridArea ▸ CardLayer (+ WordDock, TrashZone)
     /// </summary>
     public static class CreateInventoryUIMenu
     {
@@ -42,18 +42,9 @@ namespace Hangeul.Game.Editor
             panel.gameObject.AddComponent<CanvasGroup>();
             var view = panel.gameObject.AddComponent<InventoryPanelView>();
 
-            // 위쪽 제목 영역 (텍스트는 TMP 폰트 준비 후 추가)
-            var header = NewRect("Header", panel);
-            header.anchorMin = new Vector2(0f, 1f);
-            header.anchorMax = Vector2.one;
-            header.pivot = new Vector2(0.5f, 1f);
-            header.sizeDelta = new Vector2(0f, 120f);
-            header.anchoredPosition = Vector2.zero;
-            AddImage(header, new Color(0.22f, 0.15f, 0.09f, 1f));
-
             // 가방 프레임 (나중에 9-slice 스프라이트로 교체)
             var bag = NewRect("BagFrame", panel);
-            Stretch(bag, left: 40f, right: 40f, top: 140f, bottom: 40f);
+            Stretch(bag, left: 40f, right: 40f, top: 40f, bottom: 40f);
             AddImage(bag, new Color(0.35f, 0.22f, 0.12f, 1f));
 
             // 카드 격자 영역: 가방 프레임 안에서 정사각형으로 맞춘다(격자 비율에 맞게 aspectRatio 조정)

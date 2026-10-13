@@ -401,6 +401,7 @@ InventoryScreen
 - 폰트: **한글 11,172자 전체를 지원하는 폰트만** 사용 (검증 완료: Gowun Batang, Nanum Myeongjo, Noto Serif KR, Nanum Brush Script). 중세 테마는 Nanum Myeongjo(+영문 Cinzel).
 - TMP Font Asset은 **Dynamic SDF**(Atlas Population Mode: Dynamic)로 생성 → 전체 글리프 사전 베이킹 없이 필요한 글자만 즉석 생성. (정적 베이킹은 용량이 커서 비권장.)
 - 숫자가 많은 요소는 Cinzel 대신 Nanum Myeongjo(Cinzel의 `1`이 `I`로 보이는 문제).
+- **구현 현황 (스프라이트 UI 준비)**: `InventoryTheme`(ScriptableObject, `Create ▸ Hangeul ▸ Inventory Theme`)에 격자 칸(`cell`/`cellAlt`)·카드 배경(`cardSyllable/Consonant/Vowel`) 스프라이트 슬롯이 있고 `InventoryView.theme`에 연결한다. 비워 두면 코드로 그린 기본 모양(`GridLinesGraphic` 선·체커, 카드 색 칸)을 쓴다. 가방 프레임·쓰레기통 아이콘 등 씬에 놓인 Image는 Sprite를 직접 넣는다. 픽셀 아트는 Filter Mode = Point·Compression = None, 늘어나는 요소는 9-slice(Border) 권장.
 - 테마는 `ThemeProfile`(ScriptableObject)로 분리: 색 팔레트, 폰트, 카드 스프라이트, 가방 프레임, 사운드. 기본 테마/중세 테마를 프로필 교체로 전환.
 - 가방 프레임: SVG 그대로 쓰기보다 **9-slice 스프라이트** 또는 Vector Graphics 패키지로 임포트. 그리드 크기가 가변(1–20)이므로 프레임이 늘어나도록 9-slice 필수. HTML의 `BAG={mx:40, top:104, bot:46}` 값은 9-slice 보더 값의 시작점으로 사용.
 
@@ -542,7 +543,17 @@ Idle ──입력──▶ Move ──입력 없음──▶ Idle
 - **패널 뼈대**: `GameObject ▸ Hangeul ▸ Inventory UI` 메뉴가 `InventoryCanvas`(1920×1080 스케일) ▸ `Panel`(우측 40%, `InventoryPanelView`) ▸ `Header` / `BagFrame` ▸ `GridArea`(정사각 비율 유지) ▸ `CardLayer`를 만든다. 패널은 열릴 때 오른쪽에서 슬라이드하며 페이드 인(0.35초, 카메라 이동과 동일 길이).
 - 이 방침으로 §6.2 화면 구성은 "전체 화면 인벤토리"가 아니라 **우측 패널형**이 된다(좌우 패널 제외 결정과 함께 UI 설계 시 반영).
 
-### 13.7 미해결
-- 상호작용 안내 UI, Interact 애니메이션(현재 Idle 재생).
+### 13.7 월드 아이템 줍기 (확정 방침)
+- 맵의 아이템(`WorldItem`)은 **단어 하나**를 가진다. 가까이 가면 안내 UI(`InteractionPromptView`)가 아이템 위에 **단어(제목)와 `[키] 줍기`**를 띄운다. 키 이름은 입력 설정의 Interact 바인딩에서 읽는다(`PlayerInputReader.InteractKeyLabel`).
+- 상호작용하면 그 단어의 **글자 카드가 인벤토리의 빈 칸에 들어온다**(`InventoryModel.AddWord`, 중앙 줄부터 연속 배치).
+  - **전부 놓을 빈 칸이 있을 때만 줍는다**(`CanAddWord`). 모자라면 줍지 않고 아이템은 그대로 남으며 안내 문구("가방이 가득 찼습니다")만 띄운다. 일부만 들어가는 일은 없다.
+  - 한글 음절이 아닌 단어나 금지 음절(`됬`)이 섞인 아이템은 상호작용 대상에서 제외된다.
+  - 주우면 오브젝트를 없앤다(옵션으로 유지 가능). 이미 주운 아이템의 영속(재진입 시 다시 나타나지 않게)은 월드 세이브와 함께 후속 과제.
+- 안내 UI는 조작 가능 상태(Idle/Move)일 때만 보인다(인벤토리를 열었거나 상호작용 중이면 숨김). 제목이 없는 일반 대상(`InteractableObject`)은 `[키] Prompt`만 보인다(`IInteractableTitle`로 제목 지원).
+- 구현 위치: `Assets/Scripts/Game/Interaction`. Game 어셈블리는 App/Domain/UI를 참조한다(통합 계층).
+- 메뉴: `GameObject ▸ Hangeul ▸ Interaction Prompt`(씬에 한 번), `World Item`(아이템마다).
+
+### 13.8 미해결
+- Interact 애니메이션(현재 Idle 재생).
 - Walk 스프라이트 연결(현재 비어 있으면 Idle 재생).
 - 패널 내부: 제목 텍스트(TMP Essential Resources + 한글 Dynamic SDF 폰트 필요), 가방 프레임 스프라이트(9-slice), 카드 뷰(CardView). 현재는 빈 뼈대만 있다.

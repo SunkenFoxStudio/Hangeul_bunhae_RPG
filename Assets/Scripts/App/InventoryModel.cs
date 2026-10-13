@@ -132,6 +132,22 @@ namespace Hangeul.App
             return new AddWordResult(syls.Count, hadBanned);
         }
 
+        /// <summary>
+        /// 이 단어의 글자 카드를 전부 빈 칸에 놓을 수 있는지(아이템 줍기 전에 확인한다). 한글 음절이 하나도 없거나 금지 음절이 섞여 있거나
+        /// 남은 칸이 모자라면 false — 일부만 들어가는 일은 없도록 호출한 쪽이 이걸 먼저 확인한다.
+        /// </summary>
+        public bool CanAddWord(string word)
+        {
+            int total = 0;
+            foreach (char ch in word ?? "")
+            {
+                if (!Hangul.IsSyllable(ch)) continue;
+                if (ForbiddenSyllables.IsBanned(ch)) return false;
+                total++;
+            }
+            return total > 0 && total <= Math.Max(0, Grid.Capacity - Grid.Cards.Count);
+        }
+
         // ───── 분리 (detach) ─────
         /// <summary>
         /// 음절 카드에서 슬롯 하나를 자모 카드로 떼어낸다. 끌어당긴 방향 쪽 이웃 빈 칸 우선.
