@@ -45,8 +45,8 @@
 | asmdef | 포함 | 참조 허용 |
 |---|---|---|
 | `Hangeul.Domain` | Hangul, 표, Card, GridMath. 위치: `Assets/Scripts/Domain` (M0 구현: `Hangul`, `JamoTables`, `RotationTable`, `SyllableLayout` — 표는 정적 클래스에 내장, 데이터 분리는 추후) | 없음 (noEngineReferences) |
-| `Hangeul.App` | InventoryModel, Ops, Services. 위치: `Assets/Scripts/App` (M1 구현: `InventoryModel` — AddWord/Detach/SplitJamo/Transform/TryMerge/Move/Resize/Discard, M3: `RotationSession` + `BeginRotation/ApplyRotation/FinishRotation`). Domain 쪽 M1: `Card`, `GridModel`, `CardOps`(결합), `DetachRules`, `ForbiddenSyllables` | Domain |
-| `Hangeul.UI` | View, Controller, 테마. 위치: `Assets/Scripts/UI` (M2 구현: `InventoryView`, `CardView`, `WordInputView` — 글자는 uGUI `Text` + Nanum Myeongjo TTF, TMP 전환은 M8) | Domain, App, Unity |
+| `Hangeul.App` | InventoryModel, Ops, Services. 위치: `Assets/Scripts/App` (M1 구현: `InventoryModel` — AddWord/Detach/SplitJamo/Transform/TryMerge/Move/Resize/Discard, M3: `RotationSession` + `BeginRotation/ApplyRotation/FinishRotation`, M4: `ToSave/Load` + `InventorySaveData`). Domain 쪽 M1: `Card`, `GridModel`, `CardOps`(결합), `DetachRules`, `ForbiddenSyllables` | Domain |
+| `Hangeul.UI` | View, Controller, 테마. 위치: `Assets/Scripts/UI` (M2 구현: `InventoryView`, `CardView`, `WordInputView`; M4: `InventorySaveStore` — 개발용 JSON 저장소, `persistentDataPath/inventory.json`, 변경 0.5초 뒤 자동 저장 — 글자는 uGUI `Text` + Nanum Myeongjo TTF, TMP 전환은 M8) | Domain, App, Unity |
 | `Hangeul.Game` | 플레이어 캐릭터, FSM, 상호작용(§13). 위치: `Assets/Scripts/Game` | Unity.InputSystem |
 | `Hangeul.Game.Editor` | 에디터 전용 생성 메뉴 | Hangeul.Game |
 | `Hangeul.Tests` | EditMode/PlayMode 테스트. 위치: `Assets/Tests/EditMode` | 전부 |
@@ -268,6 +268,10 @@ HTML에서 렉이 났던 지점이라 처음부터 **성능 상한을 설계에 
 
 - 포맷은 HTML과 동일 스키마 유지: `schemaVersion: 1`, 카드 글자 키 `letter`. → **HTML에서 저장한 `data/item_words.json`을 Unity에서 그대로 불러올 수 있어야 한다**(상호 호환 목표).
 - 구현: `JsonUtility` 또는 `Newtonsoft`(Unity Package) 중 택1. 파일 위치 `Application.persistentDataPath`.
+- **세이브 수명 (확정 방향)**: 현재 `InventorySaveStore`의 자동 저장·자동 불러오기는 개발 테스트용이다. 실제 빌드에서 인벤토리 데이터는 **'이어하기'를 위한 게임 세이브의 일부**여야 한다. 따라서 본편 연동(M9) 때 다음을 지원한다.
+  - **새 게임 시작**: 해당 세이브(슬롯)의 인벤토리 데이터를 지우고 빈 인벤토리로 시작.
+  - **세이브 슬롯**: 슬롯마다 별도 파일(또는 슬롯 데이터 안의 `inventory` 필드). `InventoryView.saveFileName`을 슬롯별로 바꾸는 방식으로 대응하고, `InventorySaveStore.Delete(fileName)`이 그 삭제 수단이다.
+  - 본편 세이브 시스템이 생기면 `InventoryModel.ToSave()/Load()`만 그쪽에서 호출하고, 개발용 자동 저장(`persist`)은 끈다.
 - 마이그레이션 훅: `schemaVersion` 분기.
 - 그리드 크기 설정은 별도 설정 파일/PlayerPrefs(`inv_grid` 대응).
 - HTML이 저장하는 것은 아이템 단어 목록뿐이고 격자 위 카드 배치는 저장하지 않는다. **게임에서는 인벤토리이므로 카드 배치를 반드시 세이브에 포함한다**(§10-8 확정): `inventory{cols,rows,mode,cards[{id,kind,jamo,s,g,col,row}]}`를 게임 세이브 안에 두고 `schemaVersion`을 단어 목록 파일과 분리한다. 불러올 때 범위 밖/중복 칸 카드는 `Resize`의 재배치 규칙으로 보정한다.

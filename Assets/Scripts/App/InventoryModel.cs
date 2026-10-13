@@ -292,5 +292,78 @@ namespace Hangeul.App
             }
             return new ResizeResult(true, Math.Max(0, over), Math.Max(0, over));
         }
+        // ───── 저장 / 불러오기 ─────
+        /// <summary>현재 격자 크기와 카드 배치를 세이브 데이터로 만든다.</summary>
+        public InventorySaveData ToSave()
+        {
+            var d = new InventorySaveData { cols = Grid.Cols, rows = Grid.Rows };
+            foreach (var c in Grid.Cards.OrderBy(c => c.Id)) d.cards.Add(CardSaveData.From(c));
+            return d;
+        }
+
+        /// <summary>
+        /// 세이브 데이터로 인벤토리를 통째로 교체한다. 한글 규칙에 맞지 않는 카드는 버리고,
+        /// 범위 밖이거나 칸이 겹친 카드는 가장 가까운 빈 칸으로 옮기며(Resize와 같은 규칙), 자리가 모자라면 마지막 카드부터 버린다.
+        /// 아이디가 비정상이거나 겹치면 새로 매긴다. 데이터 자체가 못 쓰는 것이면 아무것도 바꾸지 않고 실패를 돌려준다.
+        /// </summary>
+        public LoadResult Load(InventorySaveData data)
+        {
+            if (data == null) return LoadResult.Fail("저장 데이터가 없습니다.");
+            if (data.schemaVersion != InventorySaveData.CurrentVersion)
+                return LoadResult.Fail($"지원하지 않는 schemaVersion: {data.schemaVersion}");
+
+            int cols = GridModel.Clamp(data.cols, GridModel.MinSize, GridModel.MaxSize);
+            int rows = GridModel.Clamp(data.rows, GridModel.MinSize, GridModel.MaxSize);
+
+            // 1) 검증
+            var cards = new List<Card>();
+            int skipped = 0;
+            foreach (var cs in data.cards ?? new List<CardSaveData>())
+            {
+                if (cs != null && cs.TryToCard(out var card)) cards.Add(card);
+                else skipped++;
+            }
+
+            // 2) 용량을 넘으면 (행→열 순) 마지막 카드부터 버린다
+            cards = cards.OrderBy(c => c.Row).ThenBy(c => c.Col).ToList();
+            int cap = cols * rows;
+            if (cards.Count > cap)
+            {
+                skipped += cards.Count - cap;
+                cards = cards.Take(cap).ToList();
+            }
+
+            // 3) 아이디 정리: 0 이하이거나 겹치면 새로 매긴다
+            var seen = new HashSet<int>();
+            int maxId = 0;
+            foreach (var c in cards) if (c.Id > 0 && seen.Add(c.Id)) maxId = Math.Max(maxId, c.Id);
+            seen.Clear();
+            foreach (var c in cards)
+            {
+                if (c.Id <= 0 || !seen.Add(c.Id)) c.Id = ++maxId;
+            }
+            _nextId = Math.Max(_nextId, maxId + 1);
+
+            // 4) 기존 카드를 지우고 새 격자에 배치
+            Discard(Grid.Cards);
+            Grid.SetSize(cols, rows);
+
+            var deferred = new List<Card>();
+            foreach (var c in cards)
+            {
+                if (Grid.InGrid(c.Col, c.Row) && Grid.CardAt(c.Col, c.Row) == null) Grid.Add(c);
+                else deferred.Add(c);
+            }
+            foreach (var c in deferred)
+            {
+                int fromCol = GridModel.Clamp(c.Col, 0, cols - 1), fromRow = GridModel.Clamp(c.Row, 0, rows - 1);
+                Grid.TryFindEmptyNear(fromCol, fromRow, out var cell);
+                c.Col = cell.col; c.Row = cell.row;
+                Grid.Add(c);
+            }
+
+            foreach (var c in Grid.Cards.ToList()) Notify(ChangeType.Added, c);
+            return new LoadResult(true, null, cards.Count, skipped, deferred.Count);
+        }
     }
 }

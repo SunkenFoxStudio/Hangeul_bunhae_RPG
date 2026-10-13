@@ -28,6 +28,12 @@ namespace Hangeul.UI
         [SerializeField] Font font;
         [SerializeField, Range(1, 20)] int cols = 5;
         [SerializeField, Range(1, 20)] int rows = 5;
+        [Header("저장")]
+        [Tooltip("켜면 시작할 때 저장 파일을 불러오고(있으면), 바뀔 때마다 자동 저장한다. 저장된 격자 크기가 위 Cols/Rows보다 우선한다.")]
+        [SerializeField] bool persist = true;
+        [SerializeField] string saveFileName = InventorySaveStore.DefaultFileName;
+
+        [Header("디버그")]
         [Tooltip("켜면 마우스를 누를 때마다 그 위치에서 클릭을 받는 UI 목록(위→아래)을 Console에 출력한다.")]
         [SerializeField] bool logClickTargets;
 
@@ -54,6 +60,9 @@ namespace Hangeul.UI
         CardView _mergeTarget;
         float _cell;
         bool _dirty = true;
+        bool _saveDirty;
+        float _lastChange;
+        const float SaveDelay = 0.5f;   // 마지막 변경 뒤 이 시간이 지나면 저장 (드래그 중에는 저장하지 않는다)
 
         public InventoryModel Model { get; private set; }
 
@@ -64,6 +73,7 @@ namespace Hangeul.UI
 
             Model = new InventoryModel(cols, rows);
             Model.Changed += OnChanged;
+            if (persist) LoadSaved();
 
             var hl = new GameObject("CellHighlight", typeof(RectTransform), typeof(Image));
             hl.transform.SetParent(cardLayer, false);
@@ -76,8 +86,44 @@ namespace Hangeul.UI
 
         void OnDestroy()
         {
-            if (Model != null) Model.Changed -= OnChanged;
+            if (Model == null) return;
+            Model.Changed -= OnChanged;
+            if (persist && _saveDirty) SaveNow();
         }
+
+        void OnApplicationQuit()
+        {
+            if (Model != null && persist && _saveDirty) SaveNow();
+        }
+
+        // ───── 저장 ─────
+        void LoadSaved()
+        {
+            if (!InventorySaveStore.Exists(saveFileName)) return;
+            var r = InventorySaveStore.Load(Model, saveFileName);
+            if (!r.Ok) Debug.LogWarning($"[InventoryView] 인벤토리 불러오기 실패: {r.Error}");
+            else if (r.Skipped > 0 || r.Relocated > 0)
+                Debug.LogWarning($"[InventoryView] 인벤토리 불러오기: 카드 {r.Loaded}장, 버린 카드 {r.Skipped}장, 옮긴 카드 {r.Relocated}장");
+            _saveDirty = false;
+            _dirty = true;
+        }
+
+        [ContextMenu("지금 저장")]
+        public void SaveNow()
+        {
+            try { InventorySaveStore.Save(Model, saveFileName); _saveDirty = false; }
+            catch (System.Exception e) { Debug.LogWarning("[InventoryView] 인벤토리 저장 실패: " + e.Message); }
+        }
+
+        [ContextMenu("저장 파일 삭제")]
+        void DeleteSaveFile()
+        {
+            InventorySaveStore.Delete(saveFileName);
+            Debug.Log("[InventoryView] 저장 파일을 삭제했습니다: " + InventorySaveStore.PathOf(saveFileName));
+        }
+
+        [ContextMenu("저장 폴더 열기")]
+        void OpenSaveFolder() => Application.OpenURL("file://" + Application.persistentDataPath);
 
         void OnRectTransformDimensionsChange() => _dirty = true;
 
@@ -133,6 +179,9 @@ namespace Hangeul.UI
         // ───── 모델 변경 → 화면 ─────
         void OnChanged(CardChange ch)
         {
+            _saveDirty = true;
+            _lastChange = Time.unscaledTime;
+
             switch (ch.Type)
             {
                 case ChangeType.Added:
@@ -389,6 +438,7 @@ namespace Hangeul.UI
             if (_drag != null) UpdateFeedback(Time.unscaledDeltaTime);
 
             if (logClickTargets) LogClickTargets();
+            if (persist && _saveDirty && _drag == null && Time.unscaledTime - _lastChange > SaveDelay) SaveNow();
 
             var kb = Keyboard.current;
             if (kb != null && kb.rKey.wasPressedThisFrame && _last != null && _views.ContainsKey(_last.Card.Id) && IsInteractive() && !Typing())
