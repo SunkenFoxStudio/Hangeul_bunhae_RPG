@@ -34,6 +34,15 @@ namespace Hangeul.Domain
             return jamo;
         }
 
+        /// <summary>해당 각도에 자모로 인정되는 모양이 있으면 true(표에 없는 자모/각도는 false).</summary>
+        public static bool TryRotate(char jamo, int quarterTurns, out char result)
+        {
+            int n = ((quarterTurns % 4) + 4) % 4;
+            if (Rot4.TryGetValue(jamo, out var row) && row[n] != NoMap) { result = row[n]; return true; }
+            result = jamo;
+            return false;
+        }
+
         /// <summary>모양이 바뀌는 가장 작은 시계방향 회전 횟수(1..3). 회전해도 안 바뀌면 0.</summary>
         public static int NextStep(char jamo)
         {

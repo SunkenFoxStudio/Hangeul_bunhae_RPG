@@ -38,6 +38,12 @@ namespace Hangeul.UI
             public Vector2 StartLocal;   // 누른 지점
             public Vector2 Pos;          // 현재 카드 왼쪽 위
             public bool Moved;
+
+            // 모서리 드래그 회전 (Rot != null이면 이동이 아니라 회전 드래그)
+            public RotationSession Rot;
+            public Vector2 Center;       // 카드 중심(화면 좌표)
+            public float PrevAngle;      // 직전 포인터 각도 (시계방향 +, 라디안)
+            public float Total;          // 누적 각도
         }
 
         readonly Dictionary<int, CardView> _views = new Dictionary<int, CardView>();
@@ -145,6 +151,9 @@ namespace Hangeul.UI
                 case ChangeType.Updated:
                     if (_views.TryGetValue(ch.Card.Id, out var upd)) { upd.Refresh(); upd.Pop(); }
                     break;
+                case ChangeType.Rotating:
+                    if (_views.TryGetValue(ch.Card.Id, out var rot)) rot.Refresh();
+                    break;
                 case ChangeType.Moved:
                     if (_views.TryGetValue(ch.Card.Id, out var mv)) Place(mv);
                     break;
@@ -203,6 +212,21 @@ namespace Hangeul.UI
                 Origin = CellPos(v.Card),
             };
 
+            // 자모 카드의 모서리를 좌클릭으로 잡으면 이동이 아니라 회전
+            if (!right && v.IsInCorner(e.pressPosition, e.pressEventCamera))
+            {
+                state.Rot = Model.BeginRotation(v.Card);
+                if (state.Rot != null)
+                {
+                    state.Center = v.ScreenCenter(e.pressEventCamera);
+                    state.PrevAngle = AngleOf(e.pressPosition, state.Center);
+                    _drag = state;
+                    _last = v;
+                    RotateDrag(e);
+                    return;
+                }
+            }
+
             // 음절 카드를 좌클릭으로 끌면 분리: 끌어당긴 방향 쪽 슬롯이 떨어져 나오고, 그 카드를 계속 끈다
             if (!right && v.Card.Kind == CardKind.Syllable)
             {
@@ -224,6 +248,7 @@ namespace Hangeul.UI
         public void Drag(PointerEventData e)
         {
             if (_drag == null) return;
+            if (_drag.Rot != null) { RotateDrag(e); return; }
             Vector2 local = ToLayer(e.position, e.pressEventCamera);
             Vector2 pos = _drag.Origin + (local - _drag.StartLocal);
             pos.x = Mathf.Clamp(pos.x, 0f, (Model.Grid.Cols - 1) * _cell);
@@ -240,6 +265,8 @@ namespace Hangeul.UI
             if (logClickTargets) Debug.Log($"[InventoryView] EndDrag drag={(d == null ? "없음" : "있음")} moved={(d != null && d.Moved)}");
             if (d == null) return;
             _drag = null;
+
+            if (d.Rot != null) { FinishRotateDrag(d); return; }
 
             bool holdOn = _hold.On;
             ClearFeedback();
@@ -264,6 +291,35 @@ namespace Hangeul.UI
             if (occupant != null && _views.TryGetValue(occupant.Id, out var ov)) ov.Pop();
         }
 
+        // ───── 모서리 드래그 회전 ─────
+        // 포인터가 카드 중심을 기준으로 돈 각도를 누적해 90° 단위로 반올림한다. 경계를 넘는 순간 자모가 바뀐다.
+        static float AngleOf(Vector2 screen, Vector2 center)
+            => Mathf.Atan2(-(screen.y - center.y), screen.x - center.x);   // 화면 y는 위가 +라서 부호를 뒤집어 시계방향이 +가 되게 한다
+
+        void RotateDrag(PointerEventData e)
+        {
+            var d = _drag;
+            float a = AngleOf(e.position, d.Center);
+            float delta = a - d.PrevAngle;
+            if (delta > Mathf.PI) delta -= 2f * Mathf.PI;
+            else if (delta < -Mathf.PI) delta += 2f * Mathf.PI;
+            d.Total += delta;
+            d.PrevAngle = a;
+
+            int steps = Mathf.RoundToInt(d.Total / (Mathf.PI / 2f));
+            if (steps == d.Rot.Steps) return;
+
+            // 자모가 바뀌면 이전 모습에서 이어지도록 시작 각도를 맞춘 뒤 목표 각도로 돌린다
+            if (Model.ApplyRotation(d.View.Card, d.Rot, steps)) d.View.SetRotation(d.Rot.JumpAngleDeg, 0f);
+            d.View.SetRotation(d.Rot.TargetAngleDeg, 0.12f);
+        }
+
+        void FinishRotateDrag(DragState d)
+        {
+            bool mapped = Model.FinishRotation(d.View.Card, d.Rot);
+            d.View.SetRotation(0f, mapped ? 0f : 0.18f);   // 확정이면 각도 초기화, 글자가 안 되는 각도면 원위치로 돌아간다
+        }
+
         // ───── 드래그 중 피드백 ─────
         (int col, int row) CellOf(Vector2 topLeft)
         {
@@ -274,7 +330,7 @@ namespace Hangeul.UI
 
         void UpdateFeedback(float dt)
         {
-            if (_drag == null) return;
+            if (_drag == null || _drag.Rot != null) return;
             var card = _drag.View.Card;
             var (col, row) = CellOf(_drag.Pos);
             var occupant = Model.Grid.CardAt(col, row, card);

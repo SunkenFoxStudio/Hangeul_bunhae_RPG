@@ -183,11 +183,53 @@ namespace Hangeul.UI
         void Play(Anim a, float dur)
         {
             _anim = a; _animT = 0f; _animDur = dur;
+            if (a == Anim.Rotate) { _rotActive = false; _rotCur = 0f; }
+        }
+
+        // ───── 모서리 드래그 회전용 ─────
+        float _rotCur, _rotFrom, _rotTo, _rotT, _rotDur;
+        bool _rotActive;
+
+        /// <summary>글자면을 시계방향 deg도로 돌린다. seconds가 0이면 즉시, 아니면 그 시간 동안 부드럽게.</summary>
+        public void SetRotation(float deg, float seconds)
+        {
+            if (seconds <= 0f)
+            {
+                _rotActive = false;
+                _rotCur = deg;
+                _face.localEulerAngles = new Vector3(0f, 0f, -deg);
+                return;
+            }
+            _rotFrom = _rotCur; _rotTo = deg; _rotT = 0f; _rotDur = seconds; _rotActive = true;
+        }
+
+        /// <summary>자모 카드의 모서리(회전 손잡이) 영역인지: 각 모서리 한 변의 26% 정사각형.</summary>
+        public bool IsInCorner(Vector2 screenPos, Camera cam)
+        {
+            if (Card.Kind != CardKind.Jamo) return false;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(_face, screenPos, cam, out var p);
+            var r = _face.rect;
+            float z = r.width * 0.26f, lx = p.x - r.xMin, ly = p.y - r.yMin;
+            return (lx < z || lx > r.width - z) && (ly < z || ly > r.height - z);
+        }
+
+        public Vector2 ScreenCenter(Camera cam)
+            => RectTransformUtility.WorldToScreenPoint(cam, _face.TransformPoint(_face.rect.center));
+
+        void UpdateRotTween()
+        {
+            if (!_rotActive) return;
+            _rotT += Time.unscaledDeltaTime;
+            float u = Mathf.Clamp01(_rotT / _rotDur);
+            _rotCur = Mathf.Lerp(_rotFrom, _rotTo, 1f - (1f - u) * (1f - u));
+            _face.localEulerAngles = new Vector3(0f, 0f, -_rotCur);
+            if (u >= 1f) _rotActive = false;
         }
 
         void Update()
         {
             // enabled를 끄면 uGUI가 이벤트(클릭/드래그)를 보내지 않으므로, 애니메이션 없을 때는 여기서 바로 빠진다
+            UpdateRotTween();
             if (_anim == Anim.None) return;
 
             _animT += Time.unscaledDeltaTime;

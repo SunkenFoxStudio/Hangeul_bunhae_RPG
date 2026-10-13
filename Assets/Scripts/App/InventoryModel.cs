@@ -13,6 +13,7 @@ namespace Hangeul.App
         Updated,    // 내용이 바뀐 카드 (pop 연출)
         Moved,      // 칸이 바뀐 카드
         Rejected,   // 할 수 없는 조작 (흔들기)
+        Rotating,   // 드래그 회전 중 자모가 바뀜 (다시 그리기만, 팝 연출 없음)
     }
 
     public readonly struct CardChange
@@ -189,6 +190,31 @@ namespace Hangeul.App
             quarterTurns = k;
             Notify(ChangeType.Updated, c);
             return TransformResult.Rotated;
+        }
+
+        // ───── 모서리 드래그 회전 ─────
+        /// <summary>자모 카드의 드래그 회전을 시작한다. 자모 카드가 아니면 null.</summary>
+        public RotationSession BeginRotation(Card c) => c.Kind == CardKind.Jamo ? new RotationSession(c.Jamo) : null;
+
+        /// <summary>누적 90° 횟수를 반영한다. 90° 경계를 넘는 순간 자모가 바뀐다(손을 떼기 전에도). 바뀌었으면 true.</summary>
+        public bool ApplyRotation(Card c, RotationSession s, int steps)
+        {
+            if (!s.Apply(steps)) return false;
+            c.Jamo = s.Current;
+            Notify(ChangeType.Rotating, c);
+            return true;
+        }
+
+        /// <summary>손을 뗀다. 자모로 인정되는 각도면 true(확정), 아니면 false(원래 자모로 복귀한 상태).</summary>
+        public bool FinishRotation(Card c, RotationSession s)
+        {
+            bool mapped = s.Finish();
+            if (c.Jamo != s.Current)
+            {
+                c.Jamo = s.Current;
+                Notify(ChangeType.Rotating, c);
+            }
+            return mapped;
         }
 
         // ───── 결합 / 이동 ─────

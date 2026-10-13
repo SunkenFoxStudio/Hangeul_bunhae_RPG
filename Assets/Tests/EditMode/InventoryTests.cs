@@ -427,4 +427,92 @@ namespace Hangeul.Tests
             Assert.IsFalse(t.On);
         }
     }
+    public class RotationSessionTests
+    {
+        [Test]
+        public void Vowel_ChangesAtEachQuarter_AndAnglesChainSeamlessly()
+        {
+            var s = new RotationSession('ㅏ');
+
+            Assert.IsTrue(s.Apply(1));
+            Assert.AreEqual(('ㅜ', 1), (s.Current, s.Rn));
+            Assert.AreEqual(-90f, s.JumpAngleDeg);   // 새 글자를 이전 모습(-90°)에서 시작해
+            Assert.AreEqual(0f, s.TargetAngleDeg);   // 0°까지 돌린다
+
+            Assert.IsTrue(s.Apply(2));
+            Assert.AreEqual(('ㅓ', 2), (s.Current, s.Rn));
+
+            Assert.IsTrue(s.Apply(0));               // 되돌리면 원래 자모
+            Assert.AreEqual(('ㅏ', 0), (s.Current, s.Rn));
+            Assert.AreEqual(0f, s.TargetAngleDeg);
+        }
+
+        [Test]
+        public void Negative_And_FullTurns()
+        {
+            var s = new RotationSession('ㅏ');
+            Assert.IsTrue(s.Apply(-1));
+            Assert.AreEqual('ㅗ', s.Current);        // 반시계 90° = 시계 270°
+            Assert.AreEqual(3, s.Rn);
+            Assert.AreEqual(-360f, s.TargetAngleDeg);
+
+            Assert.IsTrue(s.Apply(4));
+            Assert.AreEqual('ㅏ', s.Current);
+            Assert.IsTrue(s.Finish());               // 한 바퀴는 인정
+        }
+
+        [Test]
+        public void Consonant_NoMapAtQuarter_KeepsOrig_AndFinishFails()
+        {
+            var s = new RotationSession('ㄱ');
+            Assert.IsFalse(s.Apply(1));              // 90°에는 ㄱ 모양이 없어서 그대로
+            Assert.AreEqual('ㄱ', s.Current);
+            Assert.AreEqual(90f, s.TargetAngleDeg);  // 화면 각도만 돌아간다
+            Assert.IsFalse(s.Finish());              // 이 각도에서 놓으면 원위치
+
+            Assert.IsTrue(s.Apply(2));
+            Assert.AreEqual('ㄴ', s.Current);
+            Assert.IsTrue(s.Finish());
+        }
+
+        [Test]
+        public void Model_AppliesLive_AndConfirms()
+        {
+            var m = new InventoryModel(5, 5);
+            var log = new List<CardChange>();
+            m.Changed += log.Add;
+            var c = m.PlaceJamo('ㅏ', 0, 0);
+            log.Clear();
+
+            var s = m.BeginRotation(c);
+            Assert.IsTrue(m.ApplyRotation(c, s, 1));
+            Assert.AreEqual('ㅜ', c.Jamo);           // 손을 떼기 전에 바로 바뀐다
+            Assert.AreEqual(ChangeType.Rotating, log.Single().Type);
+
+            Assert.IsTrue(m.FinishRotation(c, s));
+            Assert.AreEqual('ㅜ', c.Jamo);
+        }
+
+        [Test]
+        public void Model_UnmappedFinish_RestoresOrig()
+        {
+            var m = new InventoryModel(5, 5);
+            var c = m.PlaceJamo('ㅁ', 0, 0);
+            var s = m.BeginRotation(c);
+            m.ApplyRotation(c, s, 1);
+            Assert.IsFalse(m.FinishRotation(c, s));
+            Assert.AreEqual('ㅁ', c.Jamo);
+            Assert.IsNull(m.BeginRotation(Card.NewSyllable(9, 'ㄱ', 'ㅏ', ' ', 0, 0)));
+        }
+
+        [Test]
+        public void TryRotate()
+        {
+            Assert.IsTrue(RotationTable.TryRotate('ㅏ', 1, out var r));
+            Assert.AreEqual('ㅜ', r);
+            Assert.IsFalse(RotationTable.TryRotate('ㄱ', 1, out r));
+            Assert.AreEqual('ㄱ', r);
+            Assert.IsFalse(RotationTable.TryRotate('ㅁ', 0, out _));
+        }
+    }
 }
