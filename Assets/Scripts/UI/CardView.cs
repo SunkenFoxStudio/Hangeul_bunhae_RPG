@@ -18,6 +18,12 @@ namespace Hangeul.UI
         static readonly Color VowelColor = new Color(0.72f, 0.82f, 0.70f);
         static readonly Color HoldColor = new Color(0.86f, 0.72f, 0.52f);
         static readonly Color TargetColor = new Color(1f, 0.78f, 0.35f);
+        // 가방 모드: 단어가 아닌 카드(어둡게 + 물음표)
+        static readonly Color UnknownFlat = new Color(0.27f, 0.23f, 0.2f);
+        static readonly Color UnknownTint = new Color(0.42f, 0.4f, 0.38f);
+        static readonly Color UnknownInk = new Color(0.72f, 0.66f, 0.58f, 0.85f);
+        static readonly Color BagInk = new Color(0.95f, 0.9f, 0.78f);   // 어두운 가방 카드 위의 단어 글자
+        const float LinkRatio = 0.24f;     // 단어 글자 사이를 잇는 동그라미 지름 (칸 대비)
 
         const float FaceInset = 0.04f;     // 카드 사이 간격 (칸의 4%씩)
         const float FontRatio = 0.78f;     // HTML의 font-size 78 / 100
@@ -35,6 +41,8 @@ namespace Hangeul.UI
         Anim _anim;
         float _animT, _animDur, _rotTurns;
         bool _target, _holdOn;
+        bool _bag, _bagUnknown, _linkRight;
+        Image _link;
 
         public Card Card { get; private set; }
         public RectTransform Rect => _rect;
@@ -146,21 +154,104 @@ namespace Hangeul.UI
 
             _bg.sprite = sprite;
             _bg.type = sprite != null && sprite.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
-            _bg.color = _target ? TargetColor : (sprite != null ? Color.white : flat);
+            Color normal = sprite != null ? Color.white : flat;
+            Color dark = sprite != null ? UnknownTint : UnknownFlat;
+            _bg.color = _target ? TargetColor : (_bag ? dark : normal);   // 가방 모드는 단어 카드도 물음표 카드와 같은 어두운 색
         }
 
         // ───── 그리기 ─────
         public void Refresh()
+        {
+            BuildContent();
+            UpdateLink();
+        }
+
+        // ───── 가방 모드 표현 ─────
+        /// <summary>
+        /// 가방 모드 표현. bag: 가방 모드의 어두운 카드 색(단어 카드도 물음표 카드와 같은 색). unknown: 단어가 아닌 카드라 글자 대신 물음표.
+        /// linkRight: 같은 단어의 다음 글자와 이어지는 카드라 오른쪽 경계에 카드와 같은 색의 작은 동그라미를 덧댄다. 조립 모드에서는 (false, false, false).
+        /// </summary>
+        public void SetBag(bool bag, bool unknown, bool linkRight)
+        {
+            if (_bag == bag && _bagUnknown == unknown && _linkRight == linkRight) return;
+            _bag = bag;
+            _bagUnknown = unknown;
+            _linkRight = linkRight;
+            Refresh();
+        }
+
+        void UpdateLink()
+        {
+            if (!_linkRight || _cell <= 0f)
+            {
+                if (_link != null) _link.gameObject.SetActive(false);
+                return;
+            }
+            if (_link == null)
+            {
+                var go = new GameObject("Link", typeof(RectTransform), typeof(Image));
+                go.transform.SetParent(transform, false);
+                _link = go.GetComponent<Image>();
+                _link.sprite = CircleSprite();
+                _link.raycastTarget = false;
+                var rt = (RectTransform)go.transform;
+                rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+            }
+            float d = _cell * LinkRatio;
+            var r = (RectTransform)_link.transform;
+            r.sizeDelta = new Vector2(d, d);
+            r.anchoredPosition = new Vector2(_cell, -_cell / 2f);   // 오른쪽 가장자리 가운데 = 다음 카드와의 경계
+            _link.color = _bg.color;   // 카드 배경색과 똑같이 (가방 모드의 어두운 색)
+            _link.gameObject.SetActive(true);
+        }
+
+        static Sprite _circle;
+
+        // 흰 원 스프라이트(가장자리 1px 안티앨리어싱). 에셋 없이 한 번만 만들어 공유한다.
+        static Sprite CircleSprite()
+        {
+            if (_circle != null) return _circle;
+            const int n = 64;
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                hideFlags = HideFlags.HideAndDontSave,
+            };
+            var px = new Color32[n * n];
+            float c = (n - 1) / 2f, radius = n / 2f - 1f;
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float d = Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c));
+                    px[y * n + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(radius - d) * 255f));
+                }
+            tex.SetPixels32(px);
+            tex.Apply();
+            _circle = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f);
+            _circle.hideFlags = HideFlags.HideAndDontSave;
+            return _circle;
+        }
+
+        void BuildContent()
         {
             if (_face == null || _cell <= 0f) return;
             for (int i = _face.childCount - 1; i >= 0; i--) Destroy(_face.GetChild(i).gameObject);
             ApplyColor();
 
             float face = _cell * (1f - 2f * FaceInset);
+            Color ink = _bag ? BagInk : Ink;
+
+            if (_bagUnknown)
+            {
+                AddText(_face, "?", face, UnknownInk);
+                return;
+            }
 
             if (Card.Kind == CardKind.Jamo)
             {
-                AddText(_face, Card.Jamo.ToString(), face, Ink);
+                AddText(_face, Card.Jamo.ToString(), face, ink);
                 return;
             }
 
@@ -176,10 +267,10 @@ namespace Hangeul.UI
             foreach (Slot slot in new[] { Slot.Cho, Slot.Jung, Slot.Jong })
                 (Card.S[slot] != 0 ? filled : missing).AddRange(SyllableLayout.Regions(layout, hasJong, slot));
 
-            if (missing.Count == 0) { AddText(_face, ch, face, Ink); return; }
+            if (missing.Count == 0) { AddText(_face, ch, face, ink); return; }
 
-            AddClippedText(ch, missing, face, new Color(Ink.r, Ink.g, Ink.b, 0.28f));   // 고스트
-            AddClippedText(ch, filled, face, Ink);
+            AddClippedText(ch, missing, face, new Color(ink.r, ink.g, ink.b, 0.28f));   // 고스트
+            AddClippedText(ch, filled, face, ink);
         }
 
         void AddClippedText(string ch, System.Collections.Generic.List<SyllableLayout.Rect> rects, float face, Color color)

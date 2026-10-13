@@ -1,3 +1,4 @@
+using Hangeul.App;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -13,6 +14,25 @@ namespace Hangeul.UI
         [SerializeField] InventoryView inventory;
         [SerializeField] InputField input;
         [SerializeField] Button addButton;
+
+        InventoryModel _model;
+
+        // 모델은 InventoryView.Awake에서 만들어지므로 Start에서 구독한다. 비활성 오브젝트도 C# 이벤트는 받으므로 스스로를 껐다 켤 수 있다.
+        void Start()
+        {
+            if (inventory == null) return;
+            _model = inventory.Model;
+            _model.ModeChanged += OnModeChanged;
+            OnModeChanged(_model.Mode);
+        }
+
+        void OnDestroy()
+        {
+            if (_model != null) _model.ModeChanged -= OnModeChanged;
+        }
+
+        // 단어 입력창은 조립 모드에서만 보인다 (가방 모드에서는 숨김)
+        void OnModeChanged(InventoryMode mode) => gameObject.SetActive(mode != InventoryMode.Bag);
 
         void OnEnable()
         {

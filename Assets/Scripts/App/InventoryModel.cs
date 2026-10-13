@@ -51,10 +51,23 @@ namespace Hangeul.App
         public GridModel Grid { get; }
         public MatchScanner Scanner { get; } = new MatchScanner();
         public event Action<CardChange> Changed;
+        /// <summary>모드가 바뀌었을 때(조립/가방). 화면은 이것만 보고 표현을 바꾼다.</summary>
+        public event Action<InventoryMode> ModeChanged;
+        /// <summary>완성 단어 스캔이 끝날 때마다(알림 여부와 무관). 가방 모드 화면이 <see cref="MatchScanner.Shown"/>을 다시 읽는 시점.</summary>
+        public event Action Scanned;
+        public InventoryMode Mode { get; private set; }
         /// <summary>조작으로 단어가 새로 완성됐을 때(단어 추가/불러오기/격자 크기 변경으로 이미 완성돼 있던 것은 알리지 않는다). 본편이 구독해 아이템 지급 등을 처리한다.</summary>
         public event Action<WordMatch> WordCompleted;
 
         public InventoryModel(int cols = 10, int rows = 10) { Grid = new GridModel(cols, rows); }
+
+        /// <summary>모드를 바꾼다. 카드 데이터는 건드리지 않는다.</summary>
+        public void SetMode(InventoryMode mode)
+        {
+            if (Mode == mode) return;
+            Mode = mode;
+            ModeChanged?.Invoke(mode);
+        }
 
         /// <summary>완성 판정에 쓸 단어 목록을 바꾼다. 이미 완성돼 있던 단어는 알리지 않는다.</summary>
         public void SetWords(ItemWordSet words)
@@ -70,6 +83,7 @@ namespace Hangeul.App
         public IReadOnlyList<WordMatch> Scan(bool notify)
         {
             var fresh = Scanner.Scan(Grid, notify);
+            Scanned?.Invoke();
             foreach (var m in fresh) WordCompleted?.Invoke(m);
             return fresh;
         }
@@ -274,6 +288,31 @@ namespace Hangeul.App
             return CombineOutcome.Ok;
         }
 
+        /// <summary>
+        /// 가로로 이어 붙은 카드 묶음(왼쪽→오른쪽 순서)을 왼쪽 끝이 (startCol,row)가 되게 통째로 옮길 수 있는지.
+        /// 목적지가 모두 격자 안이고, 비어 있거나 묶음 자신의 칸이어야 한다(자리 교환은 하지 않는다).
+        /// </summary>
+        public bool CanMoveGroup(IReadOnlyList<Card> cards, int startCol, int row)
+        {
+            if (cards == null || cards.Count == 0) return false;
+            if (row < 0 || row >= Grid.Rows || startCol < 0 || startCol + cards.Count > Grid.Cols) return false;
+            for (int i = 0; i < cards.Count; i++)
+            {
+                var occupant = Grid.CardAt(startCol + i, row);
+                if (occupant != null && !cards.Contains(occupant)) return false;
+            }
+            return true;
+        }
+
+        /// <summary>묶음을 통째로 옮긴다. 옮길 수 없으면 아무것도 바꾸지 않고 false.</summary>
+        public bool MoveGroup(IReadOnlyList<Card> cards, int startCol, int row)
+        {
+            if (!CanMoveGroup(cards, startCol, row)) return false;
+            for (int i = 0; i < cards.Count; i++) { cards[i].Col = startCol + i; cards[i].Row = row; }
+            foreach (var c in cards) Notify(ChangeType.Moved, c);
+            return true;
+        }
+
         /// <summary>카드를 (col,row)로 옮긴다. 격자 밖은 clamp, 점유된 칸이면 자리 교환(상대는 내 원래 칸으로).</summary>
         public void Move(Card c, int col, int row)
         {
@@ -335,7 +374,12 @@ namespace Hangeul.App
         /// <summary>현재 격자 크기와 카드 배치를 세이브 데이터로 만든다.</summary>
         public InventorySaveData ToSave()
         {
-            var d = new InventorySaveData { cols = Grid.Cols, rows = Grid.Rows };
+            var d = new InventorySaveData
+            {
+                cols = Grid.Cols,
+                rows = Grid.Rows,
+                mode = Mode == InventoryMode.Bag ? InventorySaveData.ModeBag : InventorySaveData.ModeAssemble,
+            };
             foreach (var c in Grid.Cards.OrderBy(c => c.Id)) d.cards.Add(CardSaveData.From(c));
             return d;
         }
@@ -402,6 +446,7 @@ namespace Hangeul.App
             }
 
             foreach (var c in Grid.Cards.ToList()) Notify(ChangeType.Added, c);
+            SetMode(data.mode == InventorySaveData.ModeBag ? InventoryMode.Bag : InventoryMode.Assemble);
             Scan(notify: false);
             return new LoadResult(true, null, cards.Count, skipped, deferred.Count);
         }

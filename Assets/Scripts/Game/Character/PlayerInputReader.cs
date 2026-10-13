@@ -21,7 +21,7 @@ namespace Hangeul.Game.Character
 
         public Vector2 Move => _move != null ? _move.ReadValue<Vector2>() : Vector2.zero;
 
-        /// <summary>이번 프레임에 상호작용 키를 눌렀는지. (에셋의 Interact에 Hold가 걸려 있어도 누른 순간 true)</summary>
+        /// <summary>이번 프레임에 상호작용 키를 눌렀는지. (Interact는 Hold 없이 짧게 누르는 방식이다)</summary>
         public bool InteractPressed => _interact != null && _interact.WasPressedThisFrame();
 
         /// <summary>이번 프레임에 인벤토리 열기/닫기 키(Tab)를 눌렀는지.</summary>

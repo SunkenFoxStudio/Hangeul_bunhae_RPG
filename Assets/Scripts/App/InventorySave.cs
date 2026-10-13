@@ -12,10 +12,14 @@ namespace Hangeul.App
     public sealed class InventorySaveData
     {
         public const int CurrentVersion = 1;
+        public const string ModeAssemble = "assemble";
+        public const string ModeBag = "bag";
 
         public int schemaVersion = CurrentVersion;
         public int cols = 10;
         public int rows = 10;
+        /// <summary>"assemble"(조립) 또는 "bag"(가방). 모르는 값은 조립으로 본다.</summary>
+        public string mode = ModeAssemble;
         public List<CardSaveData> cards = new List<CardSaveData>();
     }
 

@@ -13,7 +13,8 @@ namespace Hangeul.UI
     /// 드래그 입력을 모델 명령으로 바꾼다.
     /// 조작: 우클릭 드래그 = 카드 이동/결합, 음절 좌클릭 드래그 = 분리(그 카드를 계속 끌고 감), 자모 좌클릭 드래그 = 이동/결합,
     /// 우클릭 = 회전 우선 변환, 더블클릭 = 분리 우선 변환, R 키 = 마지막으로 만진 카드 변환.
-    /// 모서리 드래그 회전은 M3.
+    /// 모서리 드래그 회전: 자모 카드 모서리를 좌클릭으로 잡고 돌린다.
+    /// 가방 모드: 완성된 단어는 한 덩어리(어디를 잡든 통째로 이동), 단어가 아닌 카드는 어둡게 물음표. 분해·결합·회전은 막힌다.
     /// </summary>
     public sealed class InventoryView : MonoBehaviour
     {
@@ -71,10 +72,24 @@ namespace Hangeul.UI
             public float Total;          // 누적 각도
 
             public bool OverTrash;       // 포인터가 쓰레기통 위에 있음
+
+            // 가방 모드 덩어리 드래그 (Group != null이면 이 카드들을 통째로 옮긴다)
+            public List<CardView> Group;
+            public List<Card> GroupCards;
+            public List<Vector2> GroupOrigins;
+            public int LeadIndex;        // 잡은 카드의 묶음 안 순서
+        }
+
+        // 가방 모드에서 한 단어로 묶인 카드들 (카드 아이디 → 소속 묶음과 그 안의 순서)
+        sealed class ChunkRef
+        {
+            public List<Card> Cards;
+            public int Index;
         }
 
         readonly Dictionary<int, CardView> _views = new Dictionary<int, CardView>();
         readonly HoHoldTracker _hold = new HoHoldTracker();
+        readonly Dictionary<int, ChunkRef> _chunks = new Dictionary<int, ChunkRef>();
         Image _highlight;
         GridLinesGraphic _gridLines;
         RectTransform _cellRoot;
@@ -100,10 +115,13 @@ namespace Hangeul.UI
             Model = new InventoryModel(cols, rows);
             Model.Changed += OnChanged;
             Model.WordCompleted += OnWordCompleted;
+            Model.ModeChanged += OnModeChanged;
+            Model.Scanned += RefreshBag;
             // 쓰레기통이 카드 뒤에 그려져야 카드가 그 위로 지나가고, 달라붙을 때도 보인다
             if (trashZone != null) trashZone.transform.SetAsFirstSibling();
             LoadWords();
             if (persist) LoadSaved();
+            RefreshTrashVisibility();
 
             // 칸 구분선: 카드 뒤(맨 아래)에 깐다
             var lines = new GameObject("GridLines", typeof(RectTransform), typeof(CanvasRenderer), typeof(GridLinesGraphic));
@@ -130,6 +148,8 @@ namespace Hangeul.UI
             if (Model == null) return;
             Model.Changed -= OnChanged;
             Model.WordCompleted -= OnWordCompleted;
+            Model.ModeChanged -= OnModeChanged;
+            Model.Scanned -= RefreshBag;
             if (persist && _saveDirty) SaveNow();
         }
 
@@ -156,7 +176,7 @@ namespace Hangeul.UI
         void OnWordCompleted(WordMatch m)
         {
             Debug.Log($"[InventoryView] 단어 완성: {m.Word}");
-            if (_cell <= 0f) return;
+            if (_cell <= 0f || Model.Mode == InventoryMode.Bag) return;   // 가방 모드에서는 완성 글로우를 띄우지 않는다
             CompletionOverlay.Spawn(cardLayer, new Vector2(m.Col * _cell, m.Row * _cell), new Vector2(m.Length * _cell, _cell));
         }
 
@@ -191,6 +211,56 @@ namespace Hangeul.UI
 
         void OnRectTransformDimensionsChange() => _dirty = true;
 
+        // ───── 모드 ─────
+        public InventoryMode Mode => Model.Mode;
+        public void SetMode(InventoryMode mode) => Model.SetMode(mode);
+        public void ToggleMode() => Model.SetMode(Model.Mode == InventoryMode.Bag ? InventoryMode.Assemble : InventoryMode.Bag);
+
+        void OnModeChanged(InventoryMode mode)
+        {
+            _saveDirty = true;
+            _lastChange = Time.unscaledTime;
+            _last = null;
+            RefreshBag();
+            RefreshTrashVisibility();
+        }
+
+        // 쓰레기통은 조립 모드에서만 보인다
+        void RefreshTrashVisibility()
+        {
+            if (trashZone != null) trashZone.gameObject.SetActive(Model.Mode == InventoryMode.Assemble);
+        }
+
+        // 가방 모드: MatchScanner.Shown(겹치지 않는 가장 긴 단어들)을 읽어 카드마다 모양을 정한다.
+        //  - 단어에 속한 카드: 글자 그대로. 2글자 이상이면 다음 글자와 이어지는 카드에 연결 동그라미.
+        //  - 단어에 속하지 않은 카드(미완성/자모/없는 글자): 어둡게 물음표.
+        void RefreshBag()
+        {
+            _chunks.Clear();
+            bool bag = Model.Mode == InventoryMode.Bag;
+            if (bag)
+            {
+                foreach (var m in Model.Scanner.Shown)
+                {
+                    var cards = new List<Card>();
+                    for (int k = 0; k < m.Length; k++)
+                    {
+                        var c = Model.Grid.CardAt(m.Col + k, m.Row);
+                        if (c == null) { cards = null; break; }
+                        cards.Add(c);
+                    }
+                    if (cards == null) continue;
+                    for (int k = 0; k < cards.Count; k++) _chunks[cards[k].Id] = new ChunkRef { Cards = cards, Index = k };
+                }
+            }
+
+            foreach (var v in _views.Values)
+            {
+                _chunks.TryGetValue(v.Card.Id, out var cr);
+                v.SetBag(bag, bag && cr == null, bag && cr != null && cr.Index < cr.Cards.Count - 1);
+            }
+        }
+
         // ───── 외부 API ─────
         public AddWordResult AddWord(string word, (int col, int row)? anchor = null) => Model.AddWord(word, anchor);
 
@@ -211,9 +281,11 @@ namespace Hangeul.UI
 
         Vector2 CellPos(Card c) => new Vector2(c.Col * _cell, c.Row * _cell);
 
+        bool IsDragging(CardView v) => _drag != null && (_drag.View == v || (_drag.Group != null && _drag.Group.Contains(v)));
+
         void Place(CardView v)
         {
-            if (_drag != null && _drag.View == v) return;
+            if (IsDragging(v)) return;
             v.SetPosition(CellPos(v.Card));
         }
 
@@ -332,7 +404,7 @@ namespace Hangeul.UI
                     if (_views.TryGetValue(ch.Card.Id, out var rot)) rot.Refresh();
                     break;
                 case ChangeType.Moved:
-                    if (_views.TryGetValue(ch.Card.Id, out var mv) && !(_drag != null && _drag.View == mv))
+                    if (_views.TryGetValue(ch.Card.Id, out var mv) && !IsDragging(mv))
                         mv.MoveTo(CellPos(mv.Card), 0.1f);   // 놓은 칸/밀려난 칸으로 부드럽게 자리잡는다
                     break;
                 case ChangeType.Rejected:
@@ -366,6 +438,7 @@ namespace Hangeul.UI
         {
             // 우클릭 드래그를 놓을 때는 EndDrag보다 먼저 Click이 오므로, 드래그였던 입력은 클릭으로 치지 않는다
             if (e.dragging || _drag != null) return;
+            if (Model.Mode == InventoryMode.Bag) return;
             if (e.button == PointerEventData.InputButton.Right) QuickTransform(v, false);
             else if (e.button == PointerEventData.InputButton.Left && e.clickCount >= 2) QuickTransform(v, true);
         }
@@ -382,6 +455,8 @@ namespace Hangeul.UI
             bool right = e.button == PointerEventData.InputButton.Right;
             if (logClickTargets) Debug.Log($"[InventoryView] BeginDrag {v.name} button={e.button}");
             if (!right && e.button != PointerEventData.InputButton.Left) return;
+
+            if (Model.Mode == InventoryMode.Bag) { BeginBagDrag(v, e); return; }
 
             var state = new DragState
             {
@@ -423,6 +498,38 @@ namespace Hangeul.UI
             Drag(e);
         }
 
+        // 가방 모드: 어디를 잡든 그 카드가 속한 단어 덩어리(없으면 그 카드 한 장)를 통째로 끈다
+        void BeginBagDrag(CardView v, PointerEventData e)
+        {
+            _chunks.TryGetValue(v.Card.Id, out var cr);
+            var cards = cr != null ? cr.Cards : new List<Card> { v.Card };
+            int lead = cr != null ? cr.Index : 0;
+
+            var group = new List<CardView>();
+            var origins = new List<Vector2>();
+            foreach (var c in cards)
+            {
+                if (!_views.TryGetValue(c.Id, out var gv)) return;
+                group.Add(gv);
+                origins.Add(CellPos(c));
+            }
+
+            _drag = new DragState
+            {
+                View = v,
+                StartLocal = ToLayer(e.pressPosition, e.pressEventCamera),
+                Origin = origins[lead],
+                Group = group,
+                GroupCards = new List<Card>(cards),
+                GroupOrigins = origins,
+                LeadIndex = lead,
+            };
+            _last = v;
+            _highlight.transform.SetAsLastSibling();
+            foreach (var gv in group) gv.transform.SetAsLastSibling();
+            Drag(e);
+        }
+
         public void Drag(PointerEventData e)
         {
             if (_drag == null) return;
@@ -431,7 +538,8 @@ namespace Hangeul.UI
             Vector2 pos = _drag.Origin + (local - _drag.StartLocal);   // 격자에 묶이지 않고 포인터를 그대로 따라간다
 
             // 쓰레기통 위에 있으면 포인터를 따라가지 않고 쓰레기통 칸 가운데에 붙어 살짝 작아진다
-            bool over = trashZone != null && trashZone.Contains(e.position, e.pressEventCamera);
+            // 쓰레기통은 조립 모드에서만 쓴다 (가방 모드에서는 보이지도 않는다)
+            bool over = trashZone != null && Model.Mode == InventoryMode.Assemble && trashZone.Contains(e.position, e.pressEventCamera);
             if (over != _drag.OverTrash)
             {
                 _drag.OverTrash = over;
@@ -442,6 +550,9 @@ namespace Hangeul.UI
             _drag.Pos = pos;
             _drag.Moved = true;
             _drag.View.SetPosition(pos);
+            if (_drag.Group != null)
+                for (int i = 0; i < _drag.Group.Count; i++)
+                    if (_drag.Group[i] != _drag.View) _drag.Group[i].SetPosition(_drag.GroupOrigins[i] + (pos - _drag.Origin));
             UpdateFeedback(0f);
         }
 
@@ -469,7 +580,14 @@ namespace Hangeul.UI
             bool holdOn = _hold.On;
             ClearFeedback();
 
-            if (!d.Moved) { Place(d.View); return; }
+            if (!d.Moved)
+            {
+                if (d.Group != null) foreach (var gv in d.Group) Place(gv);
+                else Place(d.View);
+                return;
+            }
+
+            if (d.Group != null) { EndBagDrag(d); return; }
 
             // 카드 중심이 격자 안일 때만 놓을 수 있다. 밖이면 제자리로 돌아간다
             if (!TryCellOf(d.Pos, out int col, out int row)) { ReturnHome(d.View); return; }
@@ -487,6 +605,13 @@ namespace Hangeul.UI
 
             Model.Move(card, col, row);                                   // 빈 칸이면 이동, 점유된 칸이면 자리 교환
             if (occupant != null && _views.TryGetValue(occupant.Id, out var ov)) ov.Pop();
+        }
+
+        // 가방 모드: 잡은 카드의 중심 칸을 기준으로 덩어리 전체가 빈 칸에 들어갈 때만 옮긴다(교환 없음). 아니면 모두 제자리로.
+        void EndBagDrag(DragState d)
+        {
+            if (TryCellOf(d.Pos, out int col, out int row) && Model.MoveGroup(d.GroupCards, col - d.LeadIndex, row)) return;
+            foreach (var gv in d.Group) ReturnHome(gv);
         }
 
         void ReturnHome(CardView v) => v.MoveTo(CellPos(v.Card), 0.15f);
@@ -539,6 +664,7 @@ namespace Hangeul.UI
         void UpdateFeedback(float dt)
         {
             if (_drag == null || _drag.Rot != null) return;
+            if (_drag.Group != null) { UpdateBagFeedback(); return; }
             if (_drag.OverTrash || !TryCellOf(_drag.Pos, out int col, out int row))
             {
                 ClearFeedback();      // 놓을 수 없는 곳: 칸 강조/결합 표시를 모두 끈다
@@ -566,6 +692,22 @@ namespace Hangeul.UI
             rt.sizeDelta = new Vector2(_cell, _cell);
             rt.anchoredPosition = new Vector2(col * _cell, -row * _cell);
             _highlight.color = target != null ? MergeColor : occupant != null ? SwapColor : EmptyColor;
+            _highlight.enabled = true;
+        }
+
+        // 가방 모드: 덩어리가 들어갈 자리(가로 n칸)를 놓을 수 있을 때만 초록으로 보여준다
+        void UpdateBagFeedback()
+        {
+            var d = _drag;
+            if (d.OverTrash || !TryCellOf(d.Pos, out int col, out int row)) { ClearFeedback(); return; }
+
+            int start = col - d.LeadIndex;
+            if (!Model.CanMoveGroup(d.GroupCards, start, row)) { _highlight.enabled = false; return; }
+
+            var rt = (RectTransform)_highlight.transform;
+            rt.sizeDelta = new Vector2(_cell * d.GroupCards.Count, _cell);
+            rt.anchoredPosition = new Vector2(start * _cell, -row * _cell);
+            _highlight.color = EmptyColor;
             _highlight.enabled = true;
         }
 
@@ -610,7 +752,7 @@ namespace Hangeul.UI
             if (persist && _saveDirty && _drag == null && Time.unscaledTime - _lastChange > SaveDelay) SaveNow();
 
             var kb = Keyboard.current;
-            if (kb != null && kb.rKey.wasPressedThisFrame && _last != null && _views.ContainsKey(_last.Card.Id) && IsInteractive() && !Typing())
+            if (kb != null && kb.rKey.wasPressedThisFrame && Model.Mode == InventoryMode.Assemble && _last != null && _views.ContainsKey(_last.Card.Id) && IsInteractive() && !Typing())
                 QuickTransform(_last, false);
         }
 
