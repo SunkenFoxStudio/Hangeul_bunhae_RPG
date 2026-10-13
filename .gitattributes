@@ -1,0 +1,27 @@
+# 기본: 텍스트는 저장소에 LF로 저장
+* text=auto
+
+# Unity가 LF로 쓰는 파일은 체크아웃 때도 LF 유지 (Windows에서 CRLF 변환으로 인한 불필요한 변경 방지)
+*.cs text eol=lf
+*.asmdef text eol=lf
+*.inputactions text eol=lf
+*.meta text eol=lf
+*.unity text eol=lf
+*.prefab text eol=lf
+*.asset text eol=lf
+*.mat text eol=lf
+*.anim text eol=lf
+*.controller text eol=lf
+*.json text eol=lf
+
+# 바이너리
+*.png binary
+*.jpg binary
+*.psd binary
+*.ase binary
+*.aseprite binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.ttf binary
+*.otf binary

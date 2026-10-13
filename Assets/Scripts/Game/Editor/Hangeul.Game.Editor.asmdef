@@ -1,0 +1,20 @@
+{
+    "name": "Hangeul.Game.Editor",
+    "rootNamespace": "Hangeul.Game.Editor",
+    "references": [
+        "Hangeul.Game",
+        "Unity.InputSystem",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

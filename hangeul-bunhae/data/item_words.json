@@ -1,0 +1,4018 @@
+{
+  "schemaVersion": 1,
+  "savedAt": "2026-10-13T04:38:20.549Z",
+  "categories": [
+    "추가한 단어",
+    "무기",
+    "방어구",
+    "소모품",
+    "재료·잡화",
+    "스킬",
+    "접두어",
+    "음식"
+  ],
+  "items": [
+    {
+      "word": "목",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "목",
+          "cho": "ㅁ",
+          "jung": "ㅗ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "뫼",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "뫼",
+          "cho": "ㅁ",
+          "jung": "ㅚ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "뇌",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "뇌",
+          "cho": "ㄴ",
+          "jung": "ㅚ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "괴물",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "괴",
+          "cho": "ㄱ",
+          "jung": "ㅚ",
+          "jong": ""
+        },
+        {
+          "letter": "물",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "모기",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "모",
+          "cho": "ㅁ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "기",
+          "cho": "ㄱ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "집",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "집",
+          "cho": "ㅈ",
+          "jung": "ㅣ",
+          "jong": "ㅂ"
+        }
+      ]
+    },
+    {
+      "word": "닭",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "닭",
+          "cho": "ㄷ",
+          "jung": "ㅏ",
+          "jong": "ㄺ"
+        }
+      ]
+    },
+    {
+      "word": "뭉탱이",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "뭉",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "탱",
+          "cho": "ㅌ",
+          "jung": "ㅐ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "이",
+          "cho": "ㅇ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "꿈",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "꿈",
+          "cho": "ㄲ",
+          "jung": "ㅜ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "개추",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "개",
+          "cho": "ㄱ",
+          "jung": "ㅐ",
+          "jong": ""
+        },
+        {
+          "letter": "추",
+          "cho": "ㅊ",
+          "jung": "ㅜ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "송곳",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "송",
+          "cho": "ㅅ",
+          "jung": "ㅗ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "곳",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": "ㅅ"
+        }
+      ]
+    },
+    {
+      "word": "핵",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "핵",
+          "cho": "ㅎ",
+          "jung": "ㅐ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "삯",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "삯",
+          "cho": "ㅅ",
+          "jung": "ㅏ",
+          "jong": "ㄳ"
+        }
+      ]
+    },
+    {
+      "word": "손",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "손",
+          "cho": "ㅅ",
+          "jung": "ㅗ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "인간",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "인",
+          "cho": "ㅇ",
+          "jung": "ㅣ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "간",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "벌레인간",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "벌",
+          "cho": "ㅂ",
+          "jung": "ㅓ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "레",
+          "cho": "ㄹ",
+          "jung": "ㅔ",
+          "jong": ""
+        },
+        {
+          "letter": "인",
+          "cho": "ㅇ",
+          "jung": "ㅣ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "간",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "위키",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "위",
+          "cho": "ㅇ",
+          "jung": "ㅟ",
+          "jong": ""
+        },
+        {
+          "letter": "키",
+          "cho": "ㅋ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "키스",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "키",
+          "cho": "ㅋ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "스",
+          "cho": "ㅅ",
+          "jung": "ㅡ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "케이스",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "케",
+          "cho": "ㅋ",
+          "jung": "ㅔ",
+          "jong": ""
+        },
+        {
+          "letter": "이",
+          "cho": "ㅇ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "스",
+          "cho": "ㅅ",
+          "jung": "ㅡ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "자",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "자",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "상",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "상",
+          "cho": "ㅅ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "퀴즈",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "퀴",
+          "cho": "ㅋ",
+          "jung": "ㅟ",
+          "jong": ""
+        },
+        {
+          "letter": "즈",
+          "cho": "ㅈ",
+          "jung": "ㅡ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "혀",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "혀",
+          "cho": "ㅎ",
+          "jung": "ㅕ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "혈",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "혈",
+          "cho": "ㅎ",
+          "jung": "ㅕ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "열",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "열",
+          "cho": "ㅇ",
+          "jung": "ㅕ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "달",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "달",
+          "cho": "ㄷ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "사자",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "사",
+          "cho": "ㅅ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "자",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "철갑",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "철",
+          "cho": "ㅊ",
+          "jung": "ㅓ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "갑",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": "ㅂ"
+        }
+      ]
+    },
+    {
+      "word": "나팔",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "나",
+          "cho": "ㄴ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "팔",
+          "cho": "ㅍ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "팔",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "팔",
+          "cho": "ㅍ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "돼지",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "돼",
+          "cho": "ㄷ",
+          "jung": "ㅙ",
+          "jong": ""
+        },
+        {
+          "letter": "지",
+          "cho": "ㅈ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "기지",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "기",
+          "cho": "ㄱ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "지",
+          "cho": "ㅈ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "양",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "양",
+          "cho": "ㅇ",
+          "jung": "ㅑ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "바위",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "바",
+          "cho": "ㅂ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "위",
+          "cho": "ㅇ",
+          "jung": "ㅟ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "어묵",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "어",
+          "cho": "ㅇ",
+          "jung": "ㅓ",
+          "jong": ""
+        },
+        {
+          "letter": "묵",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "묵",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "묵",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "국수",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "국",
+          "cho": "ㄱ",
+          "jung": "ㅜ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "수",
+          "cho": "ㅅ",
+          "jung": "ㅜ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "국",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "국",
+          "cho": "ㄱ",
+          "jung": "ㅜ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "국어",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "국",
+          "cho": "ㄱ",
+          "jung": "ㅜ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "어",
+          "cho": "ㅇ",
+          "jung": "ㅓ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "수국",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "수",
+          "cho": "ㅅ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "국",
+          "cho": "ㄱ",
+          "jung": "ㅜ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "공격",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "공",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "격",
+          "cho": "ㄱ",
+          "jung": "ㅕ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "공",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "공",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "솜",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "솜",
+          "cho": "ㅅ",
+          "jung": "ㅗ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "섬",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "섬",
+          "cho": "ㅅ",
+          "jung": "ㅓ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "고동",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "고",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "동",
+          "cho": "ㄷ",
+          "jung": "ㅗ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "과도",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "과",
+          "cho": "ㄱ",
+          "jung": "ㅘ",
+          "jong": ""
+        },
+        {
+          "letter": "도",
+          "cho": "ㄷ",
+          "jung": "ㅗ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "과거",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "과",
+          "cho": "ㄱ",
+          "jung": "ㅘ",
+          "jong": ""
+        },
+        {
+          "letter": "거",
+          "cho": "ㄱ",
+          "jung": "ㅓ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "레버",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "레",
+          "cho": "ㄹ",
+          "jung": "ㅔ",
+          "jong": ""
+        },
+        {
+          "letter": "버",
+          "cho": "ㅂ",
+          "jung": "ㅓ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "나그네",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "나",
+          "cho": "ㄴ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "그",
+          "cho": "ㄱ",
+          "jung": "ㅡ",
+          "jong": ""
+        },
+        {
+          "letter": "네",
+          "cho": "ㄴ",
+          "jung": "ㅔ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "다과",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "다",
+          "cho": "ㄷ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "과",
+          "cho": "ㄱ",
+          "jung": "ㅘ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "지구",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "지",
+          "cho": "ㅈ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "구",
+          "cho": "ㄱ",
+          "jung": "ㅜ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "국자",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "국",
+          "cho": "ㄱ",
+          "jung": "ㅜ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "자",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "다리",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "다",
+          "cho": "ㄷ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "리",
+          "cho": "ㄹ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "자국",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "자",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "국",
+          "cho": "ㄱ",
+          "jung": "ㅜ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "잠자리",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "잠",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": "ㅁ"
+        },
+        {
+          "letter": "자",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "리",
+          "cho": "ㄹ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "값",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "값",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": "ㅄ"
+        }
+      ]
+    },
+    {
+      "word": "박수",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "박",
+          "cho": "ㅂ",
+          "jung": "ㅏ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "수",
+          "cho": "ㅅ",
+          "jung": "ㅜ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "수박",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "수",
+          "cho": "ㅅ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "박",
+          "cho": "ㅂ",
+          "jung": "ㅏ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "순무",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "순",
+          "cho": "ㅅ",
+          "jung": "ㅜ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "무",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "무순",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "무",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "순",
+          "cho": "ㅅ",
+          "jung": "ㅜ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "무",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "무",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "음악",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "음",
+          "cho": "ㅇ",
+          "jung": "ㅡ",
+          "jong": "ㅁ"
+        },
+        {
+          "letter": "악",
+          "cho": "ㅇ",
+          "jung": "ㅏ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "얼굴",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "얼",
+          "cho": "ㅇ",
+          "jung": "ㅓ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "굴",
+          "cho": "ㄱ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "가마",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "가",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "마",
+          "cho": "ㅁ",
+          "jung": "ㅏ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "통",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "통",
+          "cho": "ㅌ",
+          "jung": "ㅗ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "버터",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "버",
+          "cho": "ㅂ",
+          "jung": "ㅓ",
+          "jong": ""
+        },
+        {
+          "letter": "터",
+          "cho": "ㅌ",
+          "jung": "ㅓ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "버튼",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "버",
+          "cho": "ㅂ",
+          "jung": "ㅓ",
+          "jong": ""
+        },
+        {
+          "letter": "튼",
+          "cho": "ㅌ",
+          "jung": "ㅡ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "병",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "병",
+          "cho": "ㅂ",
+          "jung": "ㅕ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "알",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "알",
+          "cho": "ㅇ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "그늘",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "그",
+          "cho": "ㄱ",
+          "jung": "ㅡ",
+          "jong": ""
+        },
+        {
+          "letter": "늘",
+          "cho": "ㄴ",
+          "jung": "ㅡ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "한기",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "한",
+          "cho": "ㅎ",
+          "jung": "ㅏ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "기",
+          "cho": "ㄱ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "흙",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "흙",
+          "cho": "ㅎ",
+          "jung": "ㅡ",
+          "jong": "ㄺ"
+        }
+      ]
+    },
+    {
+      "word": "카드",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "카",
+          "cho": "ㅋ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "드",
+          "cho": "ㄷ",
+          "jung": "ㅡ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "편지",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "편",
+          "cho": "ㅍ",
+          "jung": "ㅕ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "지",
+          "cho": "ㅈ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "숲",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "숲",
+          "cho": "ㅅ",
+          "jung": "ㅜ",
+          "jong": "ㅍ"
+        }
+      ]
+    },
+    {
+      "word": "매직",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "매",
+          "cho": "ㅁ",
+          "jung": "ㅐ",
+          "jong": ""
+        },
+        {
+          "letter": "직",
+          "cho": "ㅈ",
+          "jung": "ㅣ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "성",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "성",
+          "cho": "ㅅ",
+          "jung": "ㅓ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "쌍",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "쌍",
+          "cho": "ㅆ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "점",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "점",
+          "cho": "ㅈ",
+          "jung": "ㅓ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "도검",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "도",
+          "cho": "ㄷ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "검",
+          "cho": "ㄱ",
+          "jung": "ㅓ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "장창",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "장",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "창",
+          "cho": "ㅊ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "자상",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "자",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "상",
+          "cho": "ㅅ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "열상",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "열",
+          "cho": "ㅇ",
+          "jung": "ㅕ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "상",
+          "cho": "ㅅ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "식초",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "식",
+          "cho": "ㅅ",
+          "jung": "ㅣ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "초",
+          "cho": "ㅊ",
+          "jung": "ㅗ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "생강",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "생",
+          "cho": "ㅅ",
+          "jung": "ㅐ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "강",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "쇠약",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "쇠",
+          "cho": "ㅅ",
+          "jung": "ㅚ",
+          "jong": ""
+        },
+        {
+          "letter": "약",
+          "cho": "ㅇ",
+          "jung": "ㅑ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "분장",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "분",
+          "cho": "ㅂ",
+          "jung": "ㅜ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "장",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "줄",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "줄",
+          "cho": "ㅈ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "박",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "박",
+          "cho": "ㅂ",
+          "jung": "ㅏ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "쇠",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "쇠",
+          "cho": "ㅅ",
+          "jung": "ㅚ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "못",
+      "category": "추가한 단어",
+      "syllables": [
+        {
+          "letter": "못",
+          "cho": "ㅁ",
+          "jung": "ㅗ",
+          "jong": "ㅅ"
+        }
+      ]
+    },
+    {
+      "word": "검",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "검",
+          "cho": "ㄱ",
+          "jung": "ㅓ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "칼",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "칼",
+          "cho": "ㅋ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "활",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "활",
+          "cho": "ㅎ",
+          "jung": "ㅘ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "창",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "창",
+          "cho": "ㅊ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "도끼",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "도",
+          "cho": "ㄷ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "끼",
+          "cho": "ㄲ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "단검",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "단",
+          "cho": "ㄷ",
+          "jung": "ㅏ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "검",
+          "cho": "ㄱ",
+          "jung": "ㅓ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "지팡이",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "지",
+          "cho": "ㅈ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "팡",
+          "cho": "ㅍ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "이",
+          "cho": "ㅇ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "화살",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "화",
+          "cho": "ㅎ",
+          "jung": "ㅘ",
+          "jong": ""
+        },
+        {
+          "letter": "살",
+          "cho": "ㅅ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "무기",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "무",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "기",
+          "cho": "ㄱ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "나무칼",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "나",
+          "cho": "ㄴ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "무",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "칼",
+          "cho": "ㅋ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "둔기",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "둔",
+          "cho": "ㄷ",
+          "jung": "ㅜ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "기",
+          "cho": "ㄱ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "얼음화살",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "얼",
+          "cho": "ㅇ",
+          "jung": "ㅓ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "음",
+          "cho": "ㅇ",
+          "jung": "ㅡ",
+          "jong": "ㅁ"
+        },
+        {
+          "letter": "화",
+          "cho": "ㅎ",
+          "jung": "ㅘ",
+          "jong": ""
+        },
+        {
+          "letter": "살",
+          "cho": "ㅅ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "불화살",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "불",
+          "cho": "ㅂ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "화",
+          "cho": "ㅎ",
+          "jung": "ㅘ",
+          "jong": ""
+        },
+        {
+          "letter": "살",
+          "cho": "ㅅ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "불칼",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "불",
+          "cho": "ㅂ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "칼",
+          "cho": "ㅋ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "돌칼",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "돌",
+          "cho": "ㄷ",
+          "jung": "ㅗ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "칼",
+          "cho": "ㅋ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "고무칼",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "고",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "무",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "칼",
+          "cho": "ㅋ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "양손검",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "양",
+          "cho": "ㅇ",
+          "jung": "ㅑ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "손",
+          "cho": "ㅅ",
+          "jung": "ㅗ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "검",
+          "cho": "ㄱ",
+          "jung": "ㅓ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "레이피어",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "레",
+          "cho": "ㄹ",
+          "jung": "ㅔ",
+          "jong": ""
+        },
+        {
+          "letter": "이",
+          "cho": "ㅇ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "피",
+          "cho": "ㅍ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "어",
+          "cho": "ㅇ",
+          "jung": "ㅓ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "대검",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "대",
+          "cho": "ㄷ",
+          "jung": "ㅐ",
+          "jong": ""
+        },
+        {
+          "letter": "검",
+          "cho": "ㄱ",
+          "jung": "ㅓ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "톱",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "톱",
+          "cho": "ㅌ",
+          "jung": "ㅗ",
+          "jong": "ㅂ"
+        }
+      ]
+    },
+    {
+      "word": "망치",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "망",
+          "cho": "ㅁ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "치",
+          "cho": "ㅊ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "해머",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "해",
+          "cho": "ㅎ",
+          "jung": "ㅐ",
+          "jong": ""
+        },
+        {
+          "letter": "머",
+          "cho": "ㅁ",
+          "jung": "ㅓ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "수리검",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "수",
+          "cho": "ㅅ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "리",
+          "cho": "ㄹ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "검",
+          "cho": "ㄱ",
+          "jung": "ㅓ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "츠바이핸더",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "츠",
+          "cho": "ㅊ",
+          "jung": "ㅡ",
+          "jong": ""
+        },
+        {
+          "letter": "바",
+          "cho": "ㅂ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "이",
+          "cho": "ㅇ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "핸",
+          "cho": "ㅎ",
+          "jung": "ㅐ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "더",
+          "cho": "ㄷ",
+          "jung": "ㅓ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "표창",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "표",
+          "cho": "ㅍ",
+          "jung": "ㅛ",
+          "jong": ""
+        },
+        {
+          "letter": "창",
+          "cho": "ㅊ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "대포",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "대",
+          "cho": "ㄷ",
+          "jung": "ㅐ",
+          "jong": ""
+        },
+        {
+          "letter": "포",
+          "cho": "ㅍ",
+          "jung": "ㅗ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "한손검",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "한",
+          "cho": "ㅎ",
+          "jung": "ㅏ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "손",
+          "cho": "ㅅ",
+          "jung": "ㅗ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "검",
+          "cho": "ㄱ",
+          "jung": "ㅓ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "주먹",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "주",
+          "cho": "ㅈ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "먹",
+          "cho": "ㅁ",
+          "jung": "ㅓ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "주사",
+      "category": "무기",
+      "syllables": [
+        {
+          "letter": "주",
+          "cho": "ㅈ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "사",
+          "cho": "ㅅ",
+          "jung": "ㅏ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "방패",
+      "category": "방어구",
+      "syllables": [
+        {
+          "letter": "방",
+          "cho": "ㅂ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "패",
+          "cho": "ㅍ",
+          "jung": "ㅐ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "갑옷",
+      "category": "방어구",
+      "syllables": [
+        {
+          "letter": "갑",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": "ㅂ"
+        },
+        {
+          "letter": "옷",
+          "cho": "ㅇ",
+          "jung": "ㅗ",
+          "jong": "ㅅ"
+        }
+      ]
+    },
+    {
+      "word": "투구",
+      "category": "방어구",
+      "syllables": [
+        {
+          "letter": "투",
+          "cho": "ㅌ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "구",
+          "cho": "ㄱ",
+          "jung": "ㅜ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "장갑",
+      "category": "방어구",
+      "syllables": [
+        {
+          "letter": "장",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "갑",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": "ㅂ"
+        }
+      ]
+    },
+    {
+      "word": "신발",
+      "category": "방어구",
+      "syllables": [
+        {
+          "letter": "신",
+          "cho": "ㅅ",
+          "jung": "ㅣ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "발",
+          "cho": "ㅂ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "골무",
+      "category": "방어구",
+      "syllables": [
+        {
+          "letter": "골",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "무",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "옷",
+      "category": "방어구",
+      "syllables": [
+        {
+          "letter": "옷",
+          "cho": "ㅇ",
+          "jung": "ㅗ",
+          "jong": "ㅅ"
+        }
+      ]
+    },
+    {
+      "word": "철갑옷",
+      "category": "방어구",
+      "syllables": [
+        {
+          "letter": "철",
+          "cho": "ㅊ",
+          "jung": "ㅓ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "갑",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": "ㅂ"
+        },
+        {
+          "letter": "옷",
+          "cho": "ㅇ",
+          "jung": "ㅗ",
+          "jong": "ㅅ"
+        }
+      ]
+    },
+    {
+      "word": "가죽갑옷",
+      "category": "방어구",
+      "syllables": [
+        {
+          "letter": "가",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "죽",
+          "cho": "ㅈ",
+          "jung": "ㅜ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "갑",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": "ㅂ"
+        },
+        {
+          "letter": "옷",
+          "cho": "ㅇ",
+          "jung": "ㅗ",
+          "jong": "ㅅ"
+        }
+      ]
+    },
+    {
+      "word": "가면",
+      "category": "방어구",
+      "syllables": [
+        {
+          "letter": "가",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "면",
+          "cho": "ㅁ",
+          "jung": "ㅕ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "헬멧",
+      "category": "방어구",
+      "syllables": [
+        {
+          "letter": "헬",
+          "cho": "ㅎ",
+          "jung": "ㅔ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "멧",
+          "cho": "ㅁ",
+          "jung": "ㅔ",
+          "jong": "ㅅ"
+        }
+      ]
+    },
+    {
+      "word": "물약",
+      "category": "소모품",
+      "syllables": [
+        {
+          "letter": "물",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "약",
+          "cho": "ㅇ",
+          "jung": "ㅑ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "약초",
+      "category": "소모품",
+      "syllables": [
+        {
+          "letter": "약",
+          "cho": "ㅇ",
+          "jung": "ㅑ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "초",
+          "cho": "ㅊ",
+          "jung": "ㅗ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "횃불",
+      "category": "소모품",
+      "syllables": [
+        {
+          "letter": "횃",
+          "cho": "ㅎ",
+          "jung": "ㅙ",
+          "jong": "ㅅ"
+        },
+        {
+          "letter": "불",
+          "cho": "ㅂ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "두루마리",
+      "category": "소모품",
+      "syllables": [
+        {
+          "letter": "두",
+          "cho": "ㄷ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "루",
+          "cho": "ㄹ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "마",
+          "cho": "ㅁ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "리",
+          "cho": "ㄹ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "함정",
+      "category": "소모품",
+      "syllables": [
+        {
+          "letter": "함",
+          "cho": "ㅎ",
+          "jung": "ㅏ",
+          "jong": "ㅁ"
+        },
+        {
+          "letter": "정",
+          "cho": "ㅈ",
+          "jung": "ㅓ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "불함정",
+      "category": "소모품",
+      "syllables": [
+        {
+          "letter": "불",
+          "cho": "ㅂ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "함",
+          "cho": "ㅎ",
+          "jung": "ㅏ",
+          "jong": "ㅁ"
+        },
+        {
+          "letter": "정",
+          "cho": "ㅈ",
+          "jung": "ㅓ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "머니",
+      "category": "소모품",
+      "syllables": [
+        {
+          "letter": "머",
+          "cho": "ㅁ",
+          "jung": "ㅓ",
+          "jong": ""
+        },
+        {
+          "letter": "니",
+          "cho": "ㄴ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "돈",
+      "category": "소모품",
+      "syllables": [
+        {
+          "letter": "돈",
+          "cho": "ㄷ",
+          "jung": "ㅗ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "은화",
+      "category": "소모품",
+      "syllables": [
+        {
+          "letter": "은",
+          "cho": "ㅇ",
+          "jung": "ㅡ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "화",
+          "cho": "ㅎ",
+          "jung": "ㅘ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "금화",
+      "category": "소모품",
+      "syllables": [
+        {
+          "letter": "금",
+          "cho": "ㄱ",
+          "jung": "ㅡ",
+          "jong": "ㅁ"
+        },
+        {
+          "letter": "화",
+          "cho": "ㅎ",
+          "jung": "ㅘ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "상자",
+      "category": "소모품",
+      "syllables": [
+        {
+          "letter": "상",
+          "cho": "ㅅ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "자",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "고무",
+      "category": "소모품",
+      "syllables": [
+        {
+          "letter": "고",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "무",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "나무",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "나",
+          "cho": "ㄴ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "무",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "돌",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "돌",
+          "cho": "ㄷ",
+          "jung": "ㅗ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "물",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "물",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "불",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "불",
+          "cho": "ㅂ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "말",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "말",
+          "cho": "ㅁ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "불꽃",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "불",
+          "cho": "ㅂ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "꽃",
+          "cho": "ㄲ",
+          "jung": "ㅗ",
+          "jong": "ㅊ"
+        }
+      ]
+    },
+    {
+      "word": "열쇠",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "열",
+          "cho": "ㅇ",
+          "jung": "ㅕ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "쇠",
+          "cho": "ㅅ",
+          "jung": "ㅚ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "지도",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "지",
+          "cho": "ㅈ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "도",
+          "cho": "ㄷ",
+          "jung": "ㅗ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "반지",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "반",
+          "cho": "ㅂ",
+          "jung": "ㅏ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "지",
+          "cho": "ㅈ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "목걸이",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "목",
+          "cho": "ㅁ",
+          "jung": "ㅗ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "걸",
+          "cho": "ㄱ",
+          "jung": "ㅓ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "이",
+          "cho": "ㅇ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "보석",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "보",
+          "cho": "ㅂ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "석",
+          "cho": "ㅅ",
+          "jung": "ㅓ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "가방",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "가",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "방",
+          "cho": "ㅂ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "밀",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "밀",
+          "cho": "ㅁ",
+          "jung": "ㅣ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "김",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "김",
+          "cho": "ㄱ",
+          "jung": "ㅣ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "문",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "문",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "고리",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "고",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "리",
+          "cho": "ㄹ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "가죽",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "가",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "죽",
+          "cho": "ㅈ",
+          "jung": "ㅜ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "꽃",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "꽃",
+          "cho": "ㄲ",
+          "jung": "ㅗ",
+          "jong": "ㅊ"
+        }
+      ]
+    },
+    {
+      "word": "철",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "철",
+          "cho": "ㅊ",
+          "jung": "ㅓ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "울",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "울",
+          "cho": "ㅇ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "얼음",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "얼",
+          "cho": "ㅇ",
+          "jung": "ㅓ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "음",
+          "cho": "ㅇ",
+          "jung": "ㅡ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "천",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "천",
+          "cho": "ㅊ",
+          "jung": "ㅓ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "의자",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "의",
+          "cho": "ㅇ",
+          "jung": "ㅢ",
+          "jong": ""
+        },
+        {
+          "letter": "자",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "벌",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "벌",
+          "cho": "ㅂ",
+          "jung": "ㅓ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "벌레",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "벌",
+          "cho": "ㅂ",
+          "jung": "ㅓ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "레",
+          "cho": "ㄹ",
+          "jung": "ㅔ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "차",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "차",
+          "cho": "ㅊ",
+          "jung": "ㅏ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "주머니",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "주",
+          "cho": "ㅈ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "머",
+          "cho": "ㅁ",
+          "jung": "ㅓ",
+          "jong": ""
+        },
+        {
+          "letter": "니",
+          "cho": "ㄴ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "독",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "독",
+          "cho": "ㄷ",
+          "jung": "ㅗ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "장미",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "장",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "미",
+          "cho": "ㅁ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "기름",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "기",
+          "cho": "ㄱ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "름",
+          "cho": "ㄹ",
+          "jung": "ㅡ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "조미료",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "조",
+          "cho": "ㅈ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "미",
+          "cho": "ㅁ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "료",
+          "cho": "ㄹ",
+          "jung": "ㅛ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "은",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "은",
+          "cho": "ㅇ",
+          "jung": "ㅡ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "금",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "금",
+          "cho": "ㄱ",
+          "jung": "ㅡ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "석탄",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "석",
+          "cho": "ㅅ",
+          "jung": "ㅓ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "탄",
+          "cho": "ㅌ",
+          "jung": "ㅏ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "장식",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "장",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "식",
+          "cho": "ㅅ",
+          "jung": "ㅣ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "나물",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "나",
+          "cho": "ㄴ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "물",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "풀",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "풀",
+          "cho": "ㅍ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "모이",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "모",
+          "cho": "ㅁ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "이",
+          "cho": "ㅇ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "꿀",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "꿀",
+          "cho": "ㄲ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "막대",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "막",
+          "cho": "ㅁ",
+          "jung": "ㅏ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "대",
+          "cho": "ㄷ",
+          "jung": "ㅐ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "애벌레",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "애",
+          "cho": "ㅇ",
+          "jung": "ㅐ",
+          "jong": ""
+        },
+        {
+          "letter": "벌",
+          "cho": "ㅂ",
+          "jung": "ㅓ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "레",
+          "cho": "ㄹ",
+          "jung": "ㅔ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "화석",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "화",
+          "cho": "ㅎ",
+          "jung": "ㅘ",
+          "jong": ""
+        },
+        {
+          "letter": "석",
+          "cho": "ㅅ",
+          "jung": "ㅓ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "수건",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "수",
+          "cho": "ㅅ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "건",
+          "cho": "ㄱ",
+          "jung": "ㅓ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "책",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "책",
+          "cho": "ㅊ",
+          "jung": "ㅐ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "마약",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "마",
+          "cho": "ㅁ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "약",
+          "cho": "ㅇ",
+          "jung": "ㅑ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "포대",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "포",
+          "cho": "ㅍ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "대",
+          "cho": "ㄷ",
+          "jung": "ㅐ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "잔디",
+      "category": "재료·잡화",
+      "syllables": [
+        {
+          "letter": "잔",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": "ㄴ"
+        },
+        {
+          "letter": "디",
+          "cho": "ㄷ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "액화",
+      "category": "스킬",
+      "syllables": [
+        {
+          "letter": "액",
+          "cho": "ㅇ",
+          "jung": "ㅐ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "화",
+          "cho": "ㅎ",
+          "jung": "ㅘ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "화염",
+      "category": "스킬",
+      "syllables": [
+        {
+          "letter": "화",
+          "cho": "ㅎ",
+          "jung": "ㅘ",
+          "jong": ""
+        },
+        {
+          "letter": "염",
+          "cho": "ㅇ",
+          "jung": "ㅕ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "부식",
+      "category": "스킬",
+      "syllables": [
+        {
+          "letter": "부",
+          "cho": "ㅂ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "식",
+          "cho": "ㅅ",
+          "jung": "ㅣ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "빙결",
+      "category": "스킬",
+      "syllables": [
+        {
+          "letter": "빙",
+          "cho": "ㅂ",
+          "jung": "ㅣ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "결",
+          "cho": "ㄱ",
+          "jung": "ㅕ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "증발",
+      "category": "스킬",
+      "syllables": [
+        {
+          "letter": "증",
+          "cho": "ㅈ",
+          "jung": "ㅡ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "발",
+          "cho": "ㅂ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "강화",
+      "category": "스킬",
+      "syllables": [
+        {
+          "letter": "강",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "화",
+          "cho": "ㅎ",
+          "jung": "ㅘ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "석화",
+      "category": "스킬",
+      "syllables": [
+        {
+          "letter": "석",
+          "cho": "ㅅ",
+          "jung": "ㅓ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "화",
+          "cho": "ㅎ",
+          "jung": "ㅘ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "위장",
+      "category": "스킬",
+      "syllables": [
+        {
+          "letter": "위",
+          "cho": "ㅇ",
+          "jung": "ㅟ",
+          "jong": ""
+        },
+        {
+          "letter": "장",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "마법",
+      "category": "스킬",
+      "syllables": [
+        {
+          "letter": "마",
+          "cho": "ㅁ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "법",
+          "cho": "ㅂ",
+          "jung": "ㅓ",
+          "jong": "ㅂ"
+        }
+      ]
+    },
+    {
+      "word": "흑마법",
+      "category": "스킬",
+      "syllables": [
+        {
+          "letter": "흑",
+          "cho": "ㅎ",
+          "jung": "ㅡ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "마",
+          "cho": "ㅁ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "법",
+          "cho": "ㅂ",
+          "jung": "ㅓ",
+          "jong": "ㅂ"
+        }
+      ]
+    },
+    {
+      "word": "말소",
+      "category": "스킬",
+      "syllables": [
+        {
+          "letter": "말",
+          "cho": "ㅁ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "소",
+          "cho": "ㅅ",
+          "jung": "ㅗ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "필살",
+      "category": "스킬",
+      "syllables": [
+        {
+          "letter": "필",
+          "cho": "ㅍ",
+          "jung": "ㅣ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "살",
+          "cho": "ㅅ",
+          "jung": "ㅏ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "중독",
+      "category": "스킬",
+      "syllables": [
+        {
+          "letter": "중",
+          "cho": "ㅈ",
+          "jung": "ㅜ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "독",
+          "cho": "ㄷ",
+          "jung": "ㅗ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "레어",
+      "category": "접두어",
+      "syllables": [
+        {
+          "letter": "레",
+          "cho": "ㄹ",
+          "jung": "ㅔ",
+          "jong": ""
+        },
+        {
+          "letter": "어",
+          "cho": "ㅇ",
+          "jung": "ㅓ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "희귀",
+      "category": "접두어",
+      "syllables": [
+        {
+          "letter": "희",
+          "cho": "ㅎ",
+          "jung": "ㅢ",
+          "jong": ""
+        },
+        {
+          "letter": "귀",
+          "cho": "ㄱ",
+          "jung": "ㅟ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "고기",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "고",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "기",
+          "cho": "ㄱ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "닭고기",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "닭",
+          "cho": "ㄷ",
+          "jung": "ㅏ",
+          "jong": "ㄺ"
+        },
+        {
+          "letter": "고",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "기",
+          "cho": "ㄱ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "돼지고기",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "돼",
+          "cho": "ㄷ",
+          "jung": "ㅙ",
+          "jong": ""
+        },
+        {
+          "letter": "지",
+          "cho": "ㅈ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "고",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "기",
+          "cho": "ㄱ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "소고기",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "소",
+          "cho": "ㅅ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "고",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "기",
+          "cho": "ㄱ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "양고기",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "양",
+          "cho": "ㅇ",
+          "jung": "ㅑ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "고",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "기",
+          "cho": "ㄱ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "미트볼",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "미",
+          "cho": "ㅁ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "트",
+          "cho": "ㅌ",
+          "jung": "ㅡ",
+          "jong": ""
+        },
+        {
+          "letter": "볼",
+          "cho": "ㅂ",
+          "jung": "ㅗ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "스튜",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "스",
+          "cho": "ㅅ",
+          "jung": "ㅡ",
+          "jong": ""
+        },
+        {
+          "letter": "튜",
+          "cho": "ㅌ",
+          "jung": "ㅠ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "죽",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "죽",
+          "cho": "ㅈ",
+          "jung": "ㅜ",
+          "jong": "ㄱ"
+        }
+      ]
+    },
+    {
+      "word": "빵",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "빵",
+          "cho": "ㅃ",
+          "jung": "ㅏ",
+          "jong": "ㅇ"
+        }
+      ]
+    },
+    {
+      "word": "술",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "술",
+          "cho": "ㅅ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "열매",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "열",
+          "cho": "ㅇ",
+          "jung": "ㅕ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "매",
+          "cho": "ㅁ",
+          "jung": "ㅐ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "사과",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "사",
+          "cho": "ㅅ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "과",
+          "cho": "ㄱ",
+          "jung": "ㅘ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "과자",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "과",
+          "cho": "ㄱ",
+          "jung": "ㅘ",
+          "jong": ""
+        },
+        {
+          "letter": "자",
+          "cho": "ㅈ",
+          "jung": "ㅏ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "고추",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "고",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "추",
+          "cho": "ㅊ",
+          "jung": "ㅜ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "레몬",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "레",
+          "cho": "ㄹ",
+          "jung": "ㅔ",
+          "jong": ""
+        },
+        {
+          "letter": "몬",
+          "cho": "ㅁ",
+          "jung": "ㅗ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "버번",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "버",
+          "cho": "ㅂ",
+          "jung": "ㅓ",
+          "jong": ""
+        },
+        {
+          "letter": "번",
+          "cho": "ㅂ",
+          "jung": "ㅓ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "위스키",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "위",
+          "cho": "ㅇ",
+          "jung": "ㅟ",
+          "jong": ""
+        },
+        {
+          "letter": "스",
+          "cho": "ㅅ",
+          "jung": "ㅡ",
+          "jong": ""
+        },
+        {
+          "letter": "키",
+          "cho": "ㅋ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "진",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "진",
+          "cho": "ㅈ",
+          "jung": "ㅣ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "키위",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "키",
+          "cho": "ㅋ",
+          "jung": "ㅣ",
+          "jong": ""
+        },
+        {
+          "letter": "위",
+          "cho": "ㅇ",
+          "jung": "ㅟ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "감",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "감",
+          "cho": "ㄱ",
+          "jung": "ㅏ",
+          "jong": "ㅁ"
+        }
+      ]
+    },
+    {
+      "word": "라면",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "라",
+          "cho": "ㄹ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "면",
+          "cho": "ㅁ",
+          "jung": "ㅕ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "배추",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "배",
+          "cho": "ㅂ",
+          "jung": "ㅐ",
+          "jong": ""
+        },
+        {
+          "letter": "추",
+          "cho": "ㅊ",
+          "jung": "ㅜ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "물고기",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "물",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        },
+        {
+          "letter": "고",
+          "cho": "ㄱ",
+          "jung": "ㅗ",
+          "jong": ""
+        },
+        {
+          "letter": "기",
+          "cho": "ㄱ",
+          "jung": "ㅣ",
+          "jong": ""
+        }
+      ]
+    },
+    {
+      "word": "생선",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "생",
+          "cho": "ㅅ",
+          "jung": "ㅐ",
+          "jong": "ㅇ"
+        },
+        {
+          "letter": "선",
+          "cho": "ㅅ",
+          "jung": "ㅓ",
+          "jong": "ㄴ"
+        }
+      ]
+    },
+    {
+      "word": "숙주나물",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "숙",
+          "cho": "ㅅ",
+          "jung": "ㅜ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "주",
+          "cho": "ㅈ",
+          "jung": "ㅜ",
+          "jong": ""
+        },
+        {
+          "letter": "나",
+          "cho": "ㄴ",
+          "jung": "ㅏ",
+          "jong": ""
+        },
+        {
+          "letter": "물",
+          "cho": "ㅁ",
+          "jung": "ㅜ",
+          "jong": "ㄹ"
+        }
+      ]
+    },
+    {
+      "word": "맥주",
+      "category": "음식",
+      "syllables": [
+        {
+          "letter": "맥",
+          "cho": "ㅁ",
+          "jung": "ㅐ",
+          "jong": "ㄱ"
+        },
+        {
+          "letter": "주",
+          "cho": "ㅈ",
+          "jung": "ㅜ",
+          "jong": ""
+        }
+      ]
+    }
+  ]
+}

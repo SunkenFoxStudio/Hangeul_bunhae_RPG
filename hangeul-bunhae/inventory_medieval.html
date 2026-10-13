@@ -1,0 +1,1363 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>한글 인벤토리 — 중세 판</title>
+<!-- 글꼴: 한글은 나눔명조(11,172자 전부 지원), 영문·숫자는 Cinzel(로마 비문체). 둘 다 Google Fonts -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Cinzel:wght@500;700&display=swap">
+<style>
+  :root { --card: 120px; --bar: 78px; --dock: 82px; --bg: #f4f1ea; --accent: #e0662b; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg);
+    font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    user-select: none; -webkit-user-select: none; touch-action: none; }
+  #bar { position: absolute; top: 0; left: 0; right: 0; height: var(--bar); display: flex; align-items: center;
+    gap: 14px; padding: 0 18px; background: #2b2a28; color: #eee; font-size: 20px; z-index: 5000; }
+  #bar button { font: inherit; padding: 9px 16px; border-radius: 8px; border: 0; background: #555; color: #fff; cursor: pointer; white-space: nowrap; }
+  #bar label { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  #bar input.gn { width: 60px; font: inherit; font-size: 20px; padding: 5px 6px; text-align: center; border: 2px solid #666; border-radius: 8px; background: #fff; color: #222; }
+  #bar input[type=range] { width: 110px; accent-color: var(--accent); }
+  #bar .sw { cursor: pointer; user-select: none; }
+  #bar .sw input { position: absolute; opacity: 0; pointer-events: none; }
+  #bar .sw .knob { width: 40px; height: 22px; border-radius: 11px; background: #666; position: relative; transition: background .15s; }
+  #bar .sw .knob::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; }
+  #bar .sw input:checked + .knob { background: #d6453d; }
+  #bar .sw input:checked + .knob::after { left: 21px; }
+  #bar button.danger { background: #d6453d; }
+  #bar button[hidden] { display: none; }
+  @media (max-width: 1700px) { #bar .hint { display: none; } }
+  #saveStat { font-size: 14px; opacity: .75; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #saveStat.err { color: #ff9b93; opacity: 1; }
+  #bar .hint { margin-left: auto; opacity: .7; text-align: right; font-size: 15px; line-height: 1.4; }
+  #board { position: absolute; top: var(--bar); left: 0; right: 0; bottom: var(--dock); }
+
+  /* 10×10 인벤토리 격자 */
+  #grid { position: absolute; z-index: 0; pointer-events: none; outline: 2px solid #b9b19c; background-color: #ebe6da;
+    background-image: linear-gradient(#cdc6b4 1px, transparent 1px), linear-gradient(90deg, #cdc6b4 1px, transparent 1px);
+    background-size: var(--card) var(--card); }
+  /* 좌우 목록 패널 (격자 양옆 여백) */
+  .side { position: absolute; top: 10px; bottom: 10px; z-index: 2; display: none; flex-direction: column;
+    background: #fbf9f4; border: 1px solid #d8d1c0; border-radius: 12px; overflow: hidden; }
+  .side h2 { margin: 0; padding: 13px 16px; font-size: 19px; background: #2b2a28; color: #eee; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px 12px; }
+  .side h2 span, .side h2 label { white-space: nowrap; }
+  .side h2 .cnt { opacity: .6; font-weight: 400; }
+  .side h2 .tg { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 400; color: #ddd; cursor: pointer; }
+  .side h2 .tg input { position: absolute; opacity: 0; pointer-events: none; }
+  .side h2 .tg .knob { width: 32px; height: 18px; border-radius: 9px; background: #666; position: relative; transition: background .15s; }
+  .side h2 .tg .knob::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .side h2 .tg input:checked + .knob { background: #d6453d; }
+  .side h2 .tg input:checked + .knob::after { left: 16px; }
+  .side .body { flex: 1; overflow-y: auto; padding: 6px 12px 12px; touch-action: pan-y; }
+  .side h3 { margin: 14px 0 8px; font-size: 15px; color: #8a8478; font-weight: 700; letter-spacing: .04em; }
+  .side .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .side .chip { padding: 5px 13px; border-radius: 999px; background: #fff; border: 1px solid #d8d1c0; font-size: 19px; color: #2b2a28; }
+  .side .note { padding: 9px 16px 0; font-size: 15px; color: #8a8478; line-height: 1.45; }
+  .side .empty { color: #8a8478; font-size: 16px; padding: 14px 2px; }
+  #listL:not(.delmode) .chip button { display: none; }
+  .side .chip { cursor: grab; touch-action: none; }
+  .chip.src { opacity: .35; }
+  .chip.ghost { position: fixed; z-index: 99999; pointer-events: none; transform: translate(-50%, -50%) scale(1.1);
+    box-shadow: 0 8px 18px rgba(0,0,0,.28); border-color: var(--accent); }
+  /* 분류 = 폴더 (3열 격자). 폴더를 눌러야 안의 단어가 보인다 */
+  .folders { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding-top: 8px; }
+  .folder { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; aspect-ratio: 1 / 1.08;
+    padding: 6px 4px; border-radius: 10px; background: #fff; border: 1px solid #d8d1c0; cursor: pointer; text-align: center; min-width: 0;
+    box-shadow: 0 2px 0 #fff, 0 3px 0 #d8d1c0, 0 5px 0 #fff, 0 6px 0 #e4ddcc, 0 6px 10px rgba(0,0,0,.08); transition: transform .12s, background .12s; }
+  .folder:hover { transform: translateY(-2px); }
+  .folder .fn { font-size: 19px; font-weight: 700; color: #2b2a28; max-width: 100%; overflow-wrap: anywhere; line-height: 1.25; }
+  .folder .fc { font-size: 13px; color: #8a8478; }
+  .folder.empty { background: #fbf9f4; border-style: dashed; box-shadow: none; }
+  .folder.empty .fn { color: #8a8478; }
+  .folder.over { background: #fdeadc; border: 2px dashed var(--accent); }
+  .folder .catdel { position: absolute; top: 1px; right: 4px; }
+  .fhead { display: flex; align-items: center; gap: 10px; padding: 10px 0 4px; font-size: 18px; color: #2b2a28; }
+  .fhead button { font: inherit; font-size: 15px; padding: 5px 12px; border-radius: 8px; border: 0; background: #2b2a28; color: #fff; cursor: pointer; }
+  .fhead .cnt { color: #8a8478; font-size: 15px; }
+  /* 끌 때 나타나는 '어디로 옮길까요' 영역: 자리와 테두리는 항상 있고(레이아웃/스크롤이 흔들리지 않게) 내용은 끄는 동안에만 보인다 */
+  #dropdock { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: min-content; gap: 6px; flex: none; height: 240px; box-sizing: border-box;
+    margin: 0 12px 12px; padding: 8px; overflow-y: auto; border: 2px solid #d8d1c0; border-radius: 10px; }
+  #dropdock > * { visibility: hidden; }                 /* 평소에는 테두리만 보인다 */
+  #listL.chipdrag #dropdock { background: #fbf9f4; border-style: dashed; border-color: #cfc8b6; }
+  #listL.chipdrag #dropdock > * { visibility: visible; }
+  #dropdock .dt { grid-column: 1 / -1; font-size: 13px; color: #8a8478; }
+  #dropdock .folder { aspect-ratio: auto; min-height: 52px; padding: 8px 2px; box-shadow: none; }
+  #dropdock .folder .fn { font-size: 15px; }
+  #dropdock .folder.nw { border-style: dashed; background: #fbf9f4; }
+  #dropdock .folder.nw .plus { font-size: 26px; line-height: 1; color: #b0a898; }
+  .defcat { background: #fffdf8; border: 1px solid #e4ddcc; margin: 6px 0 4px; padding: 0 10px 10px; }
+  .defcat.over { background: rgba(224,102,43,.13); border: 2px dashed var(--accent); padding: 0 9px 9px; }
+  .folders { margin-top: 4px; }
+  .cat { border-radius: 10px; padding: 0 6px 8px; margin: 0 -6px; border: 2px solid transparent; transition: background .12s; }
+  .cat.over { background: rgba(224,102,43,.13); border: 2px dashed var(--accent); }
+  .cat h3 { display: flex; align-items: center; gap: 6px; }
+  .cat .ph { font-size: 15px; color: #b0a898; padding: 4px 2px; }
+  .catdel { border: 0; background: none; padding: 0 2px; font-size: 20px; line-height: 1; color: #a39a88; cursor: pointer; }
+  .catdel:hover { color: #d6453d; }
+  .chip.x, .chip.user { display: inline-flex; align-items: center; gap: 4px; }
+  .chip.user { background: #eef7f0; border-color: #a9d6b4; }
+  .chip.x button, .chip.user button { border: 0; background: none; padding: 0 0 0 2px; font-size: 20px; line-height: 1; cursor: pointer; color: #7a8f80; }
+  .chip.x button:hover, .chip.user button:hover { color: #d6453d; }
+  .opt { display: inline-flex; align-items: center; gap: 5px; padding: 4px 13px 4px 9px; border-radius: 999px; background: #fff;
+    border: 1px solid #d8d1c0; font-size: 19px; color: #2b2a28; cursor: pointer; }
+  .opt input { width: 17px; height: 17px; margin: 0; accent-color: #2fb457; cursor: pointer; }
+  .opt.in { background: #e4f6e8; border-color: #7cc78d; }
+  .chip.flash { animation: chipflash .9s; }
+  @keyframes chipflash { 0%, 100% { background: #fff; } 15%, 60% { background: #bdf0c9; border-color: #2fb457; transform: scale(1.08); } }
+  /* 단어 완성 오버레이 */
+  .done-ov { position: absolute; z-index: 4000; pointer-events: none; border: 3px solid #2fb457; border-radius: 12px;
+    background: rgba(47,180,87,.30); box-shadow: 0 0 18px rgba(47,180,87,.65); animation: doneov .9s ease-out forwards; }
+  @keyframes doneov { 0% { opacity: 0; scale: .92; } 15% { opacity: 1; scale: 1.04; } 30% { scale: 1; } 60% { opacity: 1; } 100% { opacity: 0; } }
+  #cell { position: absolute; display: none; width: var(--card); height: var(--card); border: 3px dashed; border-radius: 10px; }
+  #cell.empty { border-color: #4a9b5a; background: rgba(74,155,90,.18); }
+  #cell.swap  { border-color: #3d7ad6; background: rgba(61,122,214,.16); }
+  #cell.merge { border-color: var(--accent); background: rgba(224,102,43,.18); }
+
+  .card { position: absolute; width: var(--card); height: var(--card); border-radius: 10px; transition: left .12s, top .12s;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,.28)); touch-action: none; cursor: grab; }
+  /* .card 는 고정(그림자 담당), 안쪽 .face 가 회전한다 → 그림자 방향은 화면 기준으로 유지 */
+  .face { position: absolute; inset: 3px; border-radius: 10px; background: #fff; transition: background .2s;
+    display: flex; align-items: center; justify-content: center; }
+  .card.jamo { font-size: calc(var(--card) * .69); font-weight: 700; line-height: 1; }
+  .card .g { display: block; line-height: 1; pointer-events: none; }
+  .card.jamo .face::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .3; border-radius: inherit;
+    background:
+      radial-gradient(circle at 11% 11%, currentColor 0 3px, transparent 4px),
+      radial-gradient(circle at 89% 11%, currentColor 0 3px, transparent 4px),
+      radial-gradient(circle at 11% 89%, currentColor 0 3px, transparent 4px),
+      radial-gradient(circle at 89% 89%, currentColor 0 3px, transparent 4px); }
+  .card.jamo.corner { cursor: var(--rotcur, alias); }
+  .card.jamo.v { color: #7a3410; }
+  .card.jamo.v .face { background: #ffe9d6; }
+  .card.jamo.v.asC { color: #153a78; }
+  .card.jamo.v.asC .face { background: #dbe8ff; }
+  .card.jamo.c { color: #153a78; }
+  .card.jamo.c .face { background: #dbe8ff; }
+  .card svg { width: 100%; height: 100%; display: block; pointer-events: none; }
+  .card svg text { font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; font-weight: 700; fill: #222; }
+  .card svg text.ghost { opacity: .2; }
+  .relayout .card { transition: none; }
+  .card.dragging { transition: none; filter: drop-shadow(0 10px 10px rgba(0,0,0,.32)); cursor: grabbing; }
+  body.discard .card { cursor: pointer; }
+  .card.picked { outline: 4px solid #d6453d; opacity: .55; }
+  #empty { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; color: #8a8478; font-size: 22px; pointer-events: none; }
+  #empty.hidden { display: none; }
+  .card.target { outline: 4px solid var(--accent); }
+  .grip { position: absolute; top: 0; left: 50%; width: calc(var(--card) * .375); height: calc(var(--card) * .125); margin-left: calc(var(--card) * -.1875);
+    border-radius: 0 0 8px 8px; background: rgba(0,0,0,.10); cursor: move; }
+  .shake { animation: shake .3s; }
+  .pop { animation: pop .28s; }
+  @keyframes shake { 25% { margin-left: -6px } 50% { margin-left: 6px } 75% { margin-left: -4px } }
+  @keyframes pop { 40% { scale: 1.18 } }
+  /* 삭제 연출: 살짝 커졌다가(반동) 작아지면서 사라진다 */
+  .card.discarding { pointer-events: none; outline: none; animation: discard .55s both; }
+  @keyframes discard {
+    0%   { scale: 1;    rotate: 0deg;  opacity: 1; animation-timing-function: ease-out; }
+    28%  { scale: 1.22; rotate: -4deg; opacity: 1; animation-timing-function: cubic-bezier(.6, 0, .9, .5); }
+    100% { scale: 0;    rotate: 14deg; opacity: 0; }
+  }
+
+  /* 이스터에그: '됬' 을 만들려고 하면 페이지가 발악하며 거절한다 */
+  body.rage { animation: ragebody 2.2s linear; }
+  @keyframes ragebody {
+    0%, 100% { translate: 0 0; }
+    4% { translate: -14px 6px; } 8% { translate: 16px -8px; } 12% { translate: -18px -6px; } 16% { translate: 12px 10px; }
+    20% { translate: -10px -12px; } 24% { translate: 14px 4px; } 30% { translate: -12px 8px; } 36% { translate: 10px -6px; }
+    45% { translate: -8px 5px; } 55% { translate: 6px -4px; } 68% { translate: -4px 3px; } 82% { translate: 2px -2px; }
+  }
+  body.rage .card { animation: jitter .09s infinite alternate; outline: 4px solid #d6453d; }
+  @keyframes jitter { from { translate: -4px 2px; rotate: -5deg; } to { translate: 4px -3px; rotate: 5deg; } }
+  #rage { position: fixed; inset: 0; z-index: 9000; pointer-events: none; overflow: hidden; }
+  #rage .flash { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(214,30,30,0) 30%, rgba(214,30,30,.65) 100%);
+    animation: rageflash .22s 9 alternate; }
+  @keyframes rageflash { from { opacity: .15; } to { opacity: 1; } }
+  #rage .msg { position: absolute; font-weight: 900; color: #fff; white-space: nowrap; opacity: 0;
+    text-shadow: 0 0 0 #000, 3px 3px 0 #b3170f, -3px -3px 0 #b3170f, 3px -3px 0 #b3170f, -3px 3px 0 #b3170f, 0 6px 14px rgba(0,0,0,.5);
+    animation: slam 1.5s both; }
+  @keyframes slam {
+    0%   { opacity: 0; scale: 3.2; }
+    12%  { opacity: 1; scale: .9; }
+    20%  { scale: 1.12; }
+    28%  { scale: 1; }
+    80%  { opacity: 1; }
+    100% { opacity: 0; scale: 1.15; }
+  }
+  @media (prefers-reduced-motion: reduce) { body.rage, body.rage .card { animation: none; } }
+
+  #dock { position: absolute; left: 0; right: 0; bottom: 0; height: var(--dock); display: flex; align-items: center;
+    justify-content: center; gap: 10px; background: #2b2a28; z-index: 5000; }
+  #dock input { font: inherit; font-size: 28px; width: min(480px, 62vw); padding: 7px 14px; text-align: center;
+    border: 2px solid #666; border-radius: 10px; background: #fff; color: #222; }
+  #dock input:focus { outline: none; border-color: var(--accent); }
+  #dock input.bad { animation: shake .3s; border-color: #d6453d; }
+  #dock button { font: inherit; font-size: 22px; padding: 10px 24px; border: 0; border-radius: 10px; background: var(--accent); color: #fff; cursor: pointer; }
+
+  /* ═════════════ 중세 테마 (위의 기본 규칙을 덮어쓴다) ═════════════ */
+  :root { --serif: "Cinzel", "Nanum Myeongjo", "Batang", "Noto Serif KR", "Malgun Gothic", serif;
+    --ink: #2a1a0e; --vellum: #f1e3bf; --gold: #c9a24b; --gold2: #8b6a2f; --crimson: #8c2a22; --wood2: #3d2716;
+    --bg: #1f1812; --accent: #c9822b; }
+  html, body { font-family: var(--serif); font-weight: 700;
+    background: var(--bg) radial-gradient(ellipse at center, #2d2218 0%, #17110c 100%); }
+  #bar, #dock { background: linear-gradient(#4a3020, #2b1b10); color: #f1e3bf; }
+  #bar { border-bottom: 3px solid var(--gold2); box-shadow: 0 3px 0 #120c07, 0 6px 14px rgba(0,0,0,.5); }
+  #dock { border-top: 3px solid var(--gold2); box-shadow: 0 -3px 0 #120c07; }
+  #bar button, #dock button, .fhead button { font-family: var(--serif); font-weight: 700; color: #f6e7c1; background: linear-gradient(#8a6430, #5c4020);
+    border: 1px solid var(--gold); border-radius: 4px; box-shadow: inset 0 1px 0 rgba(255,235,180,.35), 0 2px 0 #1a0f07; text-shadow: 0 1px 0 rgba(0,0,0,.6); }
+  #bar button:hover, #dock button:hover, .fhead button:hover { filter: brightness(1.15); }
+  #bar button:active, #dock button:active { transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(255,235,180,.35); }
+  #bar button.danger { background: linear-gradient(#b0382d, #6f1e17); }
+  #dock button { background: linear-gradient(#b3772f, #6e4518); }
+  #bar input.gn, #dock input { font-family: var(--serif); font-weight: 700; background: var(--vellum); color: var(--ink); border: 2px solid var(--gold2); border-radius: 4px;
+    box-shadow: inset 0 2px 5px rgba(60,35,10,.35); }
+  #dock input:focus { border-color: var(--gold); box-shadow: inset 0 2px 5px rgba(60,35,10,.35), 0 0 0 2px rgba(201,162,75,.45); }
+  #dock input::placeholder { color: #8b7350; }
+  #bar .sw .knob, .side h2 .tg .knob { background: #1c120a; border: 1px solid var(--gold2); }
+  #bar .sw .knob::after, .side h2 .tg .knob::after { background: var(--gold); }
+  #bar .sw input:checked + .knob, .side h2 .tg input:checked + .knob { background: var(--crimson); }
+  #bar .hint, #saveStat { color: #d9c28f; }
+  #saveStat.err { color: #ff9b8a; }
+
+  /* 격자: 양피지 같은 인벤토리 판 */
+  #grid { outline: 4px solid var(--gold2); box-shadow: 0 0 0 7px var(--wood2), 0 0 0 9px var(--gold2), 0 12px 30px rgba(0,0,0,.65), inset 0 0 60px rgba(70,40,10,.45);
+    background-color: #cdb386; background-image: linear-gradient(#9d7e4c 1px, transparent 1px), linear-gradient(90deg, #9d7e4c 1px, transparent 1px),
+      radial-gradient(ellipse at 30% 20%, rgba(255,240,200,.35), transparent 60%); }
+  #empty { color: #6b5230; text-shadow: 0 1px 0 rgba(255,240,200,.4); }
+  #cell.empty { border-color: #5b7a3a; background: rgba(91,122,58,.22); }
+  #cell.swap { border-color: #2f5a8a; background: rgba(47,90,138,.20); }
+  #cell.merge { border-color: var(--crimson); background: rgba(140,42,34,.2); }
+  .done-ov { border-color: #d9b23f; background: rgba(60,160,90,.26); box-shadow: 0 0 22px rgba(217,178,63,.85), inset 0 0 14px rgba(60,160,90,.6); border-radius: 6px; }
+
+  /* 좌우 패널: 양피지 */
+  .side { background: linear-gradient(#f4e8c7, #e9d6a6); border: 3px double var(--gold2); border-radius: 6px; box-shadow: 0 0 0 3px var(--wood2), 0 10px 26px rgba(0,0,0,.6); color: var(--ink); }
+  .side h2 { background: linear-gradient(#4a3020, #2b1b10); color: #f3dc9b; border-bottom: 3px solid var(--gold2); letter-spacing: .04em; text-shadow: 0 1px 0 #000; }
+  .side h2 .cnt { color: #d9c28f; }
+  .side h2 .tg { color: #e6d3a2; }
+  .side .note, .side .empty, .side h3, .fhead .cnt, .folder .fc { color: #6e5632; }
+  .side h3 { border-bottom: 1px solid rgba(139,106,47,.5); padding-bottom: 3px; }
+  .side .chip, .opt { background: linear-gradient(#fbf1d3, #ecd9a8); border: 1px solid #a8864a; border-radius: 4px; color: var(--ink);
+    box-shadow: 0 1px 0 rgba(255,245,210,.8) inset, 0 2px 2px rgba(60,35,10,.25); }
+  .chip.user { background: linear-gradient(#e4ecc9, #cfdca4); border-color: #7f9a4a; }
+  .chip.x button, .chip.user button, .catdel { color: #8b6a2f; }
+  .chip.x button:hover, .chip.user button:hover, .catdel:hover { color: var(--crimson); }
+  .opt.in { background: linear-gradient(#d6ecc0, #b5d792); border-color: #5f8a3c; }
+  .opt input { accent-color: #5f8a3c; }
+  .chip.ghost { border-color: var(--crimson); box-shadow: 0 10px 20px rgba(0,0,0,.5); }
+  @keyframes chipflash { 0%, 100% { filter: none; } 15%, 60% { filter: brightness(1.05) hue-rotate(-40deg) saturate(1.8); border-color: #5f8a3c; transform: scale(1.08); } }
+
+  /* 분류 카드: 봉랍 도장이 찍힌 양피지 */
+  .folder { background: linear-gradient(#f9eecf, #e8d4a2); border: 2px solid var(--gold2); border-radius: 5px;
+    box-shadow: 0 2px 0 #f3e5bd, 0 3px 0 var(--gold2), 0 5px 0 #f3e5bd, 0 6px 0 #b79a5a, 0 8px 12px rgba(40,22,6,.3); }
+  .folder::before { content: ""; position: absolute; top: 6px; left: 6px; width: 13px; height: 13px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #d4553f, #7a1d14 70%); box-shadow: 0 1px 2px rgba(0,0,0,.5); }
+  .folder .fn { color: var(--ink); text-shadow: 0 1px 0 rgba(255,245,210,.7); }
+  .folder.empty { background: rgba(244,232,199,.55); border: 2px dashed #a8864a; box-shadow: none; }
+  .folder.empty::before { opacity: .4; }
+  .folder.over, .defcat.over, .cat.over { background: #f2c98a; border: 2px dashed var(--crimson); }
+  .defcat { background: rgba(255,248,224,.6); border: 1px solid #b79a5a; border-radius: 5px; }
+  #dropdock { border: 2px solid var(--gold2); border-radius: 5px; }
+  #listL.chipdrag #dropdock { background: rgba(255,248,224,.7); border-style: dashed; border-color: var(--crimson); }
+  #dropdock .folder.nw { background: transparent; }
+  #dropdock .dt, #dropdock .folder.nw .plus { color: #6e5632; }
+
+  /* 카드: 양피지 패와 문장(紋章) 색 — 모음은 적색(gules), 자음은 청색(azure) */
+  .card { filter: drop-shadow(0 3px 3px rgba(20,10,0,.55)); }
+  .face { background: linear-gradient(#f7ebc9, #e6d09b); border: 2px solid #6d4c20; border-radius: 6px;
+    box-shadow: inset 0 0 0 2px #f9efd1, inset 0 0 0 3px #b8954f, inset 0 0 14px rgba(110,70,20,.35); }
+  .card svg text { font-family: "Nanum Myeongjo", "Batang", "Noto Serif KR", serif; font-weight: 800; fill: var(--ink); }
+  .card.jamo { font-family: "Nanum Myeongjo", "Batang", "Noto Serif KR", serif; font-weight: 800; }
+  .card.jamo.v { color: #7d2217; }
+  @property --rot { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+  .card.jamo.v .face { background: linear-gradient(calc(180deg - var(--rot)), #f6dcb4, #e3b988); }
+  .card.jamo.c, .card.jamo.v.asC { color: #1c3a66; }
+  .card.jamo.c .face { background: linear-gradient(calc(180deg - var(--rot)), #dfe5e8, #b9c8d3); }
+  /* ㅗ 를 ㅇ 위에 0.6초 올려 두면(asC) 자음색으로 천천히 바뀐다. 그라데이션은 transition 이 안 되므로 자음색 층을 덧씌우고 그 투명도를 바꾼다. */
+  .face { transition: color .3s; }
+  /* 위쪽 기본 규칙의 '.card.jamo.v.asC .face { background: #dbe8ff }' 가 이기면 그라데이션→단색 교차 전환 중에 카드가 비쳐 보인다.
+     asC 일 때도 바탕은 모음색 그대로 두고(자음색은 ::before 층이 덮는다), 항상 불투명한 바탕색을 깐다. */
+  .card.jamo.v.asC .face { background: linear-gradient(calc(180deg - var(--rot)), #f6dcb4, #e3b988); }
+  .card.jamo.v .face, .card.jamo.v.asC .face { background-color: #e9c593; }
+  .card.jamo.c .face { background-color: #c9d4db; }
+  .card.jamo.v .face::before { content: ""; position: absolute; inset: 0; border-radius: inherit; opacity: 0; pointer-events: none; transition: opacity .3s;
+    background: linear-gradient(calc(180deg - var(--rot)), #dfe5e8, #b9c8d3);
+    box-shadow: inset 0 0 0 2px #f9efd1, inset 0 0 0 3px #b8954f, inset 0 0 14px rgba(110,70,20,.35); }   /* 덧씌운 층이 .face 의 안쪽 금테를 가리지 않게 같은 테를 다시 그린다 */
+  .card.jamo.v.asC .face::before { opacity: 1; }
+  .card.jamo .g { position: relative; }
+  .card.target { outline: 3px solid var(--gold); outline-offset: 1px; }
+  .card.picked { outline: 4px solid var(--crimson); }
+  .grip { background: rgba(80,50,15,.22); }
+  /* Cinzel 의 숫자 1 은 로마자 I 처럼 보여서, 숫자가 많은 곳은 나눔명조로 */
+  #bar input.gn, .cnt, .fc, .side h3, .fhead .cnt, .side h2, .side .note { font-family: "Nanum Myeongjo", "Batang", "Noto Serif KR", serif; }
+
+  /* 가방 SVG 와 격자 */
+  #bag { position: absolute; z-index: 0; pointer-events: none; }
+  #bag svg { display: block; overflow: visible; }
+  #grid { z-index: 0; outline: 2px solid #150a03; box-shadow: inset 0 0 38px rgba(50,25,5,.6), inset 0 0 0 1px rgba(255,235,180,.25);
+    border-radius: 3px; }
+  ::-webkit-scrollbar { width: 12px; }
+  ::-webkit-scrollbar-track { background: rgba(60,35,10,.15); }
+  ::-webkit-scrollbar-thumb { background: #9b7a40; border: 2px solid #e6d3a2; border-radius: 6px; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <button id="btnClear">모두 지우기</button>
+  <label title="인벤토리 칸 수 (가로 × 세로, 1~20). 값을 바꾸면 바로 적용됩니다">격자 <input class="gn" id="gCols" type="number" min="1" max="20"> × <input class="gn" id="gRows" type="number" min="1" max="20"></label>
+  <label class="sw"><input type="checkbox" id="discard"><span class="knob"></span>카드 버리기</label>
+  <button id="btnDel" class="danger" hidden>선택 삭제 (<span id="delN">0</span>)</button>
+  <button id="btnSaveItems" title="아이템 단어 목록을 JSON 파일(data/item_words.json)로 저장합니다. Shift+클릭: 저장할 파일을 다시 고름">목록 저장</button>
+  <button id="btnLoadItems" title="저장한 JSON 파일에서 목록을 불러옵니다. Shift+클릭: 파일을 다시 고름">목록 불러오기</button>
+  <span id="saveStat"></span>
+  <input type="file" id="fileLoad" accept=".json,application/json" hidden>
+  <span class="hint">좌드래그: 글자 분리 · 카드 이동(칸에 딱 맞게 놓임, 다른 카드 위면 자리 교환) · 자모를 카드 칸에 놓으면 합체<br>우드래그: 모든 카드 이동 · 모서리 돌리기/우클릭/R: 회전 · 더블클릭: 겹자모·ㅎ 분리 · ㅗ를 ㅇ 칸에 0.6초 두면 ㅎ</span>
+</div>
+<div id="board">
+  <aside id="listL" class="side"><h2><span>아이템 단어 <span class="cnt" id="listLn"></span></span><label class="tg" title="켜면 단어/분류의 × 버튼이 보입니다"><span>삭제 모드</span><input type="checkbox" id="delMode"><span class="knob"></span></label></h2><div class="body" id="listLbody"></div><div id="dropdock"></div></aside>
+  <aside id="listR" class="side"><h2><span>만들 수 있는 글자 <span class="cnt" id="listRn"></span></span></h2><div class="note" id="listRnote"></div><div class="body" id="listRbody"></div></aside>
+  <div id="empty" class="hidden">아래 입력창에 단어를 입력하면 글자 카드가 추가됩니다</div></div>
+<div id="dock">
+  <input id="word" type="text" autocomplete="off" placeholder="단어 입력 후 Enter (예: 가방)" autofocus>
+  <button id="btnGo">추가</button>
+</div>
+
+<script>
+// ───────────── 한글 모듈 ─────────────
+const CHO  = [...'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'];
+const JUNG = [...'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ'];
+const JONG = ['', ...'ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ'];
+
+const CC = { ㄱㄱ:'ㄲ', ㄷㄷ:'ㄸ', ㅂㅂ:'ㅃ', ㅅㅅ:'ㅆ', ㅈㅈ:'ㅉ',
+  ㄱㅅ:'ㄳ', ㄴㅈ:'ㄵ', ㄴㅎ:'ㄶ', ㄹㄱ:'ㄺ', ㄹㅁ:'ㄻ', ㄹㅂ:'ㄼ', ㄹㅅ:'ㄽ', ㄹㅌ:'ㄾ', ㄹㅍ:'ㄿ', ㄹㅎ:'ㅀ', ㅂㅅ:'ㅄ' };
+const VV = { ㅗㅏ:'ㅘ', ㅗㅐ:'ㅙ', ㅗㅣ:'ㅚ', ㅜㅓ:'ㅝ', ㅜㅔ:'ㅞ', ㅜㅣ:'ㅟ', ㅡㅣ:'ㅢ',
+  ㅏㅣ:'ㅐ', ㅓㅣ:'ㅔ', ㅑㅣ:'ㅒ', ㅕㅣ:'ㅖ', ㅏㅏ:'ㅑ', ㅓㅓ:'ㅕ', ㅗㅗ:'ㅛ', ㅜㅜ:'ㅠ' };
+const SPLIT = {};
+for (const t of [CC, VV]) for (const [k, v] of Object.entries(t)) SPLIT[v] = [...k];
+SPLIT['ㅎ'] = ['ㅗ', 'ㅇ'];          // ㅎ = 위의 ㅗ + 아래의 ㅇ
+// 시계방향 90도 회전 시 모양이 바뀌는 모음
+const ROT4 = {};
+for (const cyc of ['ㅏㅜㅓㅗ', 'ㅑㅠㅕㅛ'])
+  [...cyc].forEach((ch, i) => ROT4[ch] = [0, 1, 2, 3].map(k => cyc[(i + k) % 4]));
+ROT4['ㅣ'] = ['ㅣ', 'ㅡ', 'ㅣ', 'ㅡ']; ROT4['ㅡ'] = ['ㅡ', 'ㅣ', 'ㅡ', 'ㅣ'];
+ROT4['ㄱ'] = ['ㄱ', null, 'ㄴ', null];   // ┐ 를 180° 돌리면 └
+ROT4['ㄴ'] = ['ㄴ', null, 'ㄱ', null];
+// 모양이 바뀌는 가장 작은 시계방향 회전 횟수 (없으면 0)
+function nextStep(j) {
+  for (let k = 1; k < 4; k++) { const r = ROT4[j] && ROT4[j][k]; if (r && r !== j) return k; }
+  return 0;
+}
+
+const isCho = c => CHO.includes(c);
+const isJung = c => JUNG.includes(c);
+const isJong = c => !!c && JONG.includes(c);
+const isCons = c => isCho(c) || isJong(c);
+
+function decompose(ch) {
+  const n = ch.charCodeAt(0) - 0xAC00;
+  if (n < 0 || n > 11171) return null;
+  return { cho: CHO[Math.floor(n / 588)], jung: JUNG[Math.floor((n % 588) / 28)], jong: JONG[n % 28] };
+}
+function compose(cho, jung, jong = '') {
+  return String.fromCharCode(0xAC00 + (CHO.indexOf(cho) * 21 + JUNG.indexOf(jung)) * 28 + JONG.indexOf(jong));
+}
+// 모음 형태: V 세로(ㅏ), H 가로(ㅗ), C 복합(ㅘ)
+function layoutOf(v) {
+  if ('ㅏㅐㅑㅒㅓㅔㅕㅖㅣ'.includes(v)) return 'V';
+  if ('ㅗㅛㅜㅠㅡ'.includes(v)) return 'H';
+  return 'C';
+}
+// 글자 안에서 각 자모가 차지하는 영역 (0~100 좌표계, [x,y,w,h])
+function regions(layout, hasJong) {
+  if (layout === 'V') return hasJong
+    ? { cho: [[0,0,56,62]], jung: [[56,0,44,62]], jong: [[0,62,100,38]] }
+    : { cho: [[0,0,56,100]], jung: [[56,0,44,100]] };
+  if (layout === 'H') return hasJong
+    ? { cho: [[0,0,100,42]], jung: [[0,42,100,22]], jong: [[0,64,100,36]] }
+    : { cho: [[0,0,100,48]], jung: [[0,48,100,52]] };
+  return hasJong
+    ? { cho: [[0,0,48,38]], jung: [[48,0,52,62],[0,38,48,24]], jong: [[0,62,100,38]] }
+    : { cho: [[0,0,48,48]], jung: [[48,0,52,100],[0,48,48,52]] };
+}
+// 드래그 방향별로 떨어져 나올 슬롯 (앞쪽 우선)
+const PULL = {
+  V: { L:['cho'], R:['jung'], U:['cho'], D:['jong'] },
+  H: { L:[], R:[], U:['cho','jung'], D:['jong','jung'] },
+  C: { L:['cho'], R:['jung'], U:['cho'], D:['jong','jung'] },
+};
+
+// ───────────── 카드 ─────────────
+let CARD = 120;
+const board = document.getElementById('board');
+let cards = [], nextId = 1, zTop = 10, lastTouched = null, discard = false;
+const sel = new Set();
+const emptyEl = document.getElementById('empty');
+const syncEmpty = () => emptyEl.classList.toggle('hidden', cards.length > 0);
+
+// ───────────── 격자 ─────────────
+const GMIN = 1, GMAX = 20;
+let COLS = 10, ROWS = 10;                  // 가로 × 세로 칸 (설정값, 상단 '격자' 입력으로 바꾼다)
+try { const g = JSON.parse(localStorage.getItem('inv_grid')); if (g) { COLS = Math.min(GMAX, Math.max(GMIN, g.cols | 0 || 10)); ROWS = Math.min(GMAX, Math.max(GMIN, g.rows | 0 || 10)); } } catch (_) {}
+let GX = 0, GY = 0;                        // 격자 좌상단 (board 좌표)
+const gridEl = document.createElement('div'); gridEl.id = 'grid';
+const cellEl = document.createElement('div'); cellEl.id = 'cell';
+gridEl.appendChild(cellEl);
+board.insertBefore(gridEl, board.firstChild);
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const cellXY = (col, row) => ({ x: GX + col * CARD, y: GY + row * CARD });
+const cardAt = (col, row, except) => cards.find(o => o !== except && o.col === col && o.row === row);
+const inGrid = (col, row) => col >= 0 && row >= 0 && col < COLS && row < ROWS;
+const freeCell = (col, row) => inGrid(col, row) && !cardAt(col, row);
+// 카드 중심이 놓인 칸
+function cellOf(c) {
+  return { col: clamp(Math.floor((c.x + CARD / 2 - GX) / CARD), 0, COLS - 1),
+           row: clamp(Math.floor((c.y + CARD / 2 - GY) / CARD), 0, ROWS - 1) };
+}
+// (col,row) 주변의 빈 칸: 우선순위 prefs(상대 좌표)를 먼저 보고, 없으면 가장 가까운 빈 칸
+function emptyNear(col, row, prefs = []) {
+  for (const [dc, dr] of prefs) if (freeCell(col + dc, row + dr)) return { col: col + dc, row: row + dr };
+  let best = null, bd = Infinity;
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    if (cardAt(c, r)) continue;
+    const d = Math.abs(c - col) + Math.abs(r - row);
+    if (d < bd) { bd = d; best = { col: c, row: r }; }
+  }
+  return best;
+}
+function snap(c) { const p = cellXY(c.col, c.row); c.x = p.x; c.y = p.y; place(c); scheduleRefresh(); }
+function showCell(cell, kind, n = 1) {                 // n: 가로로 몇 칸을 강조할지
+  const p = cellXY(cell.col, cell.row);
+  cellEl.style.display = 'block';
+  cellEl.style.width = n > 1 ? n * CARD + 'px' : '';
+  cellEl.style.left = (p.x - GX) + 'px'; cellEl.style.top = (p.y - GY) + 'px';
+  cellEl.className = kind;
+}
+const hideCell = () => { cellEl.style.display = 'none'; };
+// ───────────── 중세 가방: 격자를 감싸는 SVG ─────────────
+// 가방 몸통(가죽) · 윗덮개와 잠금쇠 · 손잡이 · 양옆 가죽끈과 버클 · 바느질 · 징(리벳)을 격자 크기에 맞춰 다시 그린다.
+const BAG = { mx: 40, top: 104, bot: 46 };            // 격자 둘레의 여백(px): 좌우 / 위(손잡이+덮개) / 아래
+const bagEl = document.createElement('div'); bagEl.id = 'bag';
+board.insertBefore(bagEl, gridEl);
+function drawBag(gw, gh) {
+  const { mx, top, bot } = BAG, w = gw + mx * 2, h = gh + top + bot, hH = 38, cx = w / 2;   // hH: 손잡이가 솟는 높이
+  const yb = top - 14, yt = top - 6;                 // 덮개 아래 가장자리 / 혀(잠금 혀)끝
+  const rivet = (x, y, r = 4) => `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#brass)" stroke="#3a2406" stroke-width="1"/>`;
+  const sx = (mx - 16) / 2;                          // 옆 가죽끈의 왼쪽 x
+  const strap = x => `<g><rect x="${x}" y="${hH + 8}" width="16" height="${h - hH - 22}" rx="3" fill="#4a2b12" stroke="#1d0f05" stroke-width="2"/>` +
+    `<rect x="${x + 3}" y="${hH + 12}" width="10" height="${h - hH - 30}" rx="2" fill="none" stroke="#d9b877" stroke-width="1.4" stroke-dasharray="5 4" opacity=".8"/>` +
+    // 버클: 황동 사각 고리와 가시
+    `<rect x="${x - 4}" y="${top + gh * .30}" width="24" height="30" rx="4" fill="none" stroke="url(#brass)" stroke-width="5"/>` +
+    `<rect x="${x + 2}" y="${top + gh * .30 + 12}" width="12" height="4" fill="url(#brass)"/></g>`;
+  bagEl.innerHTML = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="leather" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#946232"/><stop offset=".55" stop-color="#6e4222"/><stop offset="1" stop-color="#4c2b13"/></linearGradient>
+    <linearGradient id="leather2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9743c"/><stop offset="1" stop-color="#744626"/></linearGradient>
+    <radialGradient id="brass" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#fff0b3"/><stop offset=".45" stop-color="#d4a73d"/><stop offset="1" stop-color="#7a5514"/></radialGradient>
+    <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="7"/>
+      <feColorMatrix values="0 0 0 0 .12  0 0 0 0 .06  0 0 0 0 .02  0 0 0 .55 -.12"/></filter>
+    <filter id="sh" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity=".55"/></filter>
+  </defs>
+  <!-- 손잡이 -->
+  <path d="M ${w * .27},${hH + 6} C ${w * .27},-4 ${w * .73},-4 ${w * .73},${hH + 6}" fill="none" stroke="#1d0f05" stroke-width="15" stroke-linecap="round"/>
+  <path d="M ${w * .27},${hH + 6} C ${w * .27},-4 ${w * .73},-4 ${w * .73},${hH + 6}" fill="none" stroke="url(#leather2)" stroke-width="10" stroke-linecap="round"/>
+  <path d="M ${w * .27},${hH + 6} C ${w * .27},-4 ${w * .73},-4 ${w * .73},${hH + 6}" fill="none" stroke="#e0c081" stroke-width="1.5" stroke-dasharray="6 5" opacity=".7" transform="translate(0 1)"/>
+  <!-- 몸통 -->
+  <g filter="url(#sh)">
+    <path d="M 14,${hH} L ${w - 14},${hH} Q ${w - 2},${hH} ${w - 2},${hH + 14} L ${w - 2},${h - 34} Q ${w - 2},${h - 3} ${w - 36},${h - 3} L 36,${h - 3} Q 2,${h - 3} 2,${h - 34} L 2,${hH + 14} Q 2,${hH} 14,${hH} Z" fill="url(#leather)" stroke="#1d0f05" stroke-width="3.5"/>
+  </g>
+  <path d="M 14,${hH} L ${w - 14},${hH} Q ${w - 2},${hH} ${w - 2},${hH + 14} L ${w - 2},${h - 34} Q ${w - 2},${h - 3} ${w - 36},${h - 3} L 36,${h - 3} Q 2,${h - 3} 2,${h - 34} L 2,${hH + 14} Q 2,${hH} 14,${hH} Z" filter="url(#grain)" opacity=".8"/>
+  <rect x="9" y="${hH + 9}" width="${w - 18}" height="${h - hH - 18}" rx="22" fill="none" stroke="#e0c081" stroke-width="1.8" stroke-dasharray="7 5" opacity=".85"/>
+  <!-- 격자가 들어가는 입구(안쪽 안감) -->
+  <rect x="${mx - 9}" y="${top - 9}" width="${gw + 18}" height="${gh + 18}" rx="7" fill="#2a190c" stroke="#150a03" stroke-width="3"/>
+  <rect x="${mx - 12}" y="${top - 12}" width="${gw + 24}" height="${gh + 24}" rx="9" fill="none" stroke="#b88a52" stroke-width="1.5" opacity=".7"/>
+  ${strap(sx)}${strap(w - sx - 16)}
+  <!-- 윗덮개 -->
+  <g filter="url(#sh)">
+    <path d="M 2,${hH} L ${w - 2},${hH} L ${w - 2},${yb - 14} Q ${w - 2},${yb} ${w - 18},${yb} L ${cx + 40},${yb} L ${cx + 26},${yt} L ${cx - 26},${yt} L ${cx - 40},${yb} L 18,${yb} Q 2,${yb} 2,${yb - 14} Z" fill="url(#leather2)" stroke="#1d0f05" stroke-width="3.5" stroke-linejoin="round"/>
+  </g>
+  <path d="M 2,${hH} L ${w - 2},${hH} L ${w - 2},${yb - 14} Q ${w - 2},${yb} ${w - 18},${yb} L ${cx + 40},${yb} L ${cx + 26},${yt} L ${cx - 26},${yt} L ${cx - 40},${yb} L 18,${yb} Q 2,${yb} 2,${yb - 14} Z" filter="url(#grain)" opacity=".7"/>
+  <path d="M 12,${hH + 9} L ${w - 12},${hH + 9} L ${w - 12},${yb - 18} Q ${w - 12},${yb - 8} ${w - 22},${yb - 8} L ${cx + 44},${yb - 8} L ${cx + 31},${yt - 9} L ${cx - 31},${yt - 9} L ${cx - 44},${yb - 8} L 22,${yb - 8} Q 12,${yb - 8} 12,${yb - 18} Z" fill="none" stroke="#f0d594" stroke-width="1.8" stroke-dasharray="7 5" opacity=".85"/>
+  <!-- 잠금쇠 -->
+  <circle cx="${cx}" cy="${yb - 3}" r="11" fill="url(#brass)" stroke="#3a2406" stroke-width="2"/>
+  <circle cx="${cx}" cy="${yb - 3}" r="4" fill="#3a2406"/>
+  ${rivet(18, hH + 14)}${rivet(w - 18, hH + 14)}${rivet(18, h - 20)}${rivet(w - 18, h - 20)}${rivet(cx - 70, hH + 18)}${rivet(cx + 70, hH + 18)}
+</svg>`;
+  Object.assign(bagEl.style, { left: GX - mx + 'px', top: GY - top + 'px', width: w + 'px', height: h + 'px' });
+}
+
+// 보드 크기에 맞춰 칸 크기를 정하고 가방(격자)을 가운데에 놓는다
+function layoutGrid() {
+  const W = board.clientWidth, H = board.clientHeight;
+  CARD = Math.max(28, Math.floor(Math.min((W - BAG.mx * 2) / COLS, (H - BAG.top - BAG.bot - 8) / ROWS)));
+  document.documentElement.style.setProperty('--card', CARD + 'px');
+  GX = Math.floor((W - COLS * CARD) / 2); GY = Math.floor((H - BAG.top - BAG.bot - ROWS * CARD) / 2) + BAG.top;
+  Object.assign(gridEl.style, { left: GX + 'px', top: GY + 'px', width: COLS * CARD + 'px', height: ROWS * CARD + 'px' });
+  // 격자 양옆 여백이 충분할 때만 목록 패널을 보여준다
+  drawBag(COLS * CARD, ROWS * CARD);
+  const sideW = GX - BAG.mx - 22;
+  for (const [el, side] of [[listL, 'left'], [listR, 'right']]) {
+    el.style.display = sideW >= 150 ? 'flex' : 'none';
+    Object.assign(el.style, { left: '', right: '', [side]: '10px', width: sideW + 'px' });
+  }
+  board.classList.add('relayout');      // 창 크기 변경 시에는 애니메이션 없이 즉시 재배치
+  for (const c of cards) snap(c);
+  void board.offsetWidth;
+  board.classList.remove('relayout');
+}
+window.addEventListener('resize', layoutGrid);
+
+// 격자 크기 설정. 줄어들어 밖으로 나간 카드는 가까운 빈 칸으로 옮기고, 칸이 모자라면 확인 후 넘치는 카드를 버린다.
+const gCols = document.getElementById('gCols'), gRows = document.getElementById('gRows');
+function setGridSize(cols, rows) {
+  cols = clamp(cols | 0 || COLS, GMIN, GMAX); rows = clamp(rows | 0 || ROWS, GMIN, GMAX);
+  gCols.value = cols; gRows.value = rows;
+  if (cols === COLS && rows === ROWS) return;
+  const cap = cols * rows, over = cards.length - cap;
+  if (over > 0 && !confirm(`${cols}×${rows} (${cap}칸)에는 카드 ${cards.length}장이 다 들어가지 않습니다.
+마지막 ${over}장을 버리고 줄일까요?`)) { gCols.value = COLS; gRows.value = ROWS; return; }
+  const sorted = [...cards].sort((a, b) => a.row - b.row || a.col - b.col);
+  if (over > 0) discardCards(sorted.slice(cap));
+  COLS = cols; ROWS = rows;
+  try { localStorage.setItem('inv_grid', JSON.stringify({ cols, rows })); } catch (_) {}
+  hideCell();
+  for (const c of sorted) {                      // 새 격자 밖(또는 겹침)이 된 카드를 가까운 빈 칸으로
+    if (!cards.includes(c)) continue;
+    if (inGrid(c.col, c.row) && cardAt(c.col, c.row, c) === undefined) continue;
+    const oc = clamp(c.col, 0, COLS - 1), or = clamp(c.row, 0, ROWS - 1);
+    c.col = c.row = -1;                           // 자기 자리는 비운 것으로 보고 가장 가까운 빈 칸을 찾는다
+    const cell = emptyNear(oc, or);
+    c.col = cell.col; c.row = cell.row;
+  }
+  layoutGrid(); scanMatches(false); scheduleRefresh();
+}
+gCols.onchange = gRows.onchange = () => setGridSize(+gCols.value, +gRows.value);
+gCols.value = COLS; gRows.value = ROWS;
+for (const el of [gCols, gRows]) el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
+
+function newCard(props) {
+  const c = Object.assign({ id: nextId++, kind: 'jamo', jamo: '', s: {cho:'',jung:'',jong:''}, g: {cho:'',jung:'',jong:''}, col: 0, row: 0, x: 0, y: 0 }, props);
+  Object.assign(c, cellXY(c.col, c.row));
+  c.el = document.createElement('div');
+  c.el.className = 'card';
+  c.el.addEventListener('pointerdown', e => onDown(e, c));
+  c.el.addEventListener('dblclick', () => dbl(c));
+  c.el.addEventListener('pointermove', e => { if (!drag) c.el.classList.toggle('corner', !discard && c.kind === 'jamo' && inCorner(e, c)); });
+  c.el.addEventListener('contextmenu', e => e.preventDefault());
+  board.appendChild(c.el);
+  cards.push(c);
+  render(c);
+  place(c);
+  syncEmpty();
+  return c;
+}
+// 삭제 연출과 함께 카드를 지운다. 상태(카드 목록, 칸)는 즉시 비워지고 화면에서만 잠시 남는다.
+function discardCard(c, delay = 0) {
+  cards = cards.filter(o => o !== c); sel.delete(c);
+  syncEmpty(); syncSel(); scheduleRefresh();
+  const el = c.el;
+  el.classList.remove('pop', 'shake', 'picked', 'target', 'dragging');
+  el.style.zIndex = 3000;
+  el.style.animationDelay = delay + 'ms';
+  el.classList.add('discarding');
+  el.addEventListener('animationend', () => el.remove(), { once: true });
+  setTimeout(() => el.remove(), delay + 900);          // 안전장치
+}
+// 여러 장을 지울 때는 격자 순서(위→아래, 왼쪽→오른쪽)로 조금씩 시차를 둔다
+function discardCards(list) {
+  [...list].sort((a, b) => a.row - b.row || a.col - b.col).forEach((c, i) => discardCard(c, Math.min(i * 40, 600)));
+}
+function removeCard(c) { c.el.remove(); cards = cards.filter(o => o !== c); sel.delete(c); syncEmpty(); syncSel(); scheduleRefresh(); }
+function place(c) { c.el.style.left = c.x + 'px'; c.el.style.top = c.y + 'px'; }
+function fx(c, cls) { c.el.classList.remove(cls); void c.el.offsetWidth; c.el.classList.add(cls); }
+
+function render(c) {
+  scheduleRefresh();
+  const el = c.el;
+  el.classList.toggle('jamo', c.kind === 'jamo');
+  el.classList.toggle('v', c.kind === 'jamo' && isJung(c.jamo));
+  el.classList.toggle('c', c.kind === 'jamo' && !isJung(c.jamo));
+  if (c.kind === 'jamo') { el.innerHTML = `<div class="face"><span class="g">${c.jamo}</span></div>`; return; }
+  const { s, g } = c;
+  const cho = s.cho || g.cho, jung = s.jung || g.jung, jong = s.jong || g.jong || '';
+  const R = regions(layoutOf(jung), !!jong);
+  const filled = [], missing = [];
+  for (const slot of ['cho', 'jung', 'jong']) if (R[slot]) (s[slot] ? filled : missing).push(...R[slot]);
+  const rects = a => a.map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}"/>`).join('');
+  const t = `x="50" y="52" font-size="78" text-anchor="middle" dominant-baseline="central"`;
+  const ch = compose(cho, jung, jong);
+  el.innerHTML = `<div class="face"><div class="grip"></div><svg viewBox="0 0 100 100"><defs>` +
+    `<clipPath id="m${c.id}">${rects(missing)}</clipPath><clipPath id="f${c.id}">${rects(filled)}</clipPath></defs>` +
+    (missing.length ? `<text class="ghost" ${t} clip-path="url(#m${c.id})">${ch}</text>` : '') +
+    `<text ${t}${missing.length ? ` clip-path="url(#f${c.id})"` : ''}>${ch}</text></svg></div>`;
+}
+
+// 한 줄에 n 칸 연속으로 비어 있는 자리를 찾는다. anchor(칸) 가 없으면 격자 가운데 줄부터, 있으면 그 칸과 가까운 줄/위치부터.
+function findRun(n, anchor) {
+  const a = anchor || { col: Math.floor((COLS - n) / 2), row: (ROWS - 1) / 2 };
+  const rows = [...Array(ROWS).keys()].sort((x, y) => Math.abs(x - a.row) - Math.abs(y - a.row));
+  const ideal = clamp(a.col, 0, COLS - n);
+  const starts = [...Array(COLS - n + 1).keys()].sort((x, y) => Math.abs(x - ideal) - Math.abs(y - ideal));
+  for (const r of rows) {
+    const s0 = starts.find(x => Array.from({ length: n }, (_, k) => freeCell(x + k, r)).every(Boolean));
+    if (s0 !== undefined) return { col: s0, row: r };
+  }
+  return null;
+}
+// 새 단어의 글자 카드를 격자의 빈 칸에 추가한다. 한 줄(COLS칸)에 들어가는 만큼 연속으로 놓는다.
+// 반환값: 실제로 추가된 글자 수 (격자가 가득 차면 일부만 들어간다)
+function addWord(word, anchor) {
+  const all = [...word].map(decompose).filter(Boolean);
+  if (all.some(isBanned)) rage();
+  const syls = all.filter(d => !isBanned(d)).slice(0, COLS * ROWS - cards.length);
+  const mk = (d, col, row) => fx(newCard({ kind: 'syl', s: { ...d }, g: { cho:'', jung:'', jong:'' }, col, row }), 'pop');
+  for (let i = 0; i < syls.length; i += COLS) {
+    const chunk = syls.slice(i, i + COLS), at = findRun(chunk.length, anchor);
+    if (at) chunk.forEach((d, k) => mk(d, at.col + k, at.row));
+    else chunk.forEach(d => { const cell = emptyNear(anchor ? anchor.col : COLS >> 1, anchor ? anchor.row : ROWS >> 1); mk(d, cell.col, cell.row); });   // 한 줄이 안 나오면 흩어서
+  }
+  scanMatches(false);                    // 입력으로 이미 완성돼 있는 단어는 알리지 않는다 (조작으로 완성될 때만)
+  return syls.length;
+}
+
+// ───────────── 카드 삭제 ─────────────
+const delBtn = document.getElementById('btnDel');
+function syncSel() {
+  document.getElementById('delN').textContent = sel.size;
+  delBtn.hidden = !(discard && sel.size);
+}
+function toggleSel(c) {
+  if (sel.has(c)) sel.delete(c); else sel.add(c);
+  c.el.classList.toggle('picked', sel.has(c));
+  syncSel();
+}
+function deleteSelected() { discardCards(sel); setDiscard(false); }
+function setDiscard(on) {
+  discard = on;
+  document.body.classList.toggle('discard', on);
+  document.getElementById('discard').checked = on;
+  if (!on) { for (const c of sel) c.el.classList.remove('picked'); sel.clear(); }
+  syncSel();
+}
+function clearAll() { setDiscard(false); discardCards(cards); }
+document.getElementById('discard').addEventListener('change', e => setDiscard(e.target.checked));
+delBtn.onclick = deleteSelected;
+document.getElementById('btnClear').onclick = clearAll;
+
+// ───────────── 분리 ─────────────
+function pickSlot(c, dir) {
+  const jung = c.s.jung || c.g.jung;
+  for (const slot of PULL[layoutOf(jung)][dir]) if (c.s[slot]) return slot;
+  return null;
+}
+const PREF = { L: [[-1,0],[0,-1],[0,1],[1,0]], R: [[1,0],[0,-1],[0,1],[-1,0]],
+               U: [[0,-1],[-1,0],[1,0],[0,1]], D: [[0,1],[-1,0],[1,0],[0,-1]] };
+// 떼어낸 자모는 끌어당긴 방향 쪽 이웃 빈 칸에 생긴다. 빈 칸이 하나도 없으면 null (아무것도 바꾸지 않음)
+function detach(c, slot, dir = 'R') {
+  const cell = emptyNear(c.col, c.row, PREF[dir]);
+  if (!cell) return null;
+  const val = c.s[slot];
+  c.s[slot] = ''; c.g[slot] = slot === 'jong' ? '' : val;     // 받침은 떼어내도 빈 슬롯(반투명)을 남기지 않는다: 남은 카드는 받침 없는 온전한 글자
+  const left = ['cho', 'jung', 'jong'].filter(k => c.s[k]);
+  if (left.length === 1) {              // 남은 게 하나면 그냥 자모 카드
+    c.kind = 'jamo'; c.jamo = c.s[left[0]];
+    c.s = {cho:'',jung:'',jong:''}; c.g = {cho:'',jung:'',jong:''};
+  }
+  render(c);
+  return newCard({ kind: 'jamo', jamo: val, col: cell.col, row: cell.row });
+}
+function splitJamo(c) {
+  const [a, b] = SPLIT[c.jamo];
+  let first = a, second = b, cell;
+  if (c.jamo === 'ㅎ') {                 // 위 ㅗ / 아래 ㅇ 으로 쌓는다
+    if (freeCell(c.col, c.row + 1)) cell = { col: c.col, row: c.row + 1 };
+    else if (freeCell(c.col, c.row - 1)) { cell = { col: c.col, row: c.row - 1 }; first = b; second = a; }
+    else cell = emptyNear(c.col, c.row);
+  } else cell = emptyNear(c.col, c.row, PREF.R);
+  if (!cell) return fx(c, 'shake');
+  c.jamo = first; render(c); fx(c, 'pop');
+  fx(newCard({ kind: 'jamo', jamo: second, col: cell.col, row: cell.row }), 'pop');
+}
+// 겹자모 분리 / 모음 회전. splitFirst: 둘 다 가능할 때 분리를 우선할지
+const glyph = c => c.el.querySelector('.face');
+// 카드를 deg 만큼 돌린다. 카드 그라데이션은 --rot 만큼 반대로 돌려 화면에서 보이는 방향을 그대로 유지한다.
+const rotFace = (g, deg, ms) => {
+  g.style.transition = `transform ${ms}ms, --rot ${ms}ms`;
+  g.style.transform = deg ? `rotate(${deg}deg)` : '';
+  g.style.setProperty('--rot', deg + 'deg');
+};
+function transform(c, splitFirst) {
+  if (c.kind !== 'jamo') return;
+  const canSplit = !!SPLIT[c.jamo], k = nextStep(c.jamo);
+  if (canSplit && (splitFirst || !k)) return splitJamo(c);
+  if (!k) return fx(c, 'shake');
+  const ms = 100 + 90 * k, next = ROT4[c.jamo][k];
+  // 누른 즉시 바뀔 글자로 교체하고, 새 글자를 -k*90° (= 이전 글자 모양) 에서 0° 로 돌려 보여준다
+  c.jamo = next; render(c);
+  const g = glyph(c);
+  rotFace(g, -k * 90, 0);
+  void g.offsetWidth;
+  rotFace(g, 0, ms);
+}
+function dbl(c) { if (discard) return; lastTouched = c; transform(c, true); }
+
+// ───────────── 합체 ─────────────
+// ㅗ 와 ㅇ 은 기본적으로 '오'가 되고, ㅗ를 ㅇ 위에 0.6초 올려두면(ㅗ가 자음색으로 바뀜) 'ㅎ'이 된다.
+let hold = null;
+const HOLD_MS = 600;
+const isHoPair = (a, o) => a.kind === 'jamo' && o.kind === 'jamo' && a.jamo + o.jamo in { ㅗㅇ: 1, ㅇㅗ: 1 };
+const vowelOf = (a, o) => a.jamo === 'ㅗ' ? a : o;
+function clearHold() {
+  if (!hold) return;
+  clearTimeout(hold.timer);
+  vowelOf(hold.a, hold.o).el.classList.remove('asC');
+  hold = null;
+}
+function updateHold(a, o) {
+  if (!o || !isHoPair(a, o)) return clearHold();
+  if (hold && hold.a === a && hold.o === o) return;      // 같은 대상 위에 계속 있는 중
+  clearHold();
+  const h = hold = { a, o, on: false };
+  h.timer = setTimeout(() => { h.on = true; vowelOf(a, o).el.classList.add('asC'); }, HOLD_MS);
+}
+
+// 드래그한 자모 a 를 카드 o 에 합칠 수 있으면 결과를 돌려준다.
+function combine(a, o) {
+  const j = a.jamo;
+  if (o.kind === 'jamo') {
+    const k = o.jamo;
+    if (isHoPair(a, o) && hold && hold.on && hold.a === a && hold.o === o) return { jamo: 'ㅎ' };  // 0.6초 대기하면 ㅎ
+    const m = (isJung(j) && isJung(k)) ? (VV[j + k] || VV[k + j])
+            : (isCons(j) && isCons(k)) ? (CC[j + k] || CC[k + j]) : null;
+    if (m) return { jamo: m };
+    if (isCho(j) && isJung(k)) return { s: { cho: j, jung: k, jong: '' } };
+    if (isJung(j) && isCho(k)) return { s: { cho: k, jung: j, jong: '' } };
+    return null;
+  }
+  const s = { ...o.s }, g = { ...o.g };
+  if (isJung(j)) {
+    if (!s.jung) s.jung = j;
+    else if (VV[s.jung + j]) s.jung = VV[s.jung + j];
+    else return null;
+    g.jung = '';
+  } else {
+    if (!s.cho) { if (!isCho(j)) return null; s.cho = j; g.cho = ''; }
+    else if (!s.jung) return null;
+    else if (!s.jong && isJong(j)) { s.jong = j; g.jong = ''; }
+    else if (s.jong && isJong(CC[s.jong + j])) s.jong = CC[s.jong + j];
+    else if (isCho(CC[s.cho + j])) s.cho = CC[s.cho + j];
+    else return null;
+  }
+  return { s, g };
+}
+// 카드 a 의 중심이 놓인 칸에 합칠 수 있는 카드가 있으면 그 카드
+function findTarget(a) {
+  if (a.kind !== 'jamo') return null;
+  const cell = cellOf(a), o = cardAt(cell.col, cell.row, a);
+  return o && combine(a, o) ? o : null;
+}
+function apply(a, o, r) {
+  if (r.jamo) { o.kind = 'jamo'; o.jamo = r.jamo; }
+  else { o.kind = 'syl'; o.s = r.s; o.g = r.g || { cho:'', jung:'', jong:'' }; }
+  removeCard(a);
+  render(o); fx(o, 'pop');
+}
+
+// ───────────── 이스터에그: 됬 ─────────────
+// '됐' 의 오타인 '됬' 은 만들 수 없다. 합체·입력 어느 쪽으로 만들려 해도 거절하며 화면이 발악한다.
+const BANNED = '됬';
+const isBanned = d => !!(d && d.cho && d.jung && compose(d.cho, d.jung, d.jong || '') === BANNED);
+let rageN = 0, rageTimer = 0;
+const RAGE_MSG = ['안 돼!!', '그런 글자는 없어!!', '됐다고!!', '됬?? 됬??!', '맞춤법!!!', 'ㄴㄴㄴㄴㄴ', '으아아악!!', '됬 ✗   됐 ○', '싫어어어!!'];
+function rage() {
+  rageN++;
+  clearTimeout(rageTimer);
+  const old = document.getElementById('rage'); if (old) old.remove();
+  const ov = document.createElement('div'); ov.id = 'rage';
+  ov.innerHTML = '<div class="flash"></div>';
+  const add = (text, x, y, size, rot, delay) => {
+    const m = document.createElement('div'); m.className = 'msg'; m.textContent = text;
+    m.style.cssText = `left:${x}%;top:${y}%;font-size:${size}px;rotate:${rot}deg;animation-delay:${delay}ms;transform:translate(-50%,-50%)`;
+    ov.appendChild(m);
+  };
+  add(rageN >= 3 ? '…몇 번째야 진짜' : '됐!!!', 50, 46, rageN >= 3 ? 64 : 150, -4, 0);
+  const pool = [...RAGE_MSG].sort(() => Math.random() - .5);
+  pool.slice(0, 8).forEach((t, i) => add(t, 14 + Math.random() * 72, 12 + Math.random() * 72, 40 + Math.random() * 56, (Math.random() - .5) * 50, 120 + i * 110));
+  document.body.appendChild(ov);
+  document.body.classList.remove('rage'); void document.body.offsetWidth; document.body.classList.add('rage');
+  rageTimer = setTimeout(() => { ov.remove(); document.body.classList.remove('rage'); }, 2300);
+}
+
+// ───────────── 포인터 ─────────────
+let drag = null, hot = null;
+function setHot(o) {
+  if (hot === o) return;
+  if (hot) hot.el.classList.remove('target');
+  hot = o;
+  if (hot) hot.el.classList.add('target');
+}
+function front(c) { c.el.style.zIndex = ++zTop; }
+
+// 자모 카드 모서리(회전 손잡이) 영역인지
+function inCorner(e, c) {
+  const r = c.el.getBoundingClientRect(), z = r.width * 0.26;
+  const lx = e.clientX - r.left, ly = e.clientY - r.top;
+  return (lx < z || lx > r.width - z) && (ly < z || ly > r.height - z);
+}
+function onDown(e, c) {
+  if (e.button !== 0 && e.button !== 2) return;
+  if (discard) { if (e.button === 0) toggleSel(c); return; }
+  lastTouched = c; front(c);
+  if (e.button === 0 && c.kind === 'jamo' && inCorner(e, c)) {   // 모서리를 잡으면 회전 모드
+    const r = c.el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    drag = { c, rot: true, cx, cy, pa: Math.atan2(e.clientY - cy, e.clientX - cx), total: 0, steps: 0, orig: c.jamo, rn: 0, pid: e.pointerId };
+    c.el.setPointerCapture(e.pointerId);
+    return;
+  }
+  const right = e.button === 2;
+  drag = { c, sx: e.clientX, sy: e.clientY, ox: c.x, oy: c.y, pid: e.pointerId, moved: false, right,
+           detachable: !right && c.kind === 'syl' && !e.target.closest('.grip') };
+  if (!drag.detachable) c.el.classList.add('dragging');
+  c.el.setPointerCapture(e.pointerId);
+}
+// 모서리 드래그 회전: 돌아가는 각도에 맞는 자모가 있으면 그 순간 카드 글자를 바로 그 자모로 바꾼다 (손을 떼기 전에도).
+//  d.orig: 드래그를 시작할 때의 자모, d.steps: 지금까지 돈 90° 횟수, d.rn: 화면에 보이는 자모가 orig 를 몇 번 돌린 모양인지
+function applyRot(d, st) {
+  const c = d.c, n = ((st % 4) + 4) % 4, L = ROT4[d.orig] && ROT4[d.orig][n], want = L || d.orig;
+  if (c.jamo !== want) {                              // 바뀐 자모로 교체하되, 직전 모습에서 이어서 돌아가게 시작 각도를 맞춘다
+    d.rn = want === d.orig ? 0 : n;
+    c.jamo = want; render(c);
+    const g0 = glyph(c);
+    rotFace(g0, (d.steps - d.rn) * 90, 0);
+    void g0.offsetWidth;
+  }
+  rotFace(glyph(c), (st - d.rn) * 90, 120);
+  d.steps = st;
+}
+function finishRotate(d) {
+  const c = d.c, g = glyph(c), n = ((d.steps % 4) + 4) % 4;
+  const j = ROT4[d.orig] && ROT4[d.orig][n];
+  if (!j) { rotFace(g, 0, 180); return; }             // 글자가 되지 않는 각도면 원위치 (자모는 이미 처음 것으로 돌아와 있다)
+  c.jamo = j; render(c);                              // 확정: 회전 각도 초기화
+}
+window.addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (drag.rot) {                       // 누적 각도를 90° 단위로 반올림해 계속 돌릴 수 있게
+    const a = Math.atan2(e.clientY - drag.cy, e.clientX - drag.cx);
+    let d = a - drag.pa;
+    if (d > Math.PI) d -= 2 * Math.PI; else if (d < -Math.PI) d += 2 * Math.PI;
+    drag.total += d; drag.pa = a;
+    const st = Math.round(drag.total / (Math.PI / 2));
+    if (st !== drag.steps) applyRot(drag, st);
+    return;
+  }
+  const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+  if (drag.detachable) {
+    if (Math.hypot(dx, dy) < 14) return;
+    const dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'L' : 'R') : (dy < 0 ? 'U' : 'D');
+    const slot = pickSlot(drag.c, dir);
+    if (!slot) { fx(drag.c, 'shake'); drag = null; return; }
+    const parent = drag.c, n = detach(parent, slot, dir);
+    if (!n) { fx(parent, 'shake'); drag = null; return; }       // 격자가 가득 참
+    front(n); n.el.classList.add('dragging'); fx(n, 'pop');
+    n.el.setPointerCapture(drag.pid);
+    drag = { ...drag, c: n, ox: parent.x, oy: parent.y, detachable: false };
+  }
+  const c = drag.c;
+  if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+  drag.moved = true;
+  c.x = clamp(drag.ox + dx, GX, GX + (COLS - 1) * CARD);
+  c.y = clamp(drag.oy + dy, GY, GY + (ROWS - 1) * CARD);
+  place(c);
+  const cell = cellOf(c), t = findTarget(c);
+  setHot(t);
+  updateHold(c, t);
+  showCell(cell, t ? 'merge' : cardAt(cell.col, cell.row, c) ? 'swap' : 'empty');
+});
+window.addEventListener('pointerup', () => {
+  if (!drag) return;
+  if (drag.rot) { finishRotate(drag); drag = null; return; }
+  const c = drag.c;
+  c.el.classList.remove('dragging');
+  if (drag.right && !drag.moved) transform(c, false);   // 우클릭만 했으면 회전 우선
+  if (drag.moved) {
+    const o = findTarget(c);
+    const r = o && combine(c, o);
+    if (r && isBanned(r.s)) { snap(c); rage(); }        // 됬 은 거절: 끌던 카드는 제자리로
+    else if (o) apply(c, o, r);
+    else {                                              // 칸에 딱 맞게 놓기. 점유된 칸이면 자리 교환
+      const cell = cellOf(c), occ = cardAt(cell.col, cell.row, c);
+      if (occ) { occ.col = c.col; occ.row = c.row; snap(occ); fx(occ, 'pop'); }
+      c.col = cell.col; c.row = cell.row; snap(c);
+    }
+  }
+  hideCell();
+  clearHold();
+  setHot(null);
+  drag = null;
+});
+window.addEventListener('keydown', e => {
+  if (e.key.toLowerCase() === 'r' && lastTouched && cards.includes(lastTouched) && !typing() && !discard) transform(lastTouched, false);
+  if (e.key === 'Delete' && discard && !typing()) deleteSelected();
+});
+
+// 회전 커서
+{
+  const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26'>" +
+    "<g fill='none' stroke-linecap='round' stroke-linejoin='round'>" +
+    "<path d='M5 13a8 8 0 1 0 3-6.2M5 4v4h4' stroke='white' stroke-width='5'/>" +
+    "<path d='M5 13a8 8 0 1 0 3-6.2M5 4v4h4' stroke='black' stroke-width='2.2'/></g></svg>";
+  document.documentElement.style.setProperty('--rotcur', `url("data:image/svg+xml,${encodeURIComponent(svg)}") 13 13, alias`);
+}
+
+// ───────────── 입력창 (하단 상시 표시) ─────────────
+const input = document.getElementById('word');
+const typing = () => document.activeElement === input;
+function shakeInput() { input.classList.remove('bad'); void input.offsetWidth; input.classList.add('bad'); }
+function start(word) {
+  if (![...word].some(decompose)) {            // 한글 음절이 하나도 없으면 흔들기
+    shakeInput();
+    return false;
+  }
+  const placed = addWord(word);
+  if (placed < [...word].filter(decompose).length) shakeInput();   // 격자가 가득 차서 일부만 들어감
+  input.value = ''; input.focus(); return true;
+}
+document.getElementById('btnGo').onclick = () => start(input.value.trim());
+input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) start(input.value.trim()); });
+// ───────────── 단어 목록 / 만들 수 있는 글자 / 완성 감지 ─────────────
+// 제작 가능하고 아이템으로 쓰일 단어(기본 샘플). 분류는 표시용이며 이 객체만 고치면 목록이 바뀐다.
+const ITEM_WORDS = {
+  '무기':     ['검', '칼', '활', '창', '도끼', '단검', '지팡이', '화살'],
+  '방어구':   ['방패', '갑옷', '투구', '장갑', '신발'],
+  '소모품':   ['물약', '약초', '빵', '열매', '술', '횃불', '두루마리'],
+  '재료·잡화': ['나무', '돌', '물', '불', '말', '불꽃', '열쇠', '지도', '반지', '목걸이', '보석', '금화', '가방'],
+};
+const isWord = w => typeof w === 'string' && w.length > 0 && [...w].every(decompose);
+for (const k of Object.keys(ITEM_WORDS)) ITEM_WORDS[k] = ITEM_WORDS[k].filter(isWord);
+const BASE = new Set(Object.values(ITEM_WORDS).flat());      // 기본 샘플 단어 전체
+let userWords = [];                                   // 오른쪽 목록에서 체크해 추가한 단어 (브라우저에 저장)
+let removedBase = new Set();                          // 사용자가 × 로 지운 기본 단어 (브라우저에 저장)
+const DEFAULT_CAT = '추가한 단어';                      // 새로 추가한 단어의 기본 분류 (삭제 불가)
+const loadJSON = (key, fallback) => { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch (_) { return fallback; } };
+userWords = loadJSON('inv_userWords', []).filter(w => isWord(w) && !BASE.has(w));
+removedBase = new Set(loadJSON('inv_removedBase', []).filter(w => BASE.has(w)));
+let cats = loadJSON('inv_cats', null);                // 분류 목록 (표시 순서)
+if (!Array.isArray(cats) || !cats.every(c => typeof c === 'string')) cats = [DEFAULT_CAT, ...Object.keys(ITEM_WORDS)];
+if (!cats.includes(DEFAULT_CAT)) cats.unshift(DEFAULT_CAT);
+const wordCat = {};                                   // 사용자가 지정한 단어 → 분류
+{ const raw = loadJSON('inv_wordCat', {});
+  if (raw && typeof raw === 'object') for (const [w, c] of Object.entries(raw)) if (isWord(w) && cats.includes(c)) wordCat[w] = c; }
+let order = loadJSON('inv_order', []).filter(isWord); // 분류 안에서의 표시 순서 (옮긴 단어는 맨 뒤로)
+const baseCat = {};
+for (const [cat, ws] of Object.entries(ITEM_WORDS)) ws.forEach(w => baseCat[w] = cat);
+const catOf = w => { const c = wordCat[w] || baseCat[w] || DEFAULT_CAT; return cats.includes(c) ? c : DEFAULT_CAT; };
+const saveWords = () => {
+  try {
+    localStorage.setItem('inv_userWords', JSON.stringify(userWords));
+    localStorage.setItem('inv_removedBase', JSON.stringify([...removedBase]));
+    localStorage.setItem('inv_cats', JSON.stringify(cats));
+    localStorage.setItem('inv_wordCat', JSON.stringify(wordCat));
+    localStorage.setItem('inv_order', JSON.stringify(order));
+  } catch (_) {}
+};
+const wordSet = () => new Set([...[...BASE].filter(w => !removedBase.has(w)), ...userWords]);
+const esc = t => t.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function syncOrder() {                                // order 에서 사라진 단어를 빼고, 새 단어를 뒤에 붙인다
+  const have = new Set();
+  order = order.filter(w => (BASE.has(w) || userWords.includes(w)) && !have.has(w) && have.add(w));
+  for (const w of [...BASE, ...userWords]) if (!have.has(w)) { order.push(w); have.add(w); }
+}
+
+const listL = document.getElementById('listL'), listR = document.getElementById('listR');
+const listLbody = document.getElementById('listLbody'), listRbody = document.getElementById('listRbody');
+let delMode = false;
+
+let openCat = null;                                    // 지금 열려 있는 폴더 (null 이면 폴더 목록)
+function renderLeft() {
+  syncOrder();
+  const W = wordSet(), byCat = new Map(cats.map(c => [c, []]));
+  for (const w of order) if (W.has(w)) byCat.get(catOf(w)).push(w);
+  if (openCat && !byCat.has(openCat)) openCat = null;
+  const keep = openCat ? listLbody.scrollTop : 0;
+  // '추가한 단어' 는 폴더로 접지 않고 항상 펼쳐 둔다 (새 단어가 들어오는 곳이라 여기서 다른 폴더로 바로 옮긴다)
+  const chipHtml = w => `<span class="chip x" data-w="${w}">${w}<button data-del="${w}" title="목록에서 제거">×</button></span>`;
+  const defWords = byCat.get(DEFAULT_CAT) || [];
+  let html = `<section class="cat defcat" data-cat="${esc(DEFAULT_CAT)}"><h3>${esc(DEFAULT_CAT)} · ${defWords.length}</h3><div class="chips">` +
+    (defWords.length ? defWords.map(chipHtml).join('') : '<span class="ph">여기로 끌어다 놓으세요</span>') + '</div></section>';
+  if (openCat === DEFAULT_CAT) openCat = null;
+  if (openCat) html = '';                              // 분류 안에서는 '추가한 단어' 를 숨긴다 (옮길 곳은 끌 때 아래에 나타난다)
+  if (openCat) {
+    const words = byCat.get(openCat);
+    html += `<div class="fhead"><button data-back title="분류 목록으로">← 분류</button><b>${esc(openCat)}</b><span class="cnt">${words.length}개</span></div>` +
+      '<div class="note" style="padding:2px 2px 8px">단어를 끌면 아래에 옮길 곳이 나타나요.</div><div class="chips">' +
+      (words.length ? words.map(chipHtml).join('') : '<span class="ph" style="font-size:15px;color:#b0a898;padding:4px 2px">비어 있는 폴더예요</span>') + '</div>';
+  } else {
+    html += '<div class="note" style="padding:10px 2px 6px">분류를 눌러 열어 보세요. 단어를 끌어서 분류 카드 위에 놓으면 들어가요.</div><div class="folders">';
+    for (const [cat, words] of byCat) {
+      if (cat === DEFAULT_CAT) continue;
+      const e = esc(cat);
+      const delc = delMode && !words.length ? `<button class="catdel" data-delcat="${e}" title="분류 삭제">×</button>` : '';
+      html += `<div class="folder${words.length ? '' : ' empty'}" data-cat="${e}" data-open="${e}" title="${e}">${delc}<span class="fn">${e}</span><span class="fc">${words.length}개</span></div>`;
+    }
+    html += '</div>';
+  }
+  if (removedBase.size) html += `<div class="note" style="padding:14px 2px 0">지운 기본 단어 ${removedBase.size}개 · <a href="#" data-restore style="color:#2f8a4a">모두 복원</a></div>`;
+  listLbody.innerHTML = html;
+  listLbody.scrollTop = keep;
+  // 폴더를 연 채로 단어를 끌 때만 나타나는 '넣을 폴더' 모음 (열린 폴더 자신은 제외)
+  document.getElementById('dropdock').innerHTML = `<div class="dt">${openCat ? '어느 분류로 옮길까요?' : '새 분류를 만들려면 여기에 놓으세요'}</div>` +
+    [...byCat].filter(([c]) => openCat && c !== openCat).map(([c, ws]) => `<div class="folder${ws.length ? '' : ' empty'}" data-cat="${esc(c)}"><span class="fn">${esc(c)}</span></div>`).join('') +
+    '<div class="folder nw" data-newcat><span class="plus">＋</span><span class="fn">새 분류</span></div>';
+  document.getElementById('listLn').textContent = W.size + '개';
+}
+// 단어를 목록에 넣거나 뺀다. 기본 단어는 목록에서 지워도 removedBase 에 기억해 두었다가 다시 체크하면 제자리로 돌아온다.
+function setUserWord(w, on) {
+  const inBase = BASE.has(w), has = wordSet().has(w);
+  if (on === has || !isWord(w)) return;
+  if (inBase) { if (on) removedBase.delete(w); else removedBase.add(w); }
+  else if (on) userWords.push(w);
+  else userWords = userWords.filter(x => x !== w);
+  saveWords(); renderLeft(); computeCandidates(); renderRight(true); scanMatches(false);
+}
+function moveWord(w, cat) {
+  if (!cats.includes(cat)) return;
+  wordCat[w] = cat;
+  order = order.filter(x => x !== w); order.push(w);
+  saveWords(); renderLeft();
+}
+function newCategory(w) {
+  const name = (prompt('새 분류 이름', '') || '').trim().slice(0, 12);
+  if (!name) return;
+  if (!cats.includes(name)) cats.push(name);
+  moveWord(w, name);
+}
+listLbody.addEventListener('click', e => {
+  const b = e.target.closest('[data-del]');
+  if (b) return setUserWord(b.dataset.del, false);
+  if (e.target.closest('[data-back]')) { openCat = null; renderLeft(); listLbody.scrollTop = 0; return; }
+  const dc = e.target.closest('[data-delcat]');
+  if (dc) {                                            // 비어 있는 분류만 삭제
+    const name = dc.dataset.delcat;
+    if ([...wordSet()].some(w => catOf(w) === name)) return;
+    cats = cats.filter(c => c !== name);
+    for (const w of Object.keys(wordCat)) if (wordCat[w] === name) delete wordCat[w];
+    saveWords(); return renderLeft();
+  }
+  const fo = e.target.closest('[data-open]');
+  if (fo) { openCat = fo.dataset.open; renderLeft(); listLbody.scrollTop = 0; return; }
+  if (e.target.closest('[data-restore]')) { e.preventDefault(); removedBase.clear(); saveWords(); renderLeft(); computeCandidates(); renderRight(true); scanMatches(false); }
+});
+listRbody.addEventListener('change', e => { const i = e.target.closest('input[data-w]'); if (i) setUserWord(i.dataset.w, i.checked); });
+document.getElementById('delMode').addEventListener('change', e => {
+  delMode = e.target.checked; listL.classList.toggle('delmode', delMode); renderLeft();
+});
+
+// ── 단어 칩을 끌어서 분류 지정 (포인터 이벤트 기반이라 마우스/터치 공통)
+let chipDrag = null;
+const overTarget = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest('#listL [data-cat], #listL [data-newcat]'); };
+const clearOver = () => listL.querySelectorAll('.over').forEach(el => el.classList.remove('over'));
+// 화면 좌표가 격자 안이면 그 칸
+function gridCellAt(x, y) {
+  const g = gridEl.getBoundingClientRect();
+  if (x < g.left || x >= g.right || y < g.top || y >= g.bottom) return null;
+  return { col: clamp(Math.floor((x - g.left) / CARD), 0, COLS - 1), row: clamp(Math.floor((y - g.top) / CARD), 0, ROWS - 1) };
+}
+listLbody.addEventListener('pointerdown', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip || e.target.closest('button') || e.button !== 0) return;
+  chipDrag = { w: chip.dataset.w, sx: e.clientX, sy: e.clientY, chip, ghost: null };
+});
+window.addEventListener('pointermove', e => {
+  const d = chipDrag;
+  if (!d) return;
+  if (!d.ghost) {
+    if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 6) return;
+    d.ghost = document.createElement('div');
+    d.ghost.className = 'chip ghost'; d.ghost.textContent = d.w;
+    document.body.appendChild(d.ghost);
+    d.chip.classList.add('src');
+    listL.classList.add('chipdrag');                    // 새 분류 드롭 영역을 패널 아래에 표시
+  }
+  d.ghost.style.left = e.clientX + 'px'; d.ghost.style.top = e.clientY + 'px';
+  clearOver();
+  const t = overTarget(e.clientX, e.clientY);
+  if (t) t.classList.add('over');
+  const gc = t ? null : gridCellAt(e.clientX, e.clientY);          // 격자 위면 글자 카드가 놓일 자리를 미리 보여준다
+  const run = gc && findRun(Math.min([...d.w].length, COLS), gc);
+  if (run) showCell(run, 'empty', Math.min([...d.w].length, COLS)); else hideCell();
+  const r = listLbody.getBoundingClientRect();          // 패널 위/아래 가장자리에 가면 자동 스크롤
+  if (e.clientX > r.left && e.clientX < r.right) {
+    if (e.clientY < r.top + 34) listLbody.scrollTop -= 12;
+    else if (e.clientY > r.bottom - 34) listLbody.scrollTop += 12;
+  }
+});
+function endChipDrag(e, drop) {
+  const d = chipDrag; chipDrag = null;
+  if (!d || !d.ghost) return;
+  const t = drop && e ? overTarget(e.clientX, e.clientY) : null;   // 정리하기 전에 계산 (새 분류 영역이 사라지면 레이아웃이 바뀐다)
+  const gc = drop && e && !t ? gridCellAt(e.clientX, e.clientY) : null;
+  d.ghost.remove(); d.chip.classList.remove('src'); clearOver(); hideCell(); listL.classList.remove('chipdrag');
+  if (gc) {                                             // 격자에 놓으면 단어를 글자 카드로 바꿔서 추가
+    if (addWord(d.w, gc) < [...d.w].length) shakeInput();
+    return;
+  }
+  if (!t) return;
+  if (t.dataset.newcat !== undefined) newCategory(d.w);
+  else if (t.dataset.cat !== undefined && catOf(d.w) !== t.dataset.cat) moveWord(d.w, t.dataset.cat);
+}
+window.addEventListener('pointerup', e => endChipDrag(e, true));
+window.addEventListener('pointercancel', e => endChipDrag(e, false));
+window.addEventListener('keydown', e => { if (e.key === 'Escape') endChipDrag(null, false); });
+
+// ───────────── 아이템 목록 저장 / 불러오기 (유니티용 JSON) ─────────────
+// 파일 형식 (data/README.md 참고): schemaVersion, savedAt, categories[], items[{word, category, syllables[{letter,cho,jung,jong}]}]
+// 브라우저의 File System Access API 로 같은 파일 핸들을 기억해 두었다가 다음 저장 때 그 파일을 그대로 덮어쓴다.
+const SAVE_SCHEMA = 1, FILE_TYPES = [{ description: 'JSON', accept: { 'application/json': ['.json'] } }];
+const saveStat = document.getElementById('saveStat');
+function setStat(msg, err = false) { saveStat.textContent = msg; saveStat.title = msg; saveStat.classList.toggle('err', err); }
+
+function buildExport() {
+  syncOrder();
+  const W = wordSet(), items = [];
+  for (const cat of cats) for (const w of order) if (W.has(w) && catOf(w) === cat)
+    items.push({ word: w, category: cat, syllables: [...w].map(ch => ({ letter: ch, ...decompose(ch) })) });
+  return { schemaVersion: SAVE_SCHEMA, savedAt: new Date().toISOString(), categories: [...cats], items };
+}
+// 저장 파일의 내용으로 현재 목록을 통째로 바꾼다
+function applyExport(d) {
+  if (!d || d.schemaVersion !== SAVE_SCHEMA || !Array.isArray(d.items) || !Array.isArray(d.categories)) throw new Error('아이템 목록 파일 형식이 아닙니다');
+  const seen = new Set(), items = d.items.filter(it => it && isWord(it.word) && !seen.has(it.word) && seen.add(it.word));
+  const nc = [...new Set(d.categories.filter(c => typeof c === 'string' && c))];
+  if (!nc.includes(DEFAULT_CAT)) nc.unshift(DEFAULT_CAT);
+  for (const it of items) if (typeof it.category === 'string' && it.category && !nc.includes(it.category)) nc.push(it.category);
+  cats = nc;
+  for (const k of Object.keys(wordCat)) delete wordCat[k];
+  for (const it of items) wordCat[it.word] = cats.includes(it.category) ? it.category : DEFAULT_CAT;
+  userWords = items.map(it => it.word).filter(w => !BASE.has(w));
+  removedBase = new Set([...BASE].filter(w => !seen.has(w)));
+  order = items.map(it => it.word);
+  saveWords(); renderLeft(); computeCandidates(); renderRight(false); scanMatches(false);
+  return items.length;
+}
+
+// 파일 핸들 보관 (IndexedDB)
+const idbOpen = () => new Promise((res, rej) => { const r = indexedDB.open('inv_files', 1); r.onupgradeneeded = () => r.result.createObjectStore('h'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const idbGet = async k => { try { const db = await idbOpen(); return await new Promise(res => { const q = db.transaction('h').objectStore('h').get(k); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); } catch (_) { return null; } };
+const idbSet = async (k, v) => { try { const db = await idbOpen(); await new Promise(res => { const t = db.transaction('h', 'readwrite'); t.objectStore('h').put(v, k); t.oncomplete = t.onerror = () => res(); }); } catch (_) {} };
+async function grantedHandle(mode) {                    // 기억해 둔 파일 핸들. 권한이 없으면 (클릭 직후이므로) 한 번 요청한다
+  const h = await idbGet('itemFile');
+  if (!h) return null;
+  try {
+    if (await h.queryPermission({ mode }) === 'granted' || await h.requestPermission({ mode }) === 'granted') return h;
+  } catch (_) {}
+  return null;
+}
+const looksLikeItemFile = t => { try { const d = JSON.parse(t); return d && d.schemaVersion != null && Array.isArray(d.items); } catch (_) { return false; } };
+const hhmm = () => new Date().toTimeString().slice(0, 5);
+
+async function saveItemFile(forcePick) {
+  const text = JSON.stringify(buildExport(), null, 2) + '\n', n = buildExport().items.length;
+  if (!window.showSaveFilePicker) {                      // 파일 접근 API 가 없는 브라우저: 내려받기
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = 'item_words.json'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    return setStat(`item_words.json 내려받음 (${n}개) — 이 브라우저는 덮어쓰기를 지원하지 않아요`);
+  }
+  try {
+    let h = forcePick ? null : await grantedHandle('readwrite');
+    if (!h) {
+      setStat('저장할 파일을 고르세요 (예: data/item_words.json)');
+      h = await window.showSaveFilePicker({ id: 'itemWords', suggestedName: 'item_words.json', types: FILE_TYPES });
+      const cur = await (await h.getFile()).text();      // 다른 파일을 실수로 덮어쓰지 않도록 확인
+      if (cur.trim() && !looksLikeItemFile(cur) && !confirm(`"${h.name}" 은(는) 아이템 목록 파일이 아닌 것 같습니다. 그래도 덮어쓸까요?`)) return setStat('저장 취소');
+      await idbSet('itemFile', h);
+    }
+    const w = await h.createWritable();
+    await w.write(text); await w.close();
+    setStat(`${h.name} 저장됨 · ${n}개 · ${hhmm()}`);
+  } catch (e) { setStat(e.name === 'AbortError' ? '저장 취소' : '저장 실패: ' + e.message, e.name !== 'AbortError'); }
+}
+async function loadItemFile(forcePick) {
+  try {
+    if (!window.showOpenFilePicker) return document.getElementById('fileLoad').click();
+    let h = forcePick ? null : await grantedHandle('read');
+    if (!h) { [h] = await window.showOpenFilePicker({ id: 'itemWords', types: FILE_TYPES }); await idbSet('itemFile', h); }
+    const n = applyExport(JSON.parse(await (await h.getFile()).text()));
+    setStat(`${h.name} 불러옴 · ${n}개 · ${hhmm()}`);
+  } catch (e) { setStat(e.name === 'AbortError' ? '불러오기 취소' : '불러오기 실패: ' + e.message, e.name !== 'AbortError'); }
+}
+document.getElementById('btnSaveItems').addEventListener('click', e => saveItemFile(e.shiftKey));
+document.getElementById('btnLoadItems').addEventListener('click', e => loadItemFile(e.shiftKey));
+document.getElementById('fileLoad').addEventListener('change', async e => {     // 파일 접근 API 가 없을 때의 불러오기
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try { setStat(`${f.name} 불러옴 · ${applyExport(JSON.parse(await f.text()))}개 · ${hhmm()}`); } catch (err) { setStat('불러오기 실패: ' + err.message, true); }
+});
+
+// ── 만들 수 있는 글자 (오른쪽 패널)
+// 격자의 완성된 글자 카드를 쪼개지 않고 순서만 바꿔서 만들 수 있는 단어. 낱개 자모 카드는 쓰지 않는다.
+// 사용자가 배치한 순서를 먼저 보여준다:
+//   1순위: 같은 줄에서 붙어 있는 카드의 연속 부분 (닭고기 → 닭고기 / 닭고, 고기 / 닭, 고, 기)
+//   2순위: 배치 순서(위→아래, 왼쪽→오른쪽)를 유지한 채 건너뛴 조합 (닭기)
+//   3순위: 그 밖의 모든 순열 (뜻 없는 것 포함)
+//  listed : 지금 단어 목록에 있는 단어 중 만들 수 있는 것 (전수 검사, 위 순서로 정렬)
+//  groups : 그 밖의 배열을 글자 수별로. 3글자 이상은 1순위(지금 놓인 그대로)만 보여준다 — 경우의 수가 폭발해 렉이 걸리므로.
+//           2글자 이하만 2·3순위까지 만들고 총 ARR_CAP 개까지만 생성
+const ARR_CAP = 3000, SUBSEQ_MAX = 14, FULL_LEN = 2;   // FULL_LEN 글자까지만 모든 경우의 수를 만든다. 그보다 길면 이미 놓인 순서(붙어 있는 연속 부분)만
+let cand = { letters: [], partial: 0, arr: { listed: [], groups: [], truncated: false } }, poolSig = null;
+const partialCount = () => cards.filter(c => c.kind === 'syl' && !isDone(c)).length;   // 슬롯이 비어 있는 글자 카드
+
+// 완성된 글자 카드를 배치 순서대로: seq(위→아래, 왼쪽→오른쪽), runs(같은 줄에서 붙어 있는 연속 구간)
+function placedInfo() {
+  const done = cards.filter(isDone).sort((a, b) => a.row - b.row || a.col - b.col);
+  const seq = done.map(letterOf), runs = [];
+  let cur = null, prev = null;
+  done.forEach((k, i) => {
+    if (cur && prev.row === k.row && prev.col + 1 === k.col) cur.s += seq[i];
+    else runs.push(cur = { s: seq[i], off: i });
+    prev = k;
+  });
+  return { seq, runs, key: runs.map(r => r.off + ':' + r.s).join('|') };
+}
+
+function computeArrangements({ seq, runs }) {
+  const n = seq.length, W = wordSet(), cnt = new Map(), listed = [], groups = [];
+  seq.forEach(l => cnt.set(l, (cnt.get(l) || 0) + 1));
+  // 단어 w 의 배치 순위: [티어, 위치]
+  const rank = w => {
+    let best = null;
+    for (const r of runs) { const i = r.s.indexOf(w); if (i >= 0 && (best === null || r.off + i < best)) best = r.off + i; }
+    if (best !== null) return [0, best];
+    let j = 0, first = -1;
+    for (let i = 0; i < n && j < w.length; i++) if (seq[i] === w[j]) { if (!j) first = i; j++; }
+    return j === w.length ? [1, first] : [2, 0];
+  };
+  for (const w of W) {
+    if (w.length > n) continue;
+    const need = new Map();
+    if ([...w].every(ch => { need.set(ch, (need.get(ch) || 0) + 1); return need.get(ch) <= (cnt.get(ch) || 0); })) listed.push(w);
+  }
+  const rk = new Map(listed.map(w => [w, rank(w)]));
+  listed.sort((a, b) => rk.get(a)[0] - rk.get(b)[0] || rk.get(a)[1] - rk.get(b)[1] || b.length - a.length);
+
+  let total = 0, truncated = false;
+  const distinct = [...cnt.keys()];
+  for (let len = 1; len <= n; len++) {                    // 상한에 걸려도 1순위(붙어 있는 연속 부분)는 계속 채운다
+    const words = [], seen = new Set();
+    const push = w => { if (seen.has(w) || W.has(w)) return false; seen.add(w); words.push(w); return true; };
+    // 1순위: 붙어 있는 연속 부분
+    for (const r of runs) for (let i = 0; i + len <= r.s.length; i++) push(r.s.substr(i, len));
+    // 2순위: 배치 순서를 유지한 부분 수열
+    if (len <= FULL_LEN && n <= SUBSEQ_MAX && !truncated) {
+      const idx = [];
+      const rec = start => {
+        if (truncated) return;
+        if (idx.length === len) { if (push(idx.map(i => seq[i]).join('')) && ++total >= ARR_CAP) truncated = true; return; }
+        for (let i = start; i < n; i++) { idx.push(i); rec(i + 1); idx.pop(); if (truncated) return; }
+      };
+      rec(0);
+    }
+    // 3순위: 나머지 모든 순열
+    const cur = [];
+    const dfs = () => {
+      if (truncated) return;
+      if (cur.length === len) { if (push(cur.join('')) && ++total >= ARR_CAP) truncated = true; return; }
+      for (const l of distinct) {
+        const c = cnt.get(l);
+        if (!c) continue;
+        cnt.set(l, c - 1); cur.push(l); dfs(); cur.pop(); cnt.set(l, c);
+        if (truncated) return;
+      }
+    };
+    if (len <= FULL_LEN && !truncated) dfs();
+    if (words.length) groups.push({ len, words });
+  }
+  return { listed, groups, truncated };
+}
+
+function computeCandidates() {
+  const info = placedInfo();
+  cand = { letters: info.seq, partial: partialCount(), arr: computeArrangements(info) };
+}
+function renderRight(keepScroll) {
+  const top = keepScroll ? listRbody.scrollTop : 0, W = wordSet();
+  const chip = w => { const inL = W.has(w);
+    return `<label class="opt${inL ? ' in' : ''}"><input type="checkbox" data-w="${w}"${inL ? ' checked' : ''}><span>${w}</span></label>`; };
+  const sec = (title, words) => `<h3>${title} · ${words.length}</h3><div class="chips">${words.map(chip).join('')}</div>`;
+  const n = cand.arr.listed.length + cand.arr.groups.reduce((a, g) => a + g.words.length, 0);
+  document.getElementById('listRn').textContent = cand.letters.length ? `글자 카드 ${cand.letters.length}장 · ${n}${cand.arr.truncated ? '+' : ''}개` : '';
+  listRnote.textContent = !cand.letters.length
+    ? '완성된 글자 카드가 없습니다. (낱개 자모 카드는 쓰지 않습니다)'
+    : `글자 카드 ${cand.letters.join(' ')} 로 만들 수 있는 단어 (배치한 순서 우선)` +
+      (cand.partial ? ` · 빈 슬롯이 있는 카드 ${cand.partial}장 제외` : '') +
+      (cand.arr.truncated ? ` — 2글자 이하 배열은 처음 ${ARR_CAP}개만 표시` : ' · 체크하면 왼쪽 목록에 추가') +
+      (cand.letters.length >= 3 ? ' · 3글자 이상은 놓인 그대로의 단어만 표시' : '');
+  listRbody.innerHTML = !cand.letters.length ? '' :
+    (cand.arr.listed.length ? sec('목록에 있는 단어', cand.arr.listed) : '') +
+    cand.arr.groups.map(g => sec(g.len + '글자', g.words)).join('');
+  listRbody.scrollTop = top;
+}
+const listRnote = document.getElementById('listRnote');
+
+// ── 단어 완성 감지: 같은 줄에서 왼쪽→오른쪽으로 연속된 완성 글자 카드가 목록의 단어와 같으면 초록 오버레이
+const isDone = k => k.kind === 'syl' && k.s.cho && k.s.jung && (k.s.jong || !k.g.jong);   // 비어 있는 슬롯이 없는 글자
+const letterOf = k => compose(k.s.cho, k.s.jung, k.s.jong || '');
+let prevMatches = new Set();
+function scanMatches(flash) {
+  const W = wordSet(), cur = new Set(), found = [];
+  const at = new Map(cards.map(c => [c.row * COLS + c.col, c]));
+  for (let r = 0; r < ROWS; r++) for (let c0 = 0; c0 < COLS; c0++) {
+    let w = '', ids = '';
+    for (let c1 = c0; c1 < COLS; c1++) {
+      const k = at.get(r * COLS + c1);
+      if (!k || !isDone(k)) break;
+      w += letterOf(k); ids += k.id + ',';
+      if (W.has(w)) { const key = `${r}:${c0}:${w}:${ids}`; cur.add(key); found.push({ r, c0, len: c1 - c0 + 1, w, key }); }
+    }
+  }
+  if (flash) {
+    // 겹치는 단어는 글자 수가 가장 많은 것만 표시 (술병 → '술', '병' 은 숨기고 '술병' 만). 같은 길이면 왼쪽 것 우선
+    const used = new Set(), shown = [];
+    for (const f of [...found].sort((a, b) => b.len - a.len || a.r - b.r || a.c0 - b.c0)) {
+      const cells = Array.from({ length: f.len }, (_, k) => f.r + ':' + (f.c0 + k));
+      if (cells.some(c => used.has(c))) continue;
+      cells.forEach(c => used.add(c)); shown.push(f);
+    }
+    // 이미 완성돼 있던 단어는 숨겨져 있었더라도 '새로 완성'으로 치지 않는다 (prevMatches 는 전체 기준)
+    for (const f of shown) if (!prevMatches.has(f.key)) showDone(f);
+  }
+  prevMatches = cur;
+}
+function showDone(f) {
+  const ov = document.createElement('div');
+  ov.className = 'done-ov';
+  Object.assign(ov.style, { left: GX + f.c0 * CARD + 'px', top: GY + f.r * CARD + 'px', width: f.len * CARD + 'px', height: CARD + 'px' });
+  board.appendChild(ov);
+  setTimeout(() => ov.remove(), 1000);
+  listLbody.querySelectorAll('.folder[data-open]').forEach(fo => {          // 닫혀 있는 폴더에 든 단어면 폴더가 반짝
+    if (fo.dataset.open !== catOf(f.w)) return;
+    fo.classList.remove('flash'); void fo.offsetWidth; fo.classList.add('flash');
+    setTimeout(() => fo.classList.remove('flash'), 1000);
+  });
+  listLbody.querySelectorAll(`.chip[data-w="${f.w}"]`).forEach(ch => {
+    ch.classList.remove('flash'); void ch.offsetWidth; ch.classList.add('flash');
+    setTimeout(() => ch.classList.remove('flash'), 1000);
+  });
+}
+
+let refreshT = 0;
+function scheduleRefresh() {
+  clearTimeout(refreshT);
+  refreshT = setTimeout(() => {
+    const sig = placedInfo().key + '#' + partialCount();
+    if (sig !== poolSig) { poolSig = sig; computeCandidates(); renderRight(true); }
+    scanMatches(true);
+  }, 60);
+}
+renderLeft();
+computeCandidates(); renderRight(false);
+
+layoutGrid();
+syncEmpty();
+const q = new URLSearchParams(location.search).get('w');
+if (q) start(q);
+</script>
+</body>
+</html>
