@@ -37,41 +37,47 @@ namespace Hangeul.App
         public void SetWords(ItemWordSet words) => _words = words ?? new ItemWordSet();
 
         /// <summary>
+        /// 지금 격자에서 완성돼 있는 단어를 전부 찾는다(겹쳐서 숨겨질 것까지 포함). 스캐너의 상태(알림 기준·Shown)는 바꾸지 않는다.
+        /// 가방 흔들기처럼 "이미 완성된 단어의 카드"를 보호해야 하는 곳에서 쓴다.
+        /// </summary>
+        public List<WordMatch> FindAll(GridModel grid)
+        {
+            var found = new List<WordMatch>();
+            if (_words.Count == 0) return found;
+
+            var at = new Dictionary<int, Card>();
+            foreach (var c in grid.Cards)
+                if (grid.InGrid(c.Col, c.Row)) at[c.Row * grid.Cols + c.Col] = c;
+
+            var word = new StringBuilder();
+            var ids = new StringBuilder();
+            for (int r = 0; r < grid.Rows; r++)
+                for (int c0 = 0; c0 < grid.Cols; c0++)
+                {
+                    word.Clear(); ids.Clear();
+                    for (int c1 = c0; c1 < grid.Cols; c1++)
+                    {
+                        if (!at.TryGetValue(r * grid.Cols + c1, out var card) || !card.IsComplete) break;
+                        word.Append(card.Letter.Value);
+                        ids.Append(card.Id).Append(',');
+                        if (word.Length > _words.MaxLength) break;
+
+                        string w = word.ToString();
+                        if (!_words.Contains(w)) continue;
+                        found.Add(new WordMatch(w, r, c0, c1 - c0 + 1, $"{r}:{c0}:{w}:{ids}"));
+                    }
+                }
+            return found;
+        }
+
+        /// <summary>
         /// 격자를 스캔한다. notify=true면 이번에 새로 보이게 된 매치를 돌려주고, false면 빈 목록
         /// (단어 추가/격자 크기 변경/불러오기 직후처럼 이미 완성돼 있던 것을 알리지 않을 때).
         /// </summary>
         public List<WordMatch> Scan(GridModel grid, bool notify)
         {
-            var current = new HashSet<string>();
-            var found = new List<WordMatch>();
-
-            if (_words.Count > 0)
-            {
-                var at = new Dictionary<int, Card>();
-                foreach (var c in grid.Cards)
-                    if (grid.InGrid(c.Col, c.Row)) at[c.Row * grid.Cols + c.Col] = c;
-
-                var word = new StringBuilder();
-                var ids = new StringBuilder();
-                for (int r = 0; r < grid.Rows; r++)
-                    for (int c0 = 0; c0 < grid.Cols; c0++)
-                    {
-                        word.Clear(); ids.Clear();
-                        for (int c1 = c0; c1 < grid.Cols; c1++)
-                        {
-                            if (!at.TryGetValue(r * grid.Cols + c1, out var card) || !card.IsComplete) break;
-                            word.Append(card.Letter.Value);
-                            ids.Append(card.Id).Append(',');
-                            if (word.Length > _words.MaxLength) break;
-
-                            string w = word.ToString();
-                            if (!_words.Contains(w)) continue;
-                            string key = $"{r}:{c0}:{w}:{ids}";
-                            current.Add(key);
-                            found.Add(new WordMatch(w, r, c0, c1 - c0 + 1, key));
-                        }
-                    }
-            }
+            var found = FindAll(grid);
+            var current = new HashSet<string>(found.Select(m => m.Key));
 
             // 겹치는 매치는 긴 것 우선(같은 길이면 위쪽·왼쪽)
             var used = new HashSet<(int, int)>();

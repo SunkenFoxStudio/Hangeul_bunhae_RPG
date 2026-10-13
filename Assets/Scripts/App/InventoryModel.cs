@@ -25,6 +25,13 @@ namespace Hangeul.App
 
     public enum TransformResult { None, Rotated, Split, Rejected }
 
+    public readonly struct ShakeResult
+    {
+        public readonly int Rotated;   // 회전한 자모 카드 수
+        public readonly int Merged;    // 다른 카드에 조립된(사라진) 자모 카드 수
+        public ShakeResult(int rotated, int merged) { Rotated = rotated; Merged = merged; }
+    }
+
     public readonly struct AddWordResult
     {
         public readonly int Added;
@@ -242,6 +249,75 @@ namespace Hangeul.App
             quarterTurns = k;
             Notify(ChangeType.Updated, c);
             return TransformResult.Rotated;
+        }
+
+        // ───── 가방 흔들기 ─────
+        /// <summary>
+        /// 가방을 흔든다: 인벤토리 안의 <b>자모 카드</b>(완성된 음절 카드는 건드리지 않는다)를 무작위 순서로 하나씩 보면서
+        /// mergeChance 확률로 합칠 수 있는 아무 카드에 조립하고, 아니면 rotateChance 확률로 모양이 바뀌는 각도로 회전한다.
+        /// 나머지는 그대로 둔다 — 모든 카드가 조립될 필요는 없다. 금지 음절이 되는 조립은 후보에서 제외한다.
+        /// <b>이미 완성된 단어에 속한 카드에는 조립하지 않는다</b>(흔들다가 새로 완성된 단어도 그 순간부터 보호한다).
+        /// 합쳐진 카드는 계속 처리 대상이 되므로(자모로 남아 있으면) 한 번에 연쇄 조립이 일어날 수 있다.
+        /// rng를 넘기면 결과를 재현할 수 있다(테스트용).
+        /// </summary>
+        public ShakeResult ShakeBag(Random rng, float mergeChance = 0.55f, float rotateChance = 0.3f)
+        {
+            rng = rng ?? new Random();
+            var jamo = Grid.Cards.Where(c => c.Kind == CardKind.Jamo).ToList();
+            for (int i = jamo.Count - 1; i > 0; i--)             // 처리 순서를 섞는다
+            {
+                int j = rng.Next(i + 1);
+                (jamo[i], jamo[j]) = (jamo[j], jamo[i]);
+            }
+
+            var guarded = CardsInCompletedWords();   // 완성된 단어를 이루는 카드: 조립 대상에서 제외
+
+            int rotated = 0, merged = 0;
+            foreach (var c in jamo)
+            {
+                if (c.Kind != CardKind.Jamo || !Grid.Cards.Contains(c)) continue;   // 앞에서 다른 카드에 합쳐졌거나 음절이 됐다
+
+                double roll = rng.NextDouble();
+                bool didMerge = false;
+                if (roll < mergeChance)
+                {
+                    var targets = Grid.Cards
+                        .Where(o => o != c && !guarded.Contains(o.Id) && CardOps.TryCombine(c, o, false, out _) == CombineOutcome.Ok)
+                        .ToList();
+                    if (targets.Count > 0)
+                        didMerge = TryMerge(c, targets[rng.Next(targets.Count)]) == CombineOutcome.Ok;
+                    if (didMerge)
+                    {
+                        merged++;
+                        guarded = CardsInCompletedWords();   // 이번 조립으로 단어가 완성됐을 수 있다
+                    }
+                }
+
+                if (!didMerge && roll >= mergeChance && roll < mergeChance + rotateChance)   // 조립이 걸렸는데 대상이 없으면 그대로 둔다
+                {
+                    var turns = Enumerable.Range(1, 3).Where(k => RotationTable.Rotate(c.Jamo, k) != c.Jamo).ToList();
+                    if (turns.Count > 0)
+                    {
+                        c.Jamo = RotationTable.Rotate(c.Jamo, turns[rng.Next(turns.Count)]);
+                        Notify(ChangeType.Updated, c);
+                        rotated++;
+                    }
+                }
+            }
+            return new ShakeResult(rotated, merged);
+        }
+
+        // 지금 완성돼 있는 단어(겹쳐서 숨겨진 것 포함)를 이루는 카드의 아이디
+        HashSet<int> CardsInCompletedWords()
+        {
+            var ids = new HashSet<int>();
+            foreach (var m in Scanner.FindAll(Grid))
+                for (int k = 0; k < m.Length; k++)
+                {
+                    var card = Grid.CardAt(m.Col + k, m.Row);
+                    if (card != null) ids.Add(card.Id);
+                }
+            return ids;
         }
 
         // ───── 모서리 드래그 회전 ─────

@@ -68,6 +68,7 @@ namespace Hangeul.Game.Editor
             AddWordDock(panel);
             AddTrashZone(panel);
             AddModeToggle(panel);
+            AddShakeButton(panel);
             EnsureEventSystem();
             Selection.activeGameObject = panel.gameObject;
         }
@@ -89,6 +90,7 @@ namespace Hangeul.Game.Editor
             if (panel.GetComponentInChildren<WordInputView>(true) == null) AddWordDock(panel);
             AddTrashZone(panel);
             AddModeToggle(panel);
+            AddShakeButton(panel);
             EnsureEventSystem();
             Selection.activeGameObject = grid.gameObject;
         }
@@ -162,6 +164,31 @@ namespace Hangeul.Game.Editor
             so.FindProperty("inventory").objectReferenceValue = panel.GetComponentInChildren<InventoryView>(true);
             so.FindProperty("input").objectReferenceValue = field;
             so.FindProperty("addButton").objectReferenceValue = button;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // '가방 흔들기' 버튼 (모드 전환 버튼 왼쪽). 이미 있으면 건너뛴다.
+        static void AddShakeButton(RectTransform panel)
+        {
+            if (panel.GetComponentInChildren<ShakeBagButton>(true) != null) return;
+
+            var font = LoadFont();
+            var rt = NewRect("ShakeBagButton", panel);
+            rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(1f, 1f);
+            rt.anchoredPosition = new Vector2(-210f, -4f);
+            rt.sizeDelta = new Vector2(160f, 34f);
+            var img = rt.gameObject.AddComponent<Image>();
+            img.color = new Color(0.45f, 0.28f, 0.14f, 1f);
+            var button = rt.gameObject.AddComponent<Button>();
+            button.targetGraphic = img;
+            var label = NewText("Label", rt, font, 20, new Color(0.97f, 0.9f, 0.76f), "가방 흔들기");
+            label.alignment = TextAnchor.MiddleCenter;
+
+            var shake = Undo.AddComponent<ShakeBagButton>(rt.gameObject);
+            var so = new SerializedObject(shake);
+            so.FindProperty("inventory").objectReferenceValue = panel.GetComponentInChildren<InventoryView>(true);
+            so.FindProperty("button").objectReferenceValue = button;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 

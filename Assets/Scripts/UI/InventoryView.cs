@@ -90,6 +90,8 @@ namespace Hangeul.UI
         readonly Dictionary<int, CardView> _views = new Dictionary<int, CardView>();
         readonly HoHoldTracker _hold = new HoHoldTracker();
         readonly Dictionary<int, ChunkRef> _chunks = new Dictionary<int, ChunkRef>();
+        readonly System.Random _rng = new System.Random();
+        bool _shaking;
         Image _highlight;
         GridLinesGraphic _gridLines;
         RectTransform _cellRoot;
@@ -210,6 +212,33 @@ namespace Hangeul.UI
         void OpenSaveFolder() => Application.OpenURL("file://" + Application.persistentDataPath);
 
         void OnRectTransformDimensionsChange() => _dirty = true;
+
+        // ───── 가방 흔들기 (조립 모드) ─────
+        public bool IsShaking => _shaking;
+
+        /// <summary>
+        /// 모든 카드를 잠깐 흔든 뒤, 자모 카드들을 무작위로 회전/조립한다(InventoryModel.ShakeBag).
+        /// 흔드는 동안에는 카드를 잡을 수 없다. 조립 모드에서만 동작한다.
+        /// </summary>
+        public void ShakeBag()
+        {
+            if (_shaking || _drag != null || Model.Mode != InventoryMode.Assemble) return;
+            StartCoroutine(ShakeRoutine());
+        }
+
+        System.Collections.IEnumerator ShakeRoutine()
+        {
+            _shaking = true;
+            foreach (var v in new List<CardView>(_views.Values)) v.Shake();
+            yield return new WaitForSecondsRealtime(0.35f);
+
+            if (Model.Mode == InventoryMode.Assemble)
+            {
+                var r = Model.ShakeBag(_rng);
+                Debug.Log($"[InventoryView] 가방 흔들기: 회전 {r.Rotated}장, 조립 {r.Merged}장");
+            }
+            _shaking = false;
+        }
 
         // ───── 모드 ─────
         public InventoryMode Mode => Model.Mode;
@@ -438,7 +467,7 @@ namespace Hangeul.UI
         {
             // 우클릭 드래그를 놓을 때는 EndDrag보다 먼저 Click이 오므로, 드래그였던 입력은 클릭으로 치지 않는다
             if (e.dragging || _drag != null) return;
-            if (Model.Mode == InventoryMode.Bag) return;
+            if (Model.Mode == InventoryMode.Bag || _shaking) return;
             if (e.button == PointerEventData.InputButton.Right) QuickTransform(v, false);
             else if (e.button == PointerEventData.InputButton.Left && e.clickCount >= 2) QuickTransform(v, true);
         }
@@ -452,6 +481,7 @@ namespace Hangeul.UI
         public void BeginDrag(CardView v, PointerEventData e)
         {
             _drag = null;
+            if (_shaking) return;
             bool right = e.button == PointerEventData.InputButton.Right;
             if (logClickTargets) Debug.Log($"[InventoryView] BeginDrag {v.name} button={e.button}");
             if (!right && e.button != PointerEventData.InputButton.Left) return;
