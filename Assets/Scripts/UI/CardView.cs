@@ -71,7 +71,51 @@ namespace Hangeul.UI
             Refresh();
         }
 
-        public void SetPosition(Vector2 topLeftInLayer) => _rect.anchoredPosition = new Vector2(topLeftInLayer.x, -topLeftInLayer.y);
+        /// <summary>카드 왼쪽 위를 격자 레이어 좌표(y 아래 방향)로 즉시 옮긴다. 진행 중인 이동 연출은 취소된다.</summary>
+        public void SetPosition(Vector2 topLeftInLayer)
+        {
+            _moveActive = false;
+            _rect.anchoredPosition = new Vector2(topLeftInLayer.x, -topLeftInLayer.y);
+        }
+
+        Vector2 TopLeft => new Vector2(_rect.anchoredPosition.x, -_rect.anchoredPosition.y);
+
+        // ───── 이동 연출 ─────
+        Vector2 _moveFrom, _moveTo;
+        float _moveT, _moveDur;
+        bool _moveActive;
+
+        /// <summary>현재 위치에서 목표 위치(격자 레이어 좌표)로 부드럽게 옮긴다.</summary>
+        public void MoveTo(Vector2 topLeftInLayer, float seconds)
+        {
+            if ((TopLeft - topLeftInLayer).sqrMagnitude < 0.25f) { SetPosition(topLeftInLayer); return; }
+            _moveFrom = TopLeft;
+            _moveTo = topLeftInLayer;
+            _moveT = 0f;
+            _moveDur = Mathf.Max(0.01f, seconds);
+            _moveActive = true;
+        }
+
+        const float ShrunkScale = 0.75f;
+        bool _shrunk;
+
+        /// <summary>쓰레기통 위에 올라와 있는 동안 카드를 살짝 작게 보여준다 (즉시 전환).</summary>
+        public void SetShrunk(bool on)
+        {
+            _shrunk = on;
+            _face.localScale = Vector3.one * (on ? ShrunkScale : 1f);
+        }
+
+        void UpdateMove()
+        {
+            if (!_moveActive) return;
+            _moveT += Time.unscaledDeltaTime;
+            float u = Mathf.Clamp01(_moveT / _moveDur);
+            float ease = 1f - (1f - u) * (1f - u);
+            var p = Vector2.Lerp(_moveFrom, _moveTo, ease);
+            _rect.anchoredPosition = new Vector2(p.x, -p.y);
+            if (u >= 1f) _moveActive = false;
+        }
 
         public void SetTarget(bool on)
         {
@@ -229,6 +273,7 @@ namespace Hangeul.UI
         void Update()
         {
             // enabled를 끄면 uGUI가 이벤트(클릭/드래그)를 보내지 않으므로, 애니메이션 없을 때는 여기서 바로 빠진다
+            UpdateMove();
             UpdateRotTween();
             if (_anim == Anim.None) return;
 
@@ -252,7 +297,7 @@ namespace Hangeul.UI
 
             if (u >= 1f)
             {
-                _face.localScale = Vector3.one;
+                _face.localScale = Vector3.one * (_shrunk ? ShrunkScale : 1f);
                 _face.anchoredPosition = Vector2.zero;
                 _face.localEulerAngles = Vector3.zero;
                 _anim = Anim.None;

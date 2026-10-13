@@ -45,8 +45,8 @@
 | asmdef | 포함 | 참조 허용 |
 |---|---|---|
 | `Hangeul.Domain` | Hangul, 표, Card, GridMath. 위치: `Assets/Scripts/Domain` (M0 구현: `Hangul`, `JamoTables`, `RotationTable`, `SyllableLayout` — 표는 정적 클래스에 내장, 데이터 분리는 추후) | 없음 (noEngineReferences) |
-| `Hangeul.App` | InventoryModel, Ops, Services. 위치: `Assets/Scripts/App` (M1 구현: `InventoryModel` — AddWord/Detach/SplitJamo/Transform/TryMerge/Move/Resize/Discard, M3: `RotationSession` + `BeginRotation/ApplyRotation/FinishRotation`, M4: `ToSave/Load` + `InventorySaveData`). Domain 쪽 M1: `Card`, `GridModel`, `CardOps`(결합), `DetachRules`, `ForbiddenSyllables` | Domain |
-| `Hangeul.UI` | View, Controller, 테마. 위치: `Assets/Scripts/UI` (M2 구현: `InventoryView`, `CardView`, `WordInputView`; M4: `InventorySaveStore` — 개발용 JSON 저장소, `persistentDataPath/inventory.json`, 변경 0.5초 뒤 자동 저장 — 글자는 uGUI `Text` + Nanum Myeongjo TTF, TMP 전환은 M8) | Domain, App, Unity |
+| `Hangeul.App` | InventoryModel, Ops, Services. 위치: `Assets/Scripts/App` (M1 구현: `InventoryModel` — AddWord/Detach/SplitJamo/Transform/TryMerge/Move/Resize/Discard, M3: `RotationSession` + `BeginRotation/ApplyRotation/FinishRotation`, M4: `ToSave/Load` + `InventorySaveData`, M7: `MatchScanner`, `ItemWordSet`, `WordCompleted` 이벤트). Domain 쪽 M1: `Card`, `GridModel`, `CardOps`(결합), `DetachRules`, `ForbiddenSyllables` | Domain |
+| `Hangeul.UI` | View, Controller, 테마. 위치: `Assets/Scripts/UI` (M2 구현: `InventoryView`, `CardView`, `WordInputView`; M7: `TrashZone`, `CompletionOverlay`, 단어 목록은 `Assets/Resources/item_words.json`(= `hangeul-bunhae/data`의 복사본); M4: `InventorySaveStore` — 개발용 JSON 저장소, `persistentDataPath/inventory.json`, 변경 0.5초 뒤 자동 저장 — 글자는 uGUI `Text` + Nanum Myeongjo TTF, TMP 전환은 M8) | Domain, App, Unity |
 | `Hangeul.Game` | 플레이어 캐릭터, FSM, 상호작용(§13). 위치: `Assets/Scripts/Game` | Unity.InputSystem |
 | `Hangeul.Game.Editor` | 에디터 전용 생성 메뉴 | Hangeul.Game |
 | `Hangeul.Tests` | EditMode/PlayMode 테스트. 위치: `Assets/Tests/EditMode` | 전부 |
@@ -219,7 +219,7 @@ public sealed class InventoryModel {
 
 **확정된 동작 규칙 (HTML 기준)**
 
-- **이동/교환 `Move`**: 드래그 중 카드 위치는 격자 영역으로 clamp. 놓으면 카드 중심의 칸에 스냅. 칸에 카드가 있고 결합 불가이면 **자리 교환**(상대 카드는 내 원래 칸으로, `pop` 연출). 결합 가능이면 교환 대신 결합. 드래그 중 칸 하이라이트: 빈 칸=초록, 교환=파랑, 결합=주황/진홍.
+- **이동/교환 `Move`**: *(게임 확정 변경: HTML과 다름)* 드래그 중 카드는 **격자에 묶이지 않고 화면 어디든 포인터를 따라간다.** 놓을 때 **카드 중심이 격자 안일 때만** 그 칸에 배치(스냅)되고, 격자 밖이면 **원래 칸으로 부드럽게 돌아간다.** 쓰레기통 위에서 놓으면 쓰레기통 칸 가운데로 달라붙은 뒤 삭제(§5.6). (HTML은 드래그 중에도 격자 영역으로 clamp.) 칸에 카드가 있고 결합 불가이면 **자리 교환**(상대 카드는 내 원래 칸으로, `pop` 연출). 결합 가능이면 교환 대신 결합. 드래그 중 칸 하이라이트: 빈 칸=초록, 교환=파랑, 결합=주황/진홍.
 - **`AddWord(word, anchor?)`**: 한글 음절만 추출 → 금지 음절은 건너뜀 → **남은 칸 수만큼**만 추가(`COLS*ROWS - 카드 수`). `COLS`글자씩 끊어 한 줄에 연속 배치(`TryFindRun`, anchor 없으면 중앙 줄부터). 한 줄이 안 나오면 `TryFindEmptyNear`로 흩어서 배치. 반환값=실제 추가 수; 요청보다 적으면(가득 참) 입력창 흔들기. 추가 직후 `MatchScanner.Scan(notify:false)`를 불러 **입력만으로 이미 완성된 단어는 알리지 않는다**.
 - **칩을 격자에 드롭**: 단어 칩을 격자 위에 놓으면 그 칸을 anchor로 `AddWord`. 드래그 중에는 놓일 자리(`min(글자수, COLS)`칸 폭)를 미리 하이라이트.
 - **`Resize(cols, rows)`**: 1..20으로 clamp. 용량 부족(`카드 수 > cols*rows`)이면 **확인창** → 승인 시 (행→열 순) 마지막 카드부터 초과분을 폐기(연출 포함), 거부 시 값 원복. 이후 새 격자 밖이거나 겹친 카드는 **가장 가까운 빈 칸으로 이동**. 끝나면 `Scan(notify:false)`. 값은 `inv_grid`처럼 별도 설정으로 저장.
@@ -293,7 +293,14 @@ HTML에서 렉이 났던 지점이라 처음부터 **성능 상한을 설계에 
 - 스프라이트가 차지하는 영역: 단어 길이만큼 가로로 이어진 칸(예: `도끼` = 2칸). 겹치는 매치는 `Scan`의 "겹치지 않는 가장 긴 매치" 규칙을 그대로 따른다.
 - 가방 모드에서 카드 이동을 허용할지(스프라이트 단위 재배치)는 후속 결정.
 
-### 5.6 삭제(버리기) 모드
+### 5.6 삭제(버리기) — 게임에서는 쓰레기통 방식 (확정)
+> 아래 'HTML 삭제 모드'(토글·다중 선택)는 **게임에서 쓰지 않는다.** 게임은 **인벤토리 창 왼쪽의 쓰레기통(`TrashZone`)에 카드를 끌어다 놓으면 삭제**한다.
+> - 아이콘은 `TrashZone/Icon` Image의 Sprite에 나중에 넣는다(자리만 먼저 배치). 포인터가 쓰레기통 위에 있으면 강조되고, 그 위에서는 카드가 격자 밖으로도 포인터를 따라간다.
+> - 판정은 카드 위치가 아니라 **포인터 위치** 기준. 좌/우클릭 드래그, 분리 직후 드래그 모두 가능. 회전 드래그는 해당 없음.
+> - 삭제는 `InventoryModel.Discard` 호출 → `Discarded` 이벤트. 확인창·되돌리기는 없다(필요하면 후속 결정).
+> - 삭제 직후 `MatchScanner.Scan(notify:true)`는 디바운스로 자동 수행된다.
+
+#### (참고) HTML의 삭제 모드
 - 토글을 켜면 카드 클릭이 선택/해제가 된다(회전·분리·드래그 비활성). 선택된 카드는 반투명 + 진홍 외곽선. `선택 삭제 (N)` 버튼 또는 `Delete` 키로 일괄 삭제하고 **모드는 자동으로 꺼진다**. `모두 지우기`는 모드와 무관하게 전체 삭제.
 - 삭제 연출: 살짝 커졌다 작아지며 회전·페이드(0.55초). 여러 장은 격자 순서(위→아래, 왼→오)로 **장당 40ms 시차, 최대 600ms**. 모델 상태는 즉시 비우고 화면에서만 잠시 남긴다(`Changed` 이벤트로 View가 처리).
 - 삭제 직후 `ArrangementService` 갱신 + `MatchScanner.Scan`.

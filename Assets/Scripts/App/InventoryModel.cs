@@ -49,9 +49,30 @@ namespace Hangeul.App
         int _nextId = 1;
 
         public GridModel Grid { get; }
+        public MatchScanner Scanner { get; } = new MatchScanner();
         public event Action<CardChange> Changed;
+        /// <summary>조작으로 단어가 새로 완성됐을 때(단어 추가/불러오기/격자 크기 변경으로 이미 완성돼 있던 것은 알리지 않는다). 본편이 구독해 아이템 지급 등을 처리한다.</summary>
+        public event Action<WordMatch> WordCompleted;
 
         public InventoryModel(int cols = 10, int rows = 10) { Grid = new GridModel(cols, rows); }
+
+        /// <summary>완성 판정에 쓸 단어 목록을 바꾼다. 이미 완성돼 있던 단어는 알리지 않는다.</summary>
+        public void SetWords(ItemWordSet words)
+        {
+            Scanner.SetWords(words);
+            Scan(notify: false);
+        }
+
+        /// <summary>
+        /// 완성된 단어를 다시 찾는다. 카드를 조작한 뒤 호출하면(notify=true) 새로 완성된 단어마다 <see cref="WordCompleted"/>가 발생한다.
+        /// 단어 추가/불러오기/크기 변경은 모델이 notify=false로 알아서 부른다.
+        /// </summary>
+        public IReadOnlyList<WordMatch> Scan(bool notify)
+        {
+            var fresh = Scanner.Scan(Grid, notify);
+            foreach (var m in fresh) WordCompleted?.Invoke(m);
+            return fresh;
+        }
 
         void Notify(ChangeType type, Card c) => Changed?.Invoke(new CardChange(type, c));
 
@@ -107,6 +128,7 @@ namespace Hangeul.App
                     }
                 }
             }
+            Scan(notify: false);          // 입력만으로 이미 완성돼 있는 단어는 알리지 않는다
             return new AddWordResult(syls.Count, hadBanned);
         }
 
@@ -290,6 +312,7 @@ namespace Hangeul.App
                 c.Col = cell.col; c.Row = cell.row;
                 Notify(ChangeType.Moved, c);
             }
+            Scan(notify: false);
             return new ResizeResult(true, Math.Max(0, over), Math.Max(0, over));
         }
         // ───── 저장 / 불러오기 ─────
@@ -363,6 +386,7 @@ namespace Hangeul.App
             }
 
             foreach (var c in Grid.Cards.ToList()) Notify(ChangeType.Added, c);
+            Scan(notify: false);
             return new LoadResult(true, null, cards.Count, skipped, deferred.Count);
         }
     }

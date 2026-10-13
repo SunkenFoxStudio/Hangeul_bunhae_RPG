@@ -28,6 +28,12 @@ namespace Hangeul.UI
         [SerializeField] Font font;
         [SerializeField, Range(1, 20)] int cols = 5;
         [SerializeField, Range(1, 20)] int rows = 5;
+        [Header("단어 / 쓰레기통")]
+        [Tooltip("아이템 단어 목록(item_words.json). 비워 두면 Resources/item_words를 찾는다.")]
+        [SerializeField] TextAsset itemWords;
+        [Tooltip("카드를 끌어다 놓으면 삭제되는 영역. 없으면 삭제 기능이 없다.")]
+        [SerializeField] TrashZone trashZone;
+
         [Header("저장")]
         [Tooltip("켜면 시작할 때 저장 파일을 불러오고(있으면), 바뀔 때마다 자동 저장한다. 저장된 격자 크기가 위 Cols/Rows보다 우선한다.")]
         [SerializeField] bool persist = true;
@@ -50,6 +56,8 @@ namespace Hangeul.UI
             public Vector2 Center;       // 카드 중심(화면 좌표)
             public float PrevAngle;      // 직전 포인터 각도 (시계방향 +, 라디안)
             public float Total;          // 누적 각도
+
+            public bool OverTrash;       // 포인터가 쓰레기통 위에 있음
         }
 
         readonly Dictionary<int, CardView> _views = new Dictionary<int, CardView>();
@@ -62,6 +70,8 @@ namespace Hangeul.UI
         bool _dirty = true;
         bool _saveDirty;
         float _lastChange;
+        float _scanAt = -1f;            // 조작 뒤 단어 완성을 확인할 시각 (HTML처럼 60ms 디바운스)
+        const float ScanDelay = 0.06f;
         const float SaveDelay = 0.5f;   // 마지막 변경 뒤 이 시간이 지나면 저장 (드래그 중에는 저장하지 않는다)
 
         public InventoryModel Model { get; private set; }
@@ -73,6 +83,10 @@ namespace Hangeul.UI
 
             Model = new InventoryModel(cols, rows);
             Model.Changed += OnChanged;
+            Model.WordCompleted += OnWordCompleted;
+            // 쓰레기통이 카드 뒤에 그려져야 카드가 그 위로 지나가고, 달라붙을 때도 보인다
+            if (trashZone != null) trashZone.transform.SetAsFirstSibling();
+            LoadWords();
             if (persist) LoadSaved();
 
             var hl = new GameObject("CellHighlight", typeof(RectTransform), typeof(Image));
@@ -88,12 +102,35 @@ namespace Hangeul.UI
         {
             if (Model == null) return;
             Model.Changed -= OnChanged;
+            Model.WordCompleted -= OnWordCompleted;
             if (persist && _saveDirty) SaveNow();
         }
 
         void OnApplicationQuit()
         {
             if (Model != null && persist && _saveDirty) SaveNow();
+        }
+
+        // ───── 단어 / 완성 ─────
+        void LoadWords()
+        {
+            var asset = itemWords != null ? itemWords : Resources.Load<TextAsset>("item_words");
+            if (asset == null)
+            {
+                Debug.LogWarning("[InventoryView] 아이템 단어 목록(item_words.json)이 없어 단어 완성 판정을 하지 않습니다.");
+                return;
+            }
+            var set = ItemWordSet.FromFile(JsonUtility.FromJson<ItemWordsFile>(asset.text), out int skipped);
+            if (set == null) { Debug.LogWarning("[InventoryView] 아이템 단어 목록 형식이 올바르지 않습니다 (schemaVersion 1 필요)."); return; }
+            if (skipped > 0) Debug.LogWarning($"[InventoryView] 아이템 단어 {skipped}개를 건너뛰었습니다 (한글 음절이 아니거나 중복).");
+            Model.SetWords(set);
+        }
+
+        void OnWordCompleted(WordMatch m)
+        {
+            Debug.Log($"[InventoryView] 단어 완성: {m.Word}");
+            if (_cell <= 0f) return;
+            CompletionOverlay.Spawn(cardLayer, new Vector2(m.Col * _cell, m.Row * _cell), new Vector2(m.Length * _cell, _cell));
         }
 
         // ───── 저장 ─────
@@ -181,6 +218,7 @@ namespace Hangeul.UI
         {
             _saveDirty = true;
             _lastChange = Time.unscaledTime;
+            _scanAt = Time.unscaledTime + ScanDelay;
 
             switch (ch.Type)
             {
@@ -204,7 +242,8 @@ namespace Hangeul.UI
                     if (_views.TryGetValue(ch.Card.Id, out var rot)) rot.Refresh();
                     break;
                 case ChangeType.Moved:
-                    if (_views.TryGetValue(ch.Card.Id, out var mv)) Place(mv);
+                    if (_views.TryGetValue(ch.Card.Id, out var mv) && !(_drag != null && _drag.View == mv))
+                        mv.MoveTo(CellPos(mv.Card), 0.1f);   // 놓은 칸/밀려난 칸으로 부드럽게 자리잡는다
                     break;
                 case ChangeType.Rejected:
                     if (_views.TryGetValue(ch.Card.Id, out var rj)) rj.Shake();
@@ -299,9 +338,17 @@ namespace Hangeul.UI
             if (_drag == null) return;
             if (_drag.Rot != null) { RotateDrag(e); return; }
             Vector2 local = ToLayer(e.position, e.pressEventCamera);
-            Vector2 pos = _drag.Origin + (local - _drag.StartLocal);
-            pos.x = Mathf.Clamp(pos.x, 0f, (Model.Grid.Cols - 1) * _cell);
-            pos.y = Mathf.Clamp(pos.y, 0f, (Model.Grid.Rows - 1) * _cell);
+            Vector2 pos = _drag.Origin + (local - _drag.StartLocal);   // 격자에 묶이지 않고 포인터를 그대로 따라간다
+
+            // 쓰레기통 위에 있으면 포인터를 따라가지 않고 쓰레기통 칸 가운데에 붙어 살짝 작아진다
+            bool over = trashZone != null && trashZone.Contains(e.position, e.pressEventCamera);
+            if (over != _drag.OverTrash)
+            {
+                _drag.OverTrash = over;
+                trashZone.SetHover(over);
+                _drag.View.SetShrunk(over);
+            }
+            if (over) pos = TrashTopLeft(e.pressEventCamera);
             _drag.Pos = pos;
             _drag.Moved = true;
             _drag.View.SetPosition(pos);
@@ -317,13 +364,25 @@ namespace Hangeul.UI
 
             if (d.Rot != null) { FinishRotateDrag(d); return; }
 
+            if (trashZone != null) trashZone.SetHover(false);
+            var card = d.View.Card;
+            if (!_views.ContainsKey(card.Id)) { ClearFeedback(); return; }
+
+            // 쓰레기통 위에서 놓으면 삭제 (이미 칸 가운데에 붙어 있다)
+            if (d.OverTrash)
+            {
+                ClearFeedback();
+                Model.Discard(card);
+                return;
+            }
+
             bool holdOn = _hold.On;
             ClearFeedback();
 
-            var card = d.View.Card;
-            if (!d.Moved || !_views.ContainsKey(card.Id)) { Place(d.View); return; }
+            if (!d.Moved) { Place(d.View); return; }
 
-            var (col, row) = CellOf(d.Pos);
+            // 카드 중심이 격자 안일 때만 놓을 수 있다. 밖이면 제자리로 돌아간다
+            if (!TryCellOf(d.Pos, out int col, out int row)) { ReturnHome(d.View); return; }
             var occupant = Model.Grid.CardAt(col, row, card);
 
             if (card.Kind == CardKind.Jamo && occupant != null)
@@ -332,13 +391,19 @@ namespace Hangeul.UI
                 {
                     case CombineOutcome.Ok: return;                       // 뷰 갱신은 Changed 이벤트가 처리
                     case CombineOutcome.Banned:
-                        Place(d.View); d.View.Shake(); return;            // 됬 은 거절: 제자리로
+                        ReturnHome(d.View); d.View.Shake(); return;       // 됬 은 거절: 제자리로
                 }
             }
 
             Model.Move(card, col, row);                                   // 빈 칸이면 이동, 점유된 칸이면 자리 교환
             if (occupant != null && _views.TryGetValue(occupant.Id, out var ov)) ov.Pop();
         }
+
+        void ReturnHome(CardView v) => v.MoveTo(CellPos(v.Card), 0.15f);
+
+        // 쓰레기통 칸 가운데에 카드 중심이 오도록 한 카드 왼쪽 위 (격자 레이어 좌표)
+        Vector2 TrashTopLeft(Camera cam)
+            => ToLayer(trashZone.ScreenCenter(cam), cam) - new Vector2(_cell, _cell) / 2f;
 
         // ───── 모서리 드래그 회전 ─────
         // 포인터가 카드 중심을 기준으로 돈 각도를 누적해 90° 단위로 반올림한다. 경계를 넘는 순간 자모가 바뀐다.
@@ -370,18 +435,26 @@ namespace Hangeul.UI
         }
 
         // ───── 드래그 중 피드백 ─────
-        (int col, int row) CellOf(Vector2 topLeft)
+        /// <summary>카드 중심이 놓인 칸. 중심이 격자 밖이면 false.</summary>
+        bool TryCellOf(Vector2 topLeft, out int col, out int row)
         {
-            int c = Mathf.FloorToInt((topLeft.x + _cell / 2f) / _cell);
-            int r = Mathf.FloorToInt((topLeft.y + _cell / 2f) / _cell);
-            return (GridModel.Clamp(c, 0, Model.Grid.Cols - 1), GridModel.Clamp(r, 0, Model.Grid.Rows - 1));
+            float cx = topLeft.x + _cell / 2f, cy = topLeft.y + _cell / 2f;
+            col = row = -1;
+            if (cx < 0f || cy < 0f || cx >= Model.Grid.Cols * _cell || cy >= Model.Grid.Rows * _cell) return false;
+            col = Mathf.FloorToInt(cx / _cell);
+            row = Mathf.FloorToInt(cy / _cell);
+            return true;
         }
 
         void UpdateFeedback(float dt)
         {
             if (_drag == null || _drag.Rot != null) return;
+            if (_drag.OverTrash || !TryCellOf(_drag.Pos, out int col, out int row))
+            {
+                ClearFeedback();      // 놓을 수 없는 곳: 칸 강조/결합 표시를 모두 끈다
+                return;
+            }
             var card = _drag.View.Card;
-            var (col, row) = CellOf(_drag.Pos);
             var occupant = Model.Grid.CardAt(col, row, card);
 
             CardView target = null;
@@ -436,6 +509,12 @@ namespace Hangeul.UI
         void Update()
         {
             if (_drag != null) UpdateFeedback(Time.unscaledDeltaTime);
+
+            if (_scanAt >= 0f && Time.unscaledTime >= _scanAt)
+            {
+                _scanAt = -1f;
+                Model.Scan(notify: true);
+            }
 
             if (logClickTargets) LogClickTargets();
             if (persist && _saveDirty && _drag == null && Time.unscaledTime - _lastChange > SaveDelay) SaveNow();

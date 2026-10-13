@@ -75,6 +75,7 @@ namespace Hangeul.Game.Editor
 
             AddCardGrid(grid);
             AddWordDock(panel);
+            AddTrashZone(panel);
             EnsureEventSystem();
             Selection.activeGameObject = panel.gameObject;
         }
@@ -94,6 +95,7 @@ namespace Hangeul.Game.Editor
 
             AddCardGrid(grid);
             if (panel.GetComponentInChildren<WordInputView>(true) == null) AddWordDock(panel);
+            AddTrashZone(panel);
             EnsureEventSystem();
             Selection.activeGameObject = grid.gameObject;
         }
@@ -168,6 +170,41 @@ namespace Hangeul.Game.Editor
             so.FindProperty("input").objectReferenceValue = field;
             so.FindProperty("addButton").objectReferenceValue = button;
             so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // 인벤토리 창 왼쪽 바깥에 쓰레기통 자리(아이콘은 TrashZone/Icon의 Image Sprite에 나중에 끌어 넣는다). 이미 있으면 연결만 한다.
+        static void AddTrashZone(RectTransform panel)
+        {
+            var view = panel.GetComponentInChildren<InventoryView>(true);
+            var zone = panel.GetComponentInChildren<TrashZone>(true);
+            if (zone == null)
+            {
+                var rt = NewRect("TrashZone", panel);
+                rt.anchorMin = rt.anchorMax = new Vector2(0f, 0.5f);
+                rt.pivot = new Vector2(1f, 0.5f);
+                rt.anchoredPosition = new Vector2(-12f, 0f);
+                rt.sizeDelta = new Vector2(120f, 120f);
+                var bg = rt.gameObject.AddComponent<Image>();
+
+                var iconRt = NewRect("Icon", rt);
+                Stretch(iconRt, 20f, 20f, 20f, 20f);
+                var icon = iconRt.gameObject.AddComponent<Image>();
+                icon.raycastTarget = false;
+                icon.color = new Color(1f, 1f, 1f, 0.35f);   // 스프라이트를 넣으면 흰색(1,1,1,1)으로 올린다
+
+                zone = Undo.AddComponent<TrashZone>(rt.gameObject);
+                var zso = new SerializedObject(zone);
+                zso.FindProperty("background").objectReferenceValue = bg;
+                zso.FindProperty("icon").objectReferenceValue = icon;
+                zso.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            if (view != null)
+            {
+                var so = new SerializedObject(view);
+                so.FindProperty("trashZone").objectReferenceValue = zone;
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
         }
 
         static Text NewText(string name, RectTransform parent, Font font, int size, Color color, string content)
