@@ -40,6 +40,16 @@ namespace Hangeul.Game.Interaction
             Canvas.willRenderCanvases -= FollowTarget;
         }
 
+        const float BoxSpacing = 4f;   // 이름 칸과 안내 칸 사이 간격
+
+        void Awake()
+        {
+            // 예전 방식(레이아웃 컴포넌트)으로 만든 안내 UI가 씬에 남아 있어도 이 뷰가 크기를 정하도록 치운다.
+            // (씬 파일에서도 지우려면 InteractionCanvas를 지우고 메뉴로 다시 만든다.)
+            foreach (var c in GetComponentsInChildren<ContentSizeFitter>(true)) Destroy(c);
+            foreach (var c in GetComponentsInChildren<LayoutGroup>(true)) Destroy(c);
+        }
+
         void Start()
         {
             if (player == null) player = FindFirstObjectByType<PlayerController>();
@@ -92,6 +102,28 @@ namespace Hangeul.Game.Interaction
                 titleText.text = hasTitle ? title : "";
             }
             if (hintText != null) hintText.text = $"[{player.Input.InteractKeyLabel}] {current.Prompt}";
+            LayoutBoxes(hasTitle);
+        }
+
+        // 두 칸의 폭/높이를 글자 길이에 맞추고, 안내 칸을 패널 맨 아래에 두고 그 위에 이름 칸을 쌓는다(패널 피벗은 아래 가운데).
+        void LayoutBoxes(bool hasTitle)
+        {
+            float y = 0f;
+            if (hintText != null) y += Fit(hintText, y) + BoxSpacing;
+            if (titleText != null && hasTitle) Fit(titleText, y);
+        }
+
+        // 글자 칸 text가 들어 있는 상자(바로 위 부모)를 글자 크기 + 안쪽 여백에 맞추고 y에 놓는다. 상자의 높이를 돌려준다.
+        float Fit(Text text, float y)
+        {
+            var box = text.transform.parent as RectTransform;
+            if (box == null || box == panel) return 0f;   // 상자 없이 패널에 바로 붙은 예전 구조
+
+            var margin = text.rectTransform.offsetMin;    // 글자 칸의 오프셋이 곧 안쪽 여백(가로, 세로)
+            var size = new Vector2(Mathf.Ceil(text.preferredWidth) + margin.x * 2f, Mathf.Ceil(text.preferredHeight) + margin.y * 2f);
+            box.sizeDelta = size;
+            box.anchoredPosition = new Vector2(0f, y);
+            return size.y;
         }
 
         void FollowTarget()

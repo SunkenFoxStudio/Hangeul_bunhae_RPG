@@ -40,18 +40,12 @@ namespace Hangeul.Game.Editor
             group.interactable = false;
             group.blocksRaycasts = false;
 
-            // 패널은 이름 칸과 안내 칸을 세로로 쌓는 투명한 틀. 각 칸은 자기 글자 길이에 맞춰 폭이 정해진다.
-            var stack = panel.gameObject.AddComponent<VerticalLayoutGroup>();
-            stack.childAlignment = TextAnchor.LowerCenter;
-            stack.spacing = 4f;
-            stack.childControlWidth = stack.childControlHeight = false;
-            stack.childForceExpandWidth = stack.childForceExpandHeight = false;
-            var stackFit = panel.gameObject.AddComponent<ContentSizeFitter>();
-            stackFit.horizontalFit = stackFit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            var title = NewBox("TitleBox", panel, font, 40, new Color(0.97f, 0.9f, 0.76f), 18, 8, out _);
+            // 패널은 이름 칸과 안내 칸을 쌓는 투명한 틀(크기 0). 두 칸의 폭/높이/위치는 실행할 때 InteractionPromptView가 글자 길이에 맞춰 정한다.
+            // (레이아웃 컴포넌트를 쓰지 않는다: 쓰면 플레이를 끝낼 때마다 에디터가 크기를 다시 계산해 씬이 "변경됨"으로 표시된다.)
+            panel.sizeDelta = Vector2.zero;
+            var title = NewBox("TitleBox", panel, font, 40, new Color(0.97f, 0.9f, 0.76f), 18, 8, new Vector2(0f, 52f));
             title.text = "검";
-            var hint = NewBox("HintBox", panel, font, 22, new Color(0.85f, 0.7f, 0.45f), 14, 6, out _);
+            var hint = NewBox("HintBox", panel, font, 22, new Color(0.85f, 0.7f, 0.45f), 14, 6, Vector2.zero);
             hint.text = "[E] 줍기";
 
             // 결과 문구 (화면 아래쪽 가운데)
@@ -100,21 +94,25 @@ namespace Hangeul.Game.Editor
             return (RectTransform)go.transform;
         }
 
-        // 배경 이미지 + 글자 하나로 이뤄진 칸. 폭과 높이가 글자에 맞춰진다. 반환값은 안의 Text.
-        static Text NewBox(string name, Transform parent, Font font, int size, Color color, int padX, int padY, out RectTransform box)
+        // 배경 이미지 + 글자 하나로 이뤄진 칸. 피벗/앵커는 아래 가운데, 글자 칸의 여백(오프셋)이 곧 안쪽 여백이다.
+        // 실제 크기는 실행할 때 글자에 맞춰 정해지므로 여기서는 대략적인 크기만 둔다. 반환값은 안의 Text.
+        static Text NewBox(string name, Transform parent, Font font, int size, Color color, int padX, int padY, Vector2 position)
         {
-            box = NewRect(name, parent);
+            var box = NewRect(name, parent);
+            box.anchorMin = box.anchorMax = new Vector2(0.5f, 0f);
+            box.pivot = new Vector2(0.5f, 0f);
+            box.sizeDelta = new Vector2(size * 3f + padX * 2f, size + padY * 2f);
+            box.anchoredPosition = position;
             var bg = box.gameObject.AddComponent<Image>();
             bg.color = new Color(0.12f, 0.09f, 0.06f, 0.85f);
             bg.raycastTarget = false;
-            var row = box.gameObject.AddComponent<HorizontalLayoutGroup>();
-            row.padding = new RectOffset(padX, padX, padY, padY);
-            row.childAlignment = TextAnchor.MiddleCenter;
-            row.childControlWidth = row.childControlHeight = true;
-            row.childForceExpandWidth = row.childForceExpandHeight = false;
-            var fit = box.gameObject.AddComponent<ContentSizeFitter>();
-            fit.horizontalFit = fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            return NewText("Text", box, font, size, color, TextAnchor.MiddleCenter);
+
+            var text = NewText("Text", box, font, size, color, TextAnchor.MiddleCenter);
+            text.rectTransform.anchorMin = Vector2.zero;
+            text.rectTransform.anchorMax = Vector2.one;
+            text.rectTransform.offsetMin = new Vector2(padX, padY);
+            text.rectTransform.offsetMax = new Vector2(-padX, -padY);
+            return text;
         }
 
         static Text NewText(string name, Transform parent, Font font, int size, Color color, TextAnchor anchor)

@@ -570,6 +570,7 @@ Idle ──입력──▶ Move ──입력 없음──▶ Idle
   - **전부 놓을 빈 칸이 있을 때만 줍는다**(`CanAddWord`). 모자라면 줍지 않고 아이템은 그대로 남으며 안내 문구("가방이 가득 찼습니다")만 띄운다. 일부만 들어가는 일은 없다.
   - 한글 음절이 아닌 단어나 금지 음절(`됬`)이 섞인 아이템은 상호작용 대상에서 제외된다.
   - 주우면 오브젝트를 없앤다(옵션으로 유지 가능). 이미 주운 아이템의 영속(재진입 시 다시 나타나지 않게)은 월드 세이브와 함께 후속 과제.
+- 안내 UI는 **이름 칸과 안내 칸 두 칸**이며 각 칸의 폭/높이/위치는 **실행할 때 `InteractionPromptView`가 글자 길이에 맞춰 직접 정한다**(안내 칸이 맨 아래, 그 위에 이름 칸). 씬에는 `LayoutGroup`/`ContentSizeFitter`를 두지 않는다 — 두면 플레이를 끝낼 때마다 에디터가 RectTransform 크기를 다시 계산해 씬이 "변경됨"으로 표시된다.
 - 안내 UI는 조작 가능 상태(Idle/Move)일 때만 보인다(인벤토리를 열었거나 상호작용 중이면 숨김). 제목이 없는 일반 대상(`InteractableObject`)은 `[키] Prompt`만 보인다(`IInteractableTitle`로 제목 지원).
 - 구현 위치: `Assets/Scripts/Game/Interaction`. Game 어셈블리는 App/Domain/UI를 참조한다(통합 계층).
 - 메뉴: `GameObject ▸ Hangeul ▸ Interaction Prompt`(씬에 한 번), `World Item`(아이템마다).
