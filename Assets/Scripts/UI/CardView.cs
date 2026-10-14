@@ -27,6 +27,8 @@ namespace Hangeul.UI
 
         const float FaceInset = 0.04f;     // 카드 사이 간격 (칸의 4%씩)
         const float FontRatio = 0.78f;     // HTML의 font-size 78 / 100
+        // 글꼴의 위·아래 여백(ascent/descent)이 달라 MiddleCenter만으로는 글자가 위로 치우친다. 카드 크기 비율로 아래로 내린다(눈으로 맞춘 값).
+        const float TextDropRatio = 0.06f;
 
         enum Anim { None, Pop, Shake, Rotate }
 
@@ -288,7 +290,7 @@ namespace Hangeul.UI
                 var t = AddText(rt, ch, face, color);
                 t.anchorMin = t.anchorMax = t.pivot = new Vector2(0f, 1f);
                 t.sizeDelta = new Vector2(face, face);
-                t.anchoredPosition = new Vector2(-r.X / 100f * face, r.Y / 100f * face);
+                t.anchoredPosition = new Vector2(-r.X / 100f * face, r.Y / 100f * face - face * TextDropRatio);
             }
         }
 
@@ -299,7 +301,9 @@ namespace Hangeul.UI
             var rt = (RectTransform)go.transform;
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.one;
-            rt.offsetMin = rt.offsetMax = Vector2.zero;
+            float drop = face * TextDropRatio;
+            rt.offsetMin = new Vector2(0f, -drop);
+            rt.offsetMax = new Vector2(0f, -drop);
 
             var text = go.GetComponent<Text>();
             text.font = _font;

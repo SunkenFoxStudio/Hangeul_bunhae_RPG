@@ -86,7 +86,9 @@ namespace Hangeul.Game.Interaction
             bool hasTitle = !string.IsNullOrEmpty(title);
             if (titleText != null)
             {
-                titleText.gameObject.SetActive(hasTitle);
+                // 이름 칸(배경 포함)을 통째로 켜고 끈다. 칸이 따로 없으면 글자만 토글한다.
+                var box = titleText.transform.parent;
+                (box != null && box != panel ? box.gameObject : titleText.gameObject).SetActive(hasTitle);
                 titleText.text = hasTitle ? title : "";
             }
             if (hintText != null) hintText.text = $"[{player.Input.InteractKeyLabel}] {current.Prompt}";

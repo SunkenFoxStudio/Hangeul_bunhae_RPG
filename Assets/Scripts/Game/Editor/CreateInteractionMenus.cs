@@ -36,24 +36,22 @@ namespace Hangeul.Game.Editor
             var panel = NewRect("Prompt", canvasGo.transform);
             panel.pivot = new Vector2(0.5f, 0f);
             panel.anchorMin = panel.anchorMax = new Vector2(0.5f, 0.5f);
-            panel.sizeDelta = new Vector2(220f, 84f);
-            var bg = panel.gameObject.AddComponent<Image>();
-            bg.color = new Color(0.12f, 0.09f, 0.06f, 0.85f);
-            bg.raycastTarget = false;
             var group = panel.gameObject.AddComponent<CanvasGroup>();
             group.interactable = false;
             group.blocksRaycasts = false;
 
-            var title = NewText("Title", panel, font, 40, new Color(0.97f, 0.9f, 0.76f), TextAnchor.MiddleCenter);
-            title.rectTransform.anchorMin = new Vector2(0f, 0.38f);
-            title.rectTransform.anchorMax = Vector2.one;
-            title.rectTransform.offsetMin = title.rectTransform.offsetMax = Vector2.zero;
-            title.text = "검";
+            // 패널은 이름 칸과 안내 칸을 세로로 쌓는 투명한 틀. 각 칸은 자기 글자 길이에 맞춰 폭이 정해진다.
+            var stack = panel.gameObject.AddComponent<VerticalLayoutGroup>();
+            stack.childAlignment = TextAnchor.LowerCenter;
+            stack.spacing = 4f;
+            stack.childControlWidth = stack.childControlHeight = false;
+            stack.childForceExpandWidth = stack.childForceExpandHeight = false;
+            var stackFit = panel.gameObject.AddComponent<ContentSizeFitter>();
+            stackFit.horizontalFit = stackFit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            var hint = NewText("Hint", panel, font, 22, new Color(0.85f, 0.7f, 0.45f), TextAnchor.MiddleCenter);
-            hint.rectTransform.anchorMin = Vector2.zero;
-            hint.rectTransform.anchorMax = new Vector2(1f, 0.4f);
-            hint.rectTransform.offsetMin = hint.rectTransform.offsetMax = Vector2.zero;
+            var title = NewBox("TitleBox", panel, font, 40, new Color(0.97f, 0.9f, 0.76f), 18, 8, out _);
+            title.text = "검";
+            var hint = NewBox("HintBox", panel, font, 22, new Color(0.85f, 0.7f, 0.45f), 14, 6, out _);
             hint.text = "[E] 줍기";
 
             // 결과 문구 (화면 아래쪽 가운데)
@@ -100,6 +98,23 @@ namespace Hangeul.Game.Editor
             var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(parent, false);
             return (RectTransform)go.transform;
+        }
+
+        // 배경 이미지 + 글자 하나로 이뤄진 칸. 폭과 높이가 글자에 맞춰진다. 반환값은 안의 Text.
+        static Text NewBox(string name, Transform parent, Font font, int size, Color color, int padX, int padY, out RectTransform box)
+        {
+            box = NewRect(name, parent);
+            var bg = box.gameObject.AddComponent<Image>();
+            bg.color = new Color(0.12f, 0.09f, 0.06f, 0.85f);
+            bg.raycastTarget = false;
+            var row = box.gameObject.AddComponent<HorizontalLayoutGroup>();
+            row.padding = new RectOffset(padX, padX, padY, padY);
+            row.childAlignment = TextAnchor.MiddleCenter;
+            row.childControlWidth = row.childControlHeight = true;
+            row.childForceExpandWidth = row.childForceExpandHeight = false;
+            var fit = box.gameObject.AddComponent<ContentSizeFitter>();
+            fit.horizontalFit = fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            return NewText("Text", box, font, size, color, TextAnchor.MiddleCenter);
         }
 
         static Text NewText(string name, Transform parent, Font font, int size, Color color, TextAnchor anchor)
