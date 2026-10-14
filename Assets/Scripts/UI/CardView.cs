@@ -43,8 +43,8 @@ namespace Hangeul.UI
         Anim _anim;
         float _animT, _animDur, _rotTurns;
         bool _target, _holdOn;
-        bool _bag, _bagUnknown, _linkRight;
-        Image _link;
+        bool _bag, _bagUnknown, _linkRight, _linkDown;
+        Image _link, _linkDownImage;
 
         public Card Card { get; private set; }
         public RectTransform Rect => _rect;
@@ -171,41 +171,50 @@ namespace Hangeul.UI
         // ───── 가방 모드 표현 ─────
         /// <summary>
         /// 가방 모드 표현. bag: 가방 모드의 어두운 카드 색(단어 카드도 물음표 카드와 같은 색). unknown: 단어가 아닌 카드라 글자 대신 물음표.
-        /// linkRight: 같은 단어의 다음 글자와 이어지는 카드라 오른쪽 경계에 카드와 같은 색의 작은 동그라미를 덧댄다. 조립 모드에서는 (false, false, false).
+        /// linkRight: 같은 단어의 다음 글자와 이어지는 카드라 오른쪽 경계에 카드와 같은 색의 작은 동그라미를 덧댄다.
+        /// linkDown: 접두어를 위에 얹은 단어에서, 바로 아래 카드(본체의 첫 글자)와 이어지는 카드라 아래쪽 경계에 동그라미를 덧댄다.
+        /// 조립 모드에서는 (false, false, false, false).
         /// </summary>
-        public void SetBag(bool bag, bool unknown, bool linkRight)
+        public void SetBag(bool bag, bool unknown, bool linkRight, bool linkDown = false)
         {
-            if (_bag == bag && _bagUnknown == unknown && _linkRight == linkRight) return;
+            if (_bag == bag && _bagUnknown == unknown && _linkRight == linkRight && _linkDown == linkDown) return;
             _bag = bag;
             _bagUnknown = unknown;
             _linkRight = linkRight;
+            _linkDown = linkDown;
             Refresh();
         }
 
         void UpdateLink()
         {
-            if (!_linkRight || _cell <= 0f)
+            UpdateLinkDot(ref _link, "Link", _linkRight, new Vector2(_cell, -_cell / 2f));           // 오른쪽 가장자리 가운데 = 다음 카드와의 경계
+            UpdateLinkDot(ref _linkDownImage, "LinkDown", _linkDown, new Vector2(_cell / 2f, -_cell));   // 아래쪽 가장자리 가운데 = 아래 카드와의 경계
+        }
+
+        void UpdateLinkDot(ref Image dot, string name, bool on, Vector2 position)
+        {
+            if (!on || _cell <= 0f)
             {
-                if (_link != null) _link.gameObject.SetActive(false);
+                if (dot != null) dot.gameObject.SetActive(false);
                 return;
             }
-            if (_link == null)
+            if (dot == null)
             {
-                var go = new GameObject("Link", typeof(RectTransform), typeof(Image));
+                var go = new GameObject(name, typeof(RectTransform), typeof(Image));
                 go.transform.SetParent(transform, false);
-                _link = go.GetComponent<Image>();
-                _link.sprite = CircleSprite();
-                _link.raycastTarget = false;
+                dot = go.GetComponent<Image>();
+                dot.sprite = CircleSprite();
+                dot.raycastTarget = false;
                 var rt = (RectTransform)go.transform;
                 rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
                 rt.pivot = new Vector2(0.5f, 0.5f);
             }
             float d = _cell * LinkRatio;
-            var r = (RectTransform)_link.transform;
+            var r = (RectTransform)dot.transform;
             r.sizeDelta = new Vector2(d, d);
-            r.anchoredPosition = new Vector2(_cell, -_cell / 2f);   // 오른쪽 가장자리 가운데 = 다음 카드와의 경계
-            _link.color = _bg.color;   // 카드 배경색과 똑같이 (가방 모드의 어두운 색)
-            _link.gameObject.SetActive(true);
+            r.anchoredPosition = position;
+            dot.color = _bg.color;   // 카드 배경색과 똑같이 (가방 모드의 어두운 색)
+            dot.gameObject.SetActive(true);
         }
 
         static Sprite _circle;

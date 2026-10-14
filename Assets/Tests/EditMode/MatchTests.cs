@@ -24,6 +24,76 @@ namespace Hangeul.Tests
             Assert.AreEqual(2, set.MaxLength);
         }
 
+        static ItemWordsFile PrefixFile()
+        {
+            var file = new ItemWordsFile { schemaVersion = 1 };
+            file.items.Add(new ItemWordEntry { word = "불", category = "접두어" });
+            file.items.Add(new ItemWordEntry { word = "얼음", category = "접두어" });
+            file.items.Add(new ItemWordEntry { word = "화살", category = "무기", acceptsPrefix = true, prefixes = new List<string> { "불", "얼음" } });
+            file.items.Add(new ItemWordEntry { word = "사과", category = "음식" });   // 접두어 불가
+            return file;
+        }
+
+        [Test]
+        public void Prefixes_BecomeCompoundWords()
+        {
+            var set = ItemWordSet.FromFile(PrefixFile(), out int skipped);
+            Assert.IsTrue(set.Contains("불화살") && set.Contains("얼음화살"));
+            Assert.IsTrue(set.IsCompound("불화살"));
+            Assert.IsFalse(set.IsCompound("화살"));
+            Assert.IsFalse(set.Contains("불사과"));
+            Assert.AreEqual(0, skipped);
+            Assert.AreEqual(4, set.MaxLength);   // 얼음화살
+        }
+
+        [Test]
+        public void Prefixes_IgnoredWhenNotAllowedOrNotAPrefixWord()
+        {
+            var file = PrefixFile();
+            file.items[2].acceptsPrefix = false;                                   // 체크를 끄면 목록이 남아 있어도 무시한다
+            Assert.IsFalse(ItemWordSet.FromFile(file, out _).Contains("불화살"));
+
+            file.items[2].acceptsPrefix = true;
+            file.items[2].prefixes.Add("사과");                                    // 접두어 카테고리의 단어가 아니면 무시한다
+            Assert.IsFalse(ItemWordSet.FromFile(file, out _).Contains("사과화살"));
+        }
+
+        [Test]
+        public void AttributeCategory_IsAlsoAPrefixSource()
+        {
+            var file = new ItemWordsFile { schemaVersion = 1 };
+            file.items.Add(new ItemWordEntry { word = "불", category = "속성" });
+            file.items.Add(new ItemWordEntry { word = "레어", category = "접두어" });
+            file.items.Add(new ItemWordEntry { word = "화살", category = "무기", acceptsPrefix = true, prefixes = new List<string> { "불", "레어" } });
+            // 속성/접두어 단어 자신에게 붙은 규칙은 무시한다
+            file.items.Add(new ItemWordEntry { word = "화염", category = "속성", acceptsPrefix = true, prefixes = new List<string> { "불" } });
+
+            var set = ItemWordSet.FromFile(file, out _);
+            Assert.IsTrue(set.Contains("불화살") && set.Contains("레어화살"));
+            Assert.IsFalse(set.Contains("불화염"));
+            Assert.IsTrue(ItemWordSet.IsPrefixCategory("속성") && ItemWordSet.IsPrefixCategory("접두어") && !ItemWordSet.IsPrefixCategory("무기"));
+        }
+
+        [Test]
+        public void ExplicitWord_WinsOverCompound()
+        {
+            var file = PrefixFile();
+            file.items.Add(new ItemWordEntry { word = "불화살", category = "무기" });
+            var set = ItemWordSet.FromFile(file, out int skipped);
+            Assert.IsTrue(set.Contains("불화살"));
+            Assert.IsFalse(set.IsCompound("불화살"));
+            Assert.AreEqual(0, skipped);
+        }
+
+        [Test]
+        public void CompoundWord_IsCompletedAsOneItem()
+        {
+            var m = new InventoryModel(6, 3);
+            m.SetWords(ItemWordSet.FromFile(PrefixFile(), out _));
+            m.AddWord("불화살");
+            Assert.AreEqual(new[] { "불화살" }, m.Scanner.Shown.Select(x => x.Word).ToArray());   // 불·화살로 쪼개지지 않고 하나로 보인다
+        }
+
         [Test]
         public void FromFile_RejectsWrongVersion() => Assert.IsNull(ItemWordSet.FromFile(new ItemWordsFile { schemaVersion = 2 }, out _));
 
@@ -61,6 +131,148 @@ namespace Hangeul.Tests
         {
             m.AddWord(letter.ToString(), (col, row));
             return m.Grid.Cards.First(c => c.Letter == letter);
+        }
+
+        // ───── 접두어 위 배치 ─────
+        static ItemWordSet PrefixSet()
+        {
+            var file = new ItemWordsFile { schemaVersion = 1 };
+            file.items.Add(new ItemWordEntry { word = "불", category = "속성" });
+            file.items.Add(new ItemWordEntry { word = "얼음", category = "접두어" });
+            file.items.Add(new ItemWordEntry { word = "화살", category = "무기", acceptsPrefix = true, prefixes = new List<string> { "불", "얼음" } });
+            file.items.Add(new ItemWordEntry { word = "사과", category = "음식" });          // 접두어 불가
+            file.items.Add(new ItemWordEntry { word = "불꽃", category = "무기" });
+            return ItemWordSet.FromFile(file, out _);
+        }
+
+        static (InventoryModel m, List<WordMatch> done) MakePrefix(int cols, int rows)
+        {
+            var m = new InventoryModel(cols, rows);
+            m.SetWords(PrefixSet());
+            var done = new List<WordMatch>();
+            m.WordCompleted += done.Add;
+            return (m, done);
+        }
+
+        [Test]
+        public void PrefixAbove_LeftAligned_IsOneWord()
+        {
+            var (m, _) = MakePrefix(6, 4);   // 알림은 StackedWord_NotifiesOnce...에서 본다(카드를 놓는 AddWord는 알리지 않고 스캔한다)
+            Put(m, '불', 0, 0);
+            Put(m, '화', 0, 1);
+            Put(m, '살', 1, 1);
+            m.Scan(true);
+
+            var w = m.Scanner.Shown.Single();
+            Assert.AreEqual("불화살", w.Word);
+            Assert.IsTrue(w.IsStacked);
+            Assert.AreEqual((1, 0, 2, 1), (w.Row, w.Col, w.Length, w.PrefixLength));
+            CollectionAssert.AreEqual(new[] { (0, 0), (0, 1), (1, 1) }, w.Cells().ToArray());     // 읽는 순서: 접두어 → 본체
+        }
+
+        [Test]
+        public void PrefixAbove_MultiLetter_CanExtendPastTheBase()
+        {
+            var (m, _) = MakePrefix(6, 4);
+            Put(m, '얼', 0, 0);
+            Put(m, '음', 1, 0);
+            Put(m, '화', 0, 1);
+            Put(m, '살', 1, 1);
+            m.Scan(true);
+            Assert.AreEqual("얼음화살", m.Scanner.Shown.Single().Word);
+        }
+
+        [Test]
+        public void PrefixAbove_NotLeftAligned_IsNotJoined()
+        {
+            var (m, _) = MakePrefix(6, 4);
+            Put(m, '불', 1, 0);            // 화가 아니라 살 위
+            Put(m, '화', 0, 1);
+            Put(m, '살', 1, 1);
+            m.Scan(true);
+            CollectionAssert.AreEquivalent(new[] { "불", "화살" }, m.Scanner.Shown.Select(x => x.Word).ToArray());
+            Assert.IsFalse(m.Scanner.Shown.Any(x => x.IsStacked));
+        }
+
+        [Test]
+        public void PrefixAbove_OnlyForWordsThatAcceptIt()
+        {
+            var (m, _) = MakePrefix(6, 4);
+            Put(m, '불', 0, 0);
+            Put(m, '사', 0, 1);
+            Put(m, '과', 1, 1);
+            m.Scan(true);
+            CollectionAssert.AreEquivalent(new[] { "불", "사과" }, m.Scanner.Shown.Select(x => x.Word).ToArray());
+        }
+
+        [Test]
+        public void Inline_BeatsPrefixAbove()
+        {
+            var (m, _) = MakePrefix(6, 4);
+            Put(m, '불', 0, 1); Put(m, '화', 1, 1); Put(m, '살', 2, 1);   // 일렬: 불화살
+            Put(m, '얼', 1, 0); Put(m, '음', 2, 0);                       // 위 배치라면 얼음화살(더 긴 단어)
+            m.Scan(true);
+
+            var shown = m.Scanner.Shown;
+            Assert.IsTrue(shown.Any(x => x.Word == "불화살" && !x.IsStacked));
+            Assert.IsFalse(shown.Any(x => x.Word == "얼음화살"));
+            Assert.IsTrue(shown.Any(x => x.Word == "얼음"));              // 얼음은 혼자 단어로 남는다
+        }
+
+        [Test]
+        public void PrefixAbove_RejectedWhenItsCardsBelongToALongerWord()
+        {
+            var (m, _) = MakePrefix(6, 4);
+            Put(m, '불', 0, 0); Put(m, '꽃', 1, 0);                       // 불꽃(일렬)
+            Put(m, '화', 0, 1); Put(m, '살', 1, 1);
+            m.Scan(true);
+            CollectionAssert.AreEquivalent(new[] { "불꽃", "화살" }, m.Scanner.Shown.Select(x => x.Word).ToArray());
+        }
+
+        [Test]
+        public void StackedWord_NotifiesOnce_AndAlsoWhenFormedByMoving()
+        {
+            var (m, done) = MakePrefix(6, 4);
+            var bul = Put(m, '불', 4, 3);
+            Put(m, '화', 0, 1);
+            Put(m, '살', 1, 1);
+            m.Scan(true);
+            done.Clear();
+
+            m.Move(bul, 0, 0);
+            m.Scan(true);
+            Assert.AreEqual(new[] { "불화살" }, done.Select(x => x.Word).ToArray());
+            m.Scan(true);
+            Assert.AreEqual(1, done.Count);
+        }
+
+        [Test]
+        public void ShiftGroup_KeepsTheShape_AndRejectsOverlapOrOutOfGrid()
+        {
+            var (m, _) = MakePrefix(6, 4);
+            var a = Put(m, '불', 0, 0);
+            var b = Put(m, '화', 0, 1);
+            var c = Put(m, '살', 1, 1);
+            var group = new List<Card> { a, b, c };
+
+            Assert.IsTrue(m.ShiftGroup(group, 2, 1));
+            Assert.AreEqual(((2, 1), (2, 2), (3, 2)), ((a.Col, a.Row), (b.Col, b.Row), (c.Col, c.Row)));
+
+            Assert.IsFalse(m.CanShiftGroup(group, 3, 0));      // 오른쪽 끝을 넘음
+            Assert.IsFalse(m.CanShiftGroup(group, 0, -2));     // 윗줄이 격자 밖
+            var blocker = Put(m, '사', 5, 3);
+            Assert.IsFalse(m.CanShiftGroup(group, 2, 1));      // 살이 (5,3)에 닿음
+            Assert.IsTrue(m.CanShiftGroup(group, 1, 0));
+        }
+
+        [Test]
+        public void StackedWordCards_AreProtectedFromShake()
+        {
+            var (m, _) = MakePrefix(6, 4);
+            Put(m, '불', 0, 0); Put(m, '화', 0, 1); Put(m, '살', 1, 1);
+            m.PlaceJamo('ㄴ', 4, 3);                                  // 화 + ㄴ = 환이 되지만 완성된 단어라 막혀야 한다
+            var r = m.ShakeBag(new System.Random(1), mergeChance: 1f, rotateChance: 0f);
+            Assert.AreEqual(0, r.Merged);
         }
 
         [Test]

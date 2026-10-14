@@ -5,7 +5,9 @@ using Hangeul.App;
 using Hangeul.Domain;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 #if UNITY_EDITOR
@@ -33,6 +35,8 @@ namespace Hangeul.Game.DevTools
         static readonly Color Brown = new Color(0.55f, 0.39f, 0.19f, 1f);
         static readonly Color BrownSel = new Color(0.78f, 0.55f, 0.22f, 1f);
         static readonly Color Danger = new Color(0.55f, 0.22f, 0.18f, 1f);
+        static readonly Color Gold = new Color(1f, 0.80f, 0.40f, 1f);        // 목록 안 글자 버튼: 선택된 것
+        static readonly Color SoftRed = new Color(1f, 0.50f, 0.45f, 1f);     // 목록 안 글자 버튼: 삭제
         static readonly Color Ink = new Color(0.97f, 0.9f, 0.76f, 1f);
         static readonly Color Dim = new Color(0.85f, 0.7f, 0.45f, 1f);
         static readonly Color Warn = new Color(1f, 0.6f, 0.45f, 1f);
@@ -40,17 +44,50 @@ namespace Hangeul.Game.DevTools
         ItemWordsFile _file;
         bool _canSave = true;
         string _filter;        // null = 전체
-        string _addCategory;
 
         Text _status, _listHeader, _addCategoryLabel;
         InputField _wordInput, _categoryInput;
         RectTransform _catContent, _wordContent;
 
+        // 접두어 선택 창(여러 개 고르기)
+        RectTransform _popup, _popupContent;
+        Text _popupTitle;
+        ItemWordEntry _popupTarget;
+        bool _popupIsCategory;   // true면 카테고리 고르기, false면 접두어 고르기
+
         void Awake()
         {
+            EnsureEventSystem();
             Load();
             Build();
             Refresh();
+        }
+
+        // 진단용: 마우스를 누르거나 뗄 때 그 자리에 있는 UI를 위에서부터 콘솔에 적는다(클릭이 안 먹는 원인을 찾을 때 켠다).
+        [SerializeField] bool logClickTargets = false;
+
+        void Update()
+        {
+            if (!logClickTargets || Mouse.current == null || EventSystem.current == null) return;
+            bool down = Mouse.current.leftButton.wasPressedThisFrame, up = Mouse.current.leftButton.wasReleasedThisFrame;
+            if (!down && !up) return;
+
+            var hits = new List<RaycastResult>();
+            EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = Mouse.current.position.ReadValue() }, hits);
+            var names = new List<string>();
+            for (int i = 0; i < hits.Count && i < 4; i++)
+            {
+                var g = hits[i].gameObject;
+                names.Add(g.transform.parent != null ? $"{g.transform.parent.name}/{g.name}" : g.name);
+            }
+            Debug.Log($"[ItemDb] {(down ? "누름" : "뗌")}: {(names.Count == 0 ? "(UI 없음)" : string.Join("  >  ", names))}");
+        }
+
+        // EventSystem이 없을 때만 만든다. 새 UI 입력 모듈은 켜질 때 기본 입력을 스스로 연결한다.
+        static void EnsureEventSystem()
+        {
+            if (FindFirstObjectByType<EventSystem>() != null) return;
+            new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
         }
 
         // ───── 데이터 ─────
@@ -68,11 +105,24 @@ namespace Hangeul.Game.DevTools
             }
             _file.categories ??= new List<string>();
             _file.items ??= new List<ItemWordEntry>();
-            _addCategory = _file.categories.Count > 0 ? _file.categories[0] : "";
+        }
+
+        // 접두어 카테고리에서 빠졌거나 삭제된 단어를 각 단어의 접두어 목록에서 지운다.
+        void PrunePrefixes()
+        {
+            var valid = new HashSet<string>();
+            foreach (var it in _file.items)
+                if (ItemWordSet.IsPrefixCategory(it.category)) valid.Add(it.word);
+            foreach (var it in _file.items)
+            {
+                it.prefixes ??= new List<string>();
+                it.prefixes.RemoveAll(p => !valid.Contains(p));
+            }
         }
 
         void Save(string message)
         {
+            PrunePrefixes();
 #if UNITY_EDITOR
             if (!_canSave) { SetStatus("파일 형식(schemaVersion)이 달라 저장하지 않았습니다.", Warn); return; }
             string path = Path.Combine(Path.GetDirectoryName(Application.dataPath), "Assets", "Resources", "item_words.json");
@@ -84,28 +134,21 @@ namespace Hangeul.Game.DevTools
 #endif
         }
 
-        string NextCategory(string current)
-        {
-            var list = _file.categories;
-            if (list.Count == 0) return "";
-            int i = list.IndexOf(current);
-            return list[(i + 1) % list.Count];
-        }
-
         // ───── 동작 ─────
         void AddWord()
         {
             string w = (_wordInput.text ?? "").Trim();
             if (w.Length == 0) return;
             if (_file.categories.Count == 0) { SetStatus("먼저 카테고리를 추가하세요.", Warn); return; }
+            if (_filter == null) { SetStatus("왼쪽에서 단어를 넣을 카테고리를 먼저 선택하세요.", Warn); return; }   // 지금 보고 있는 카테고리에 들어간다
             if (!ItemWordSet.IsValidWord(w)) { SetStatus($"한글 음절로만 쓸 수 있습니다: {w}", Warn); return; }
             foreach (char ch in w)
                 if (ForbiddenSyllables.IsBanned(ch)) { SetStatus($"금지 음절('{ch}')이 들어 있습니다: {w}", Warn); return; }
             if (_file.items.Exists(i => i.word == w)) { SetStatus($"이미 있는 단어입니다: {w}", Warn); return; }
 
-            _file.items.Insert(0, new ItemWordEntry { word = w, category = _addCategory });
+            _file.items.Insert(0, new ItemWordEntry { word = w, category = _filter });
             _wordInput.text = "";
-            Save($"추가: {w} ({_addCategory})");
+            Save($"추가: {w} ({_filter})");
             Refresh();
             _wordInput.ActivateInputField();
         }
@@ -117,7 +160,6 @@ namespace Hangeul.Game.DevTools
             if (_file.categories.Contains(c)) { SetStatus($"이미 있는 카테고리입니다: {c}", Warn); return; }
 
             _file.categories.Add(c);
-            if (string.IsNullOrEmpty(_addCategory)) _addCategory = c;
             _categoryInput.text = "";
             Save($"카테고리 추가: {c}");
             Refresh();
@@ -129,7 +171,6 @@ namespace Hangeul.Game.DevTools
             if (_file.items.Exists(i => i.category == c)) return;   // 비어 있을 때만
             _file.categories.Remove(c);
             if (_filter == c) _filter = null;
-            if (_addCategory == c) _addCategory = _file.categories.Count > 0 ? _file.categories[0] : "";
             Save($"카테고리 삭제: {c}");
             Refresh();
         }
@@ -141,11 +182,89 @@ namespace Hangeul.Game.DevTools
             Refresh();
         }
 
-        void CycleWordCategory(ItemWordEntry e)
+        void MoveWordCategory(ItemWordEntry e, string category)
         {
-            e.category = NextCategory(e.category);
+            _popup.gameObject.SetActive(false);
+            if (e.category == category) return;
+            e.category = category;
+            if (ItemWordSet.IsPrefixCategory(e.category)) { e.acceptsPrefix = false; e.prefixes.Clear(); }   // 접두어/속성 단어 자신은 접두어를 받지 않는다
             Save($"{e.word} → {e.category}");
             Refresh();
+        }
+
+        void SetAcceptsPrefix(ItemWordEntry e, bool on)
+        {
+            e.acceptsPrefix = on;
+            Save($"{e.word}: 접두어 {(on ? "가능" : "불가")}");
+            Refresh();
+        }
+
+        void TogglePrefix(ItemWordEntry e, string prefix)
+        {
+            if (!e.prefixes.Remove(prefix)) e.prefixes.Add(prefix);
+            Save($"{e.word}: 접두어 {string.Join(", ", e.prefixes)}");
+            Refresh();
+        }
+
+        void OpenPrefixPopup(ItemWordEntry e)
+        {
+            _popupTarget = e;
+            _popupIsCategory = false;
+            _popup.gameObject.SetActive(true);
+            RefreshPopup();
+        }
+
+        void OpenCategoryPopup(ItemWordEntry e)
+        {
+            _popupTarget = e;
+            _popupIsCategory = true;
+            _popup.gameObject.SetActive(true);
+            RefreshPopup();
+        }
+
+        void RefreshPopup()
+        {
+            if (_popup == null || !_popup.gameObject.activeSelf) return;
+            if (_popupTarget == null || !_file.items.Contains(_popupTarget)) { _popup.gameObject.SetActive(false); return; }
+            if (_popupIsCategory) { RefreshCategoryPopup(); return; }
+
+            // 고른 접두어로 만들어지는 새 단어를 같이 보여준다
+            string made = string.Join(", ", _popupTarget.prefixes.ConvertAll(p => p + _popupTarget.word));
+            _popupTitle.text = $"'{_popupTarget.word}' 앞에 붙을 수 있는 접두어\n<size=20>{(made.Length == 0 ? "새 단어 없음" : "→ " + made)}</size>";
+            Clear(_popupContent);
+            int n = 0;
+            foreach (var category in ItemWordSet.PrefixCategories)   // 접두어, 속성 순으로 묶어서 보여준다
+            {
+                foreach (var it in _file.items)
+                {
+                    if (it.category != category) continue;
+                    n++;
+                    string prefix = it.word;
+                    bool on = _popupTarget.prefixes.Contains(prefix);
+                    var row = NewRow(_popupContent, 52, Color.clear);
+                    AddRowButton(row, $"{(on ? "✔ " : "")}{prefix}  <size=20>{category}</size>", 28, on ? Gold : Ink, 0f, 1f, () => TogglePrefix(_popupTarget, prefix));
+                }
+            }
+            if (n == 0)
+            {
+                var row = NewRow(_popupContent, 52, Color.clear);
+                AddLabel(row, $"'{string.Join("', '", ItemWordSet.PrefixCategories)}' 카테고리에 단어가 없습니다.", 24, Dim, 0f, 1f);
+            }
+        }
+
+        // 단어를 옮길 카테고리를 고르는 창: 하나를 누르면 그 카테고리로 옮기고 닫는다
+        void RefreshCategoryPopup()
+        {
+            _popupTitle.text = $"'{_popupTarget.word}'을(를) 옮길 카테고리{"\n"}<size=20>현재: {(string.IsNullOrEmpty(_popupTarget.category) ? "(없음)" : _popupTarget.category)}</size>";
+            Clear(_popupContent);
+            var target = _popupTarget;
+            foreach (var category in _file.categories)
+            {
+                string c = category;
+                bool current = target.category == c;
+                var row = NewRow(_popupContent, 52, Color.clear);
+                AddRowButton(row, (current ? "● " : "") + c, 28, current ? Gold : Ink, 0f, 1f, () => MoveWordCategory(target, c));
+            }
         }
 
         void SetStatus(string message, Color color)
@@ -163,7 +282,10 @@ namespace Hangeul.Game.DevTools
         {
             RefreshCategories();
             RefreshWords();
-            _addCategoryLabel.text = string.IsNullOrEmpty(_addCategory) ? "(카테고리 없음)" : _addCategory;
+            RefreshPopup();
+            // 단어는 지금 선택한 카테고리에 들어간다. 어디에 들어갈지 입력창 옆에 보여준다.
+            _addCategoryLabel.text = _filter == null ? "← 카테고리를 선택하세요" : $"→ {_filter}";
+            _addCategoryLabel.color = _filter == null ? Warn : Dim;
         }
 
         void RefreshCategories()
@@ -188,8 +310,8 @@ namespace Hangeul.Game.DevTools
         {
             var row = NewRow(_catContent, 52, Color.clear);
             bool selected = _filter == filter;
-            AddRowButton(row, label, 26, selected ? BrownSel : Brown, 0f, 1f, () => { _filter = filter; Refresh(); });
-            if (deletable) AddRowButton(row, "×", 26, Danger, 52f, 0f, () => RemoveCategory(key));
+            AddRowButton(row, label, 26, selected ? Gold : Ink, 0f, 1f, () => { _filter = filter; Refresh(); });
+            if (deletable) AddRowButton(row, "×", 26, SoftRed, 52f, 0f, () => RemoveCategory(key));
         }
 
         void RefreshWords()
@@ -203,10 +325,41 @@ namespace Hangeul.Game.DevTools
                 var entry = it;
                 var row = NewRow(_wordContent, 56, Row);
                 AddLabel(row, entry.word, 32, Ink, 0f, 1f);
-                AddRowButton(row, string.IsNullOrEmpty(entry.category) ? "(없음)" : entry.category, 24, Brown, 300f, 0f, () => CycleWordCategory(entry));
-                AddRowButton(row, "×", 26, Danger, 56f, 0f, () => RemoveWord(entry));
+                AddRowButton(row, string.IsNullOrEmpty(entry.category) ? "(없음)" : entry.category, 24, Ink, 220f, 0f, () => OpenCategoryPopup(entry));
+                AddPrefixControls(row, entry);
+                AddRowButton(row, "×", 26, SoftRed, 56f, 0f, () => RemoveWord(entry));
             }
             _listHeader.text = $"단어 {shown}개  ·  {(_filter ?? "전체")}";
+        }
+
+        // 한 줄의 접두어 칸: [체크박스 접두어 가능] [붙을 수 있는 접두어 선택(창)]. 접두어 단어 자신에게는 쓰지 않는다.
+        void AddPrefixControls(RectTransform row, ItemWordEntry e)
+        {
+            if (ItemWordSet.IsPrefixCategory(e.category))
+            {
+                AddLabel(row, "(앞에 붙는 단어)", 22, Dim, 500f, 0f);
+                return;
+            }
+
+            // 체크박스
+            var box = Rect("PrefixCheck", row, 0, 0, 1, 1, 0, 0, 0, 0);
+            TextButton(box, "", 22, Ink, () => SetAcceptsPrefix(e, !e.acceptsPrefix));
+            SetWidth(box.gameObject, 190f, 0f);
+            var frame = Rect("Box", box, 0, 0.5f, 0, 0.5f, 10, -16, 42, 16);
+            Img(frame, new Color(0.10f, 0.08f, 0.06f, 1f)).raycastTarget = false;
+            var mark = Rect("Mark", frame, 0, 0, 1, 1, 5, 5, -5, -5);
+            Img(mark, e.acceptsPrefix ? Ink : Color.clear).raycastTarget = false;
+            Txt(Rect("Text", box, 0, 0, 1, 1, 52, 0, -6, 0), "접두어 가능", 22, e.acceptsPrefix ? Ink : Dim, TextAnchor.MiddleLeft);
+
+            // 붙을 수 있는 접두어 선택
+            if (!e.acceptsPrefix)
+            {
+                AddLabel(row, "—", 24, Dim, 300f, 0f);
+                return;
+            }
+            string summary = e.prefixes.Count == 0 ? "접두어 선택…" : string.Join(", ", e.prefixes.ConvertAll(p => p + e.word));   // 만들어지는 새 단어 이름
+            if (summary.Length > 14) summary = summary.Substring(0, 13) + "…";
+            AddRowButton(row, summary, 22, e.prefixes.Count == 0 ? Dim : Gold, 300f, 0f, () => OpenPrefixPopup(e));
         }
 
         static void Clear(RectTransform content)
@@ -256,18 +409,23 @@ namespace Hangeul.Game.DevTools
             var right = Rect("Right", root, 0, 0, 1, 1, 460, 20, -20, -100);
             Img(right, Panel);
             var addRow = Rect("AddRow", right, 0, 1, 1, 1, 10, -76, -10, -10);
-            _wordInput = MakeInput(Rect("Word", addRow, 0, 0, 0.5f, 1, 0, 0, -6, 0), "추가할 단어 (예: 가방) Enter");
+            _wordInput = MakeInput(Rect("Word", addRow, 0, 0, 0.6f, 1, 0, 0, -6, 0), "추가할 단어 (예: 가방) Enter");
             _wordInput.onEndEdit.AddListener(_ => { if (EnterPressed()) AddWord(); });
-            var catBtn = Btn(Rect("Cat", addRow, 0.5f, 0, 0.82f, 1, 0, 0, -6, 0), "", 24, Brown, () =>
-            {
-                _addCategory = NextCategory(_addCategory);
-                Refresh();
-            });
-            _addCategoryLabel = catBtn.GetComponentInChildren<Text>();
+            _addCategoryLabel = Txt(Rect("Target", addRow, 0.6f, 0, 0.82f, 1, 6, 0, -6, 0), "", 24, Dim, TextAnchor.MiddleLeft);
             Btn(Rect("Add", addRow, 0.82f, 0, 1, 1, 0, 0, 0, 0), "단어 추가", 24, Brown, AddWord);
 
             _listHeader = Txt(Rect("ListHeader", right, 0, 1, 1, 1, 16, -124, 0, -80), "", 26, Dim, TextAnchor.MiddleLeft);
             _wordContent = MakeScroll(Rect("WordScroll", right, 0, 0, 1, 1, 10, 10, -10, -130));
+
+            // 접두어 선택 창: 화면 전체를 덮는 어두운 막 위에 가운데 패널. 평소에는 꺼 둔다.
+            _popup = Rect("PrefixPopup", root, 0, 0, 1, 1, 0, 0, 0, 0);
+            Img(_popup, new Color(0f, 0f, 0f, 0.65f));   // 뒤쪽 클릭을 막는다
+            var win = Rect("Window", _popup, 0.5f, 0.5f, 0.5f, 0.5f, -360, -380, 360, 380);
+            Img(win, Panel);
+            _popupTitle = Txt(Rect("Title", win, 0, 1, 1, 1, 20, -70, -20, 0), "", 28, Ink, TextAnchor.MiddleLeft);
+            _popupContent = MakeScroll(Rect("Scroll", win, 0, 0, 1, 1, 16, 90, -16, -76));
+            Btn(Rect("Close", win, 0.5f, 0, 0.5f, 0, -100, 16, 100, 70), "닫기", 26, Brown, () => _popup.gameObject.SetActive(false));
+            _popup.gameObject.SetActive(false);
         }
 
         static RectTransform Rect(string name, Transform parent, float ax0, float ay0, float ax1, float ay1, float l, float b, float r, float t)
@@ -311,6 +469,20 @@ namespace Hangeul.Game.DevTools
             b.onClick.AddListener(onClick);
             var textRt = Rect("Label", rt, 0, 0, 1, 1, 6, 0, -6, 0);
             Txt(textRt, label, size, Ink, TextAnchor.MiddleCenter);
+            return b;
+        }
+
+        // 배경 없이 글자만 보이는 버튼(목록 안 줄에서 쓴다). 투명한 이미지가 클릭을 받는다.
+        // 투명 메시는 기본적으로 그려지지도, 클릭을 받지도 않으므로 cullTransparentMesh를 끈다.
+        Button TextButton(RectTransform rt, string label, int size, Color textColor, UnityAction onClick)
+        {
+            var img = Img(rt, Color.clear);
+            img.canvasRenderer.cullTransparentMesh = false;
+            var b = rt.gameObject.AddComponent<Button>();
+            b.transition = Selectable.Transition.None;
+            b.targetGraphic = img;
+            b.onClick.AddListener(onClick);
+            Txt(Rect("Label", rt, 0, 0, 1, 1, 6, 0, -6, 0), label, size, textColor, TextAnchor.MiddleCenter);
             return b;
         }
 
@@ -366,7 +538,8 @@ namespace Hangeul.Game.DevTools
             h.spacing = 8f;
             h.childAlignment = TextAnchor.MiddleLeft;
             h.childControlWidth = h.childControlHeight = true;
-            h.childForceExpandWidth = h.childForceExpandHeight = false;
+            h.childForceExpandWidth = false;
+            h.childForceExpandHeight = true;   // 버튼은 자체 높이를 갖지 않는다. 줄 높이만큼 늘리지 않으면 높이 0이 되어 보이지도, 눌리지도 않는다.
             var le = rt.gameObject.AddComponent<LayoutElement>();
             le.preferredHeight = height;
             le.minHeight = height;
@@ -390,7 +563,7 @@ namespace Hangeul.Game.DevTools
         void AddRowButton(RectTransform row, string label, int size, Color color, float preferred, float flexible, UnityAction onClick)
         {
             var rt = Rect("Button", row, 0, 0, 1, 1, 0, 0, 0, 0);
-            Btn(rt, label, size, color, onClick);
+            TextButton(rt, label, size, color, onClick);   // color는 글자색
             SetWidth(rt.gameObject, preferred, flexible);
         }
     }

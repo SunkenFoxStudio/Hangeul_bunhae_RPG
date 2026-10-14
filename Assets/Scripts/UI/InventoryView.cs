@@ -83,8 +83,10 @@ namespace Hangeul.UI
         // 가방 모드에서 한 단어로 묶인 카드들 (카드 아이디 → 소속 묶음과 그 안의 순서)
         sealed class ChunkRef
         {
-            public List<Card> Cards;
+            public List<Card> Cards;     // 읽는 순서(접두어를 위에 얹은 단어면 접두어 → 본체)
             public int Index;
+            public bool LinkRight;       // 오른쪽 이웃과 이어짐(같은 줄 안)
+            public bool LinkDown;        // 아래 카드와 이어짐(위에 얹은 접두어의 첫 글자 → 본체의 첫 글자)
         }
 
         readonly Dictionary<int, CardView> _views = new Dictionary<int, CardView>();
@@ -180,6 +182,8 @@ namespace Hangeul.UI
             Debug.Log($"[InventoryView] 단어 완성: {m.Word}");
             if (_cell <= 0f || Model.Mode == InventoryMode.Bag) return;   // 가방 모드에서는 완성 글로우를 띄우지 않는다
             CompletionOverlay.Spawn(cardLayer, new Vector2(m.Col * _cell, m.Row * _cell), new Vector2(m.Length * _cell, _cell));
+            if (m.IsStacked)   // 위에 얹은 접두어 줄도 함께 빛낸다
+                CompletionOverlay.Spawn(cardLayer, new Vector2(m.Col * _cell, (m.Row - 1) * _cell), new Vector2(m.PrefixLength * _cell, _cell));
         }
 
         // ───── 저장 ─────
@@ -261,7 +265,7 @@ namespace Hangeul.UI
         }
 
         // 가방 모드: MatchScanner.Shown(겹치지 않는 가장 긴 단어들)을 읽어 카드마다 모양을 정한다.
-        //  - 단어에 속한 카드: 글자 그대로. 2글자 이상이면 다음 글자와 이어지는 카드에 연결 동그라미.
+        //  - 단어에 속한 카드: 글자 그대로. 이웃한 글자와 이어지는 카드에 연결 동그라미(옆은 오른쪽 경계, 위에 얹은 접두어는 아래쪽 경계).
         //  - 단어에 속하지 않은 카드(미완성/자모/없는 글자): 어둡게 물음표.
         void RefreshBag()
         {
@@ -272,21 +276,34 @@ namespace Hangeul.UI
                 foreach (var m in Model.Scanner.Shown)
                 {
                     var cards = new List<Card>();
-                    for (int k = 0; k < m.Length; k++)
+                    foreach (var (col, row) in m.Cells())
                     {
-                        var c = Model.Grid.CardAt(m.Col + k, m.Row);
+                        var c = Model.Grid.CardAt(col, row);
                         if (c == null) { cards = null; break; }
                         cards.Add(c);
                     }
                     if (cards == null) continue;
-                    for (int k = 0; k < cards.Count; k++) _chunks[cards[k].Id] = new ChunkRef { Cards = cards, Index = k };
+
+                    int p = m.PrefixLength;   // cards[0..p)가 접두어(윗줄), cards[p..)가 본체
+                    for (int k = 0; k < cards.Count; k++)
+                    {
+                        bool inPrefix = k < p;
+                        bool lastOfRun = inPrefix ? k == p - 1 : k == cards.Count - 1;
+                        _chunks[cards[k].Id] = new ChunkRef
+                        {
+                            Cards = cards,
+                            Index = k,
+                            LinkRight = !lastOfRun,
+                            LinkDown = p > 0 && k == 0,
+                        };
+                    }
                 }
             }
 
             foreach (var v in _views.Values)
             {
                 _chunks.TryGetValue(v.Card.Id, out var cr);
-                v.SetBag(bag, bag && cr == null, bag && cr != null && cr.Index < cr.Cards.Count - 1);
+                v.SetBag(bag, bag && cr == null, bag && cr != null && cr.LinkRight, bag && cr != null && cr.LinkDown);
             }
         }
 
@@ -637,10 +654,11 @@ namespace Hangeul.UI
             if (occupant != null && _views.TryGetValue(occupant.Id, out var ov)) ov.Pop();
         }
 
-        // 가방 모드: 잡은 카드의 중심 칸을 기준으로 덩어리 전체가 빈 칸에 들어갈 때만 옮긴다(교환 없음). 아니면 모두 제자리로.
+        // 가방 모드: 잡은 카드의 중심 칸을 기준으로 덩어리 전체(모양 그대로)가 빈 칸에 들어갈 때만 옮긴다(교환 없음). 아니면 모두 제자리로.
         void EndBagDrag(DragState d)
         {
-            if (TryCellOf(d.Pos, out int col, out int row) && Model.MoveGroup(d.GroupCards, col - d.LeadIndex, row)) return;
+            var lead = d.View.Card;   // 잡은 카드가 놓인 칸을 기준으로 덩어리를 모양 그대로 옮긴다
+            if (TryCellOf(d.Pos, out int col, out int row) && Model.ShiftGroup(d.GroupCards, col - lead.Col, row - lead.Row)) return;
             foreach (var gv in d.Group) ReturnHome(gv);
         }
 
@@ -725,20 +743,52 @@ namespace Hangeul.UI
             _highlight.enabled = true;
         }
 
-        // 가방 모드: 덩어리가 들어갈 자리(가로 n칸)를 놓을 수 있을 때만 초록으로 보여준다
+        // 가방 모드: 덩어리가 들어갈 자리(모양 그대로)를 놓을 수 있을 때만 칸마다 초록으로 보여준다
         void UpdateBagFeedback()
         {
             var d = _drag;
             if (d.OverTrash || !TryCellOf(d.Pos, out int col, out int row)) { ClearFeedback(); return; }
 
-            int start = col - d.LeadIndex;
-            if (!Model.CanMoveGroup(d.GroupCards, start, row)) { _highlight.enabled = false; return; }
+            var lead = d.View.Card;
+            int dCol = col - lead.Col, dRow = row - lead.Row;
+            if (!Model.CanShiftGroup(d.GroupCards, dCol, dRow)) { HideGroupHighlights(); _highlight.enabled = false; return; }
 
-            var rt = (RectTransform)_highlight.transform;
-            rt.sizeDelta = new Vector2(_cell * d.GroupCards.Count, _cell);
-            rt.anchoredPosition = new Vector2(start * _cell, -row * _cell);
-            _highlight.color = EmptyColor;
-            _highlight.enabled = true;
+            for (int i = 0; i < d.GroupCards.Count; i++)
+            {
+                var img = i == 0 ? _highlight : GroupHighlight(i - 1);
+                var rt = (RectTransform)img.transform;
+                rt.sizeDelta = new Vector2(_cell, _cell);
+                rt.anchoredPosition = new Vector2((d.GroupCards[i].Col + dCol) * _cell, -(d.GroupCards[i].Row + dRow) * _cell);
+                img.color = EmptyColor;
+                img.enabled = true;
+            }
+            for (int i = d.GroupCards.Count - 1; i < _extraHighlights.Count; i++) _extraHighlights[i].enabled = false;
+        }
+
+        // 덩어리의 2번째 이후 카드 칸을 표시하는 강조 이미지(필요할 때 만들어 재사용)
+        readonly List<Image> _extraHighlights = new List<Image>();
+
+        Image GroupHighlight(int index)
+        {
+            while (_extraHighlights.Count <= index)
+            {
+                var go = new GameObject("CellHighlightExtra", typeof(RectTransform), typeof(Image));
+                go.transform.SetParent(cardLayer, false);
+                var rt = (RectTransform)go.transform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0f, 1f);
+                var img = go.GetComponent<Image>();
+                img.raycastTarget = false;
+                img.enabled = false;
+                _extraHighlights.Add(img);
+            }
+            var h = _extraHighlights[index];
+            h.transform.SetSiblingIndex(_highlight.transform.GetSiblingIndex());   // 카드보다 아래, 첫 강조 바로 뒤
+            return h;
+        }
+
+        void HideGroupHighlights()
+        {
+            foreach (var h in _extraHighlights) h.enabled = false;
         }
 
         CardView _holdVisual;
@@ -765,6 +815,7 @@ namespace Hangeul.UI
             _holdVisual = null;
             _hold.Reset();
             _highlight.enabled = false;
+            HideGroupHighlights();
         }
 
         // ───── 매 프레임 ─────

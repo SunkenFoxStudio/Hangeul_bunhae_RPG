@@ -312,9 +312,9 @@ namespace Hangeul.App
         {
             var ids = new HashSet<int>();
             foreach (var m in Scanner.FindAll(Grid))
-                for (int k = 0; k < m.Length; k++)
+                foreach (var (col, row) in m.Cells())
                 {
-                    var card = Grid.CardAt(m.Col + k, m.Row);
+                    var card = Grid.CardAt(col, row);
                     if (card != null) ids.Add(card.Id);
                 }
             return ids;
@@ -377,6 +377,32 @@ namespace Hangeul.App
                 var occupant = Grid.CardAt(startCol + i, row);
                 if (occupant != null && !cards.Contains(occupant)) return false;
             }
+            return true;
+        }
+
+        /// <summary>
+        /// 모양이 정해진 묶음(일렬이든 접두어를 위에 얹은 모양이든)을 모양 그대로 (dCol,dRow)만큼 옮길 수 있는지.
+        /// 목적지가 모두 격자 안이고, 비어 있거나 묶음 자신의 칸이어야 한다(자리 교환은 하지 않는다).
+        /// </summary>
+        public bool CanShiftGroup(IReadOnlyList<Card> cards, int dCol, int dRow)
+        {
+            if (cards == null || cards.Count == 0) return false;
+            foreach (var c in cards)
+            {
+                int col = c.Col + dCol, row = c.Row + dRow;
+                if (!Grid.InGrid(col, row)) return false;
+                var occupant = Grid.CardAt(col, row);
+                if (occupant != null && !cards.Contains(occupant)) return false;
+            }
+            return true;
+        }
+
+        /// <summary>묶음을 모양 그대로 (dCol,dRow)만큼 옮긴다. 옮길 수 없으면 아무것도 바꾸지 않고 false.</summary>
+        public bool ShiftGroup(IReadOnlyList<Card> cards, int dCol, int dRow)
+        {
+            if (!CanShiftGroup(cards, dCol, dRow)) return false;
+            foreach (var c in cards) { c.Col += dCol; c.Row += dRow; }
+            foreach (var c in cards) Notify(ChangeType.Moved, c);
             return true;
         }
 
