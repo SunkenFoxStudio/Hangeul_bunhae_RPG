@@ -1,3 +1,4 @@
+using Hangeul.Game.Combat;
 using Hangeul.Game.FSM;
 using Hangeul.Game.Interaction;
 using UnityEngine;
@@ -23,6 +24,18 @@ namespace Hangeul.Game.Character
         [Header("Interaction")]
         [SerializeField, Min(0f)] float interactDuration = 0.25f;
 
+        [Header("Combat")]
+        [Tooltip("Health 컴포넌트가 없으면 이 값으로 자동으로 붙인다(하트 방식 정수 체력).")]
+        [SerializeField, Min(1)] int maxHealth = 6;
+        [Tooltip("한 번 맞은 뒤 더 맞지 않는 시간(초).")]
+        [SerializeField, Min(0f)] float invincibleSeconds = 1f;
+        [Tooltip("맞아서 밀려난 뒤 멈추는 빠르기(단위/초²).")]
+        [SerializeField, Min(0f)] float hurtDeceleration = 8f;
+        [Tooltip("쓰러진 뒤 되살아나기까지 걸리는 시간(초).")]
+        [SerializeField, Min(0f)] float respawnDelay = 1.5f;
+        [Tooltip("되살아난 직후 무적 시간(초).")]
+        [SerializeField, Min(0f)] float respawnInvincibleSeconds = 1.5f;
+
         [Header("Debug")]
         [SerializeField] string currentState;
 
@@ -40,6 +53,12 @@ namespace Hangeul.Game.Character
         public PlayerMoveState Move { get; private set; }
         public PlayerLockedState Locked { get; private set; }
         public PlayerInteractState Interact { get; private set; }
+        public PlayerHurtState Hurt { get; private set; }
+        public PlayerDeadState Dead { get; private set; }
+
+        public Health Health { get; private set; }
+        public float HurtDeceleration => hurtDeceleration;
+        public float RespawnDelay => respawnDelay;
 
         public PlayerInputReader Input => _input;
         public InteractionSensor Sensor { get; private set; }
@@ -57,12 +76,52 @@ namespace Hangeul.Game.Character
             Sensor = GetComponent<InteractionSensor>();
             if (Sensor == null) Sensor = gameObject.AddComponent<InteractionSensor>();
 
+            // 체력이 없으면 설정값으로 자동으로 붙인다(직접 붙이면 인스펙터에서 조절할 수 있다)
+            Health = GetComponent<Health>();
+            if (Health == null)
+            {
+                Health = gameObject.AddComponent<Health>();
+                Health.Configure(Team.Player, maxHealth, invincibleSeconds);
+            }
+
             Idle = new PlayerIdleState(this);
             Move = new PlayerMoveState(this);
             Locked = new PlayerLockedState(this);
             Interact = new PlayerInteractState(this);
+            Hurt = new PlayerHurtState(this);
+            Dead = new PlayerDeadState(this);
 
             Fsm.StateChanged += (_, next) => currentState = next.GetType().Name;
+        }
+
+        void OnEnable()
+        {
+            Health.Damaged += OnDamaged;
+            Health.Died += OnDied;
+        }
+
+        void OnDisable()
+        {
+            Health.Damaged -= OnDamaged;
+            Health.Died -= OnDied;
+        }
+
+        void OnDamaged(Health health, DamageInfo info, int taken)
+        {
+            if (Fsm.Current != Dead) Fsm.ChangeState(Hurt);
+        }
+
+        void OnDied(Health health) => Fsm.ChangeState(Dead);
+
+        /// <summary>
+        /// 쓰러진 뒤 되살아난다: 체력을 채우고 잠깐 무적으로 Idle에 돌아온다.
+        /// 지금은 쓰러진 자리에서 되살아난다(체크포인트로 돌아가는 것은 체크포인트를 만들 때 이 함수에 넣는다).
+        /// </summary>
+        public void Respawn()
+        {
+            Health.Revive();
+            Health.GrantInvincibility(respawnInvincibleSeconds);
+            Fsm.ChangeState(Idle);
         }
 
         void Start() => Fsm.Initialize(Idle);

@@ -303,7 +303,7 @@ HTML에서 렉이 났던 지점이라 처음부터 **성능 상한을 설계에 
 ### 5.6a 가방 흔들기 (게임 전용 기능, 조립 모드) — Unity Physics2D (2026-10-14)
 - 조립 모드의 **'가방 흔들기' 버튼**을 누르면 **주사위를 쥐고 위아래로 흔들듯이** 인벤토리의 카드들이 **Unity 물리엔진(Physics2D)** 으로 튕기고 구르며 서로 부딪히고, 부딪혀서 합칠 수 있으면 조립된다. 가방 모드에서는 버튼이 숨겨진다.
 - **구조**: `ShakeWorld`(`Hangeul.UI`, Unity 물리) + `ShakeSession`(`Hangeul.App`, 규칙) + `InventoryView.UpdateShake`(화면).
-  - `ShakeWorld`: 카드마다 `Rigidbody2D` + `BoxCollider2D`(사각형 그대로 구르고 쌓임, 한 칸 = 1 유니티 단위), 격자 영역은 정적 벽 4개(두께 3). 게임 월드와 부딪히지 않도록 멀리 떨어진 좌표(`shakeWorldOrigin`, 기본 (2000,2000))에 만들고 끝나면 모두 지운다. `Physics2D.simulationMode`는 건드리지 않는다(자동 시뮬레이션 그대로 사용).
+  - `ShakeWorld`: 카드마다 `Rigidbody2D` + `BoxCollider2D`(사각형 그대로 구르고 쌓임, 한 칸 = 1 유니티 단위), 격자 영역은 정적 벽 4개(두께 3). **독립된 물리 씬**(`LocalPhysicsMode.Physics2D`)에 만들어 게임 월드의 물체와 절대 부딪히지 않고, **1/120초 걸음으로 직접 진행**한다(`PhysicsScene2D.Simulate`, 매 프레임 `InventoryView`가 `Tick(Time.unscaledDeltaTime)`). 독립 물리 씬은 자동으로 시뮬레이션되지 않으므로, 인벤토리를 열어 게임 시간이 멈춰 있어도(`Time.timeScale = 0`, §13.9) 흔들기 물리는 돈다. 끝나면 씬째 지운다.
   - **흔드는 방법 (2026-10-14 수정)**: 카드를 계속 떠는 힘(사인파 진동)은 **주지 않는다** — 작은 진폭의 진동처럼 보여서 뺐다. 대신 `ShakeSeconds` 동안 `TossInterval`(기본 0.7초)마다 모든 카드를 **위로 던져 올리고**(`TossSpeed` 칸/초에 카드마다 ±25%, 좌우로 `Sideways`만큼 흩어짐, 회전 `Spin`), 던지는 사이에는 `Gravity`로 떨어지며 서로 부딪힌다(주사위를 쥐고 위로 흔들듯이). `TossSpeed`를 0으로 하면 던지지 않고 중력으로 떨어지기만 한다. 벽은 움직이지 않아 카드가 화면의 격자 밖으로 나가지 않는다. 프로젝트의 Physics2D 중력 설정과 무관하게 직접 힘을 준다(`gravityScale = 0`).
   - `ShakeSession`: 물리가 알려 주는 것을 모델에 반영하는 순수 C#. 부딪힘 → 조립(`TryMerge`), 도는 각도 → 자모 모양(`SetPose`), 끝 → 칸 맞추기(`Finish`). 물리 없이도 EditMode에서 테스트한다.
 - **움직이는 카드**: **자모 카드와 아직 단어가 아닌 음절 카드 전부**. **이미 완성된 단어를 이루는 카드**(`InventoryModel.CompletedWordCardIds`, 접두어를 위에 얹은 단어 포함)는 **가만히 있고 합쳐지지도 않는다**(리지드바디 없는 정적 충돌체 = 장애물).
@@ -311,7 +311,7 @@ HTML에서 렉이 났던 지점이라 처음부터 **성능 상한을 설계에 
 - **회전**: 카드가 물리로 도는 각도가 누적되고(`ShakeBody.Angle`), **자모 카드는 90°를 넘을 때마다 글자가 바뀐다**(`RotationSession`: `ㅏ→ㅜ→ㅓ→ㅗ`, `ㄱ↔ㄴ` 등. 모양이 없는 자모는 보기만 돈다). 글자가 바뀐 만큼(Rn·90°)을 뺀 나머지 각도만 화면에서 돌려 그리므로 물리 각도 그대로 보이고 글자가 바뀌어도 끊기지 않는다(`DisplayAngleDeg`). 음절 카드도 물리 각도 그대로 구르지만 글자는 바뀌지 않는다. 조립 직후 새 카드는 그 각도에서부터 다시 센다(`AngleBase`).
 - **끝날 때**: 흔드는 시간(`ShakeSeconds`)이 지난 뒤 모든 카드가 멈추거나(`MaxSettleSeconds` 경과, 또는 물리가 안 돌 때를 대비한 실시간 한도) 끝난다. 도는 자모를 가장 가까운 90° 모양으로 확정하고(`FinishRotation`), **각 카드를 자기 위치에서 가장 가까운 빈 칸에 맞춘다**(`InventoryModel.ApplyLayout`로 한꺼번에 이동, 칸이 바뀐 카드마다 `Moved`). 글자는 0.2초 동안 똑바로 선다. **중력이 있으면(기본 12) 카드가 아래쪽에 쌓인 채로 칸에 맞춰진다** — 위치를 유지하고 싶으면 `shakeGravity`를 0으로.
 - **모델과 화면**: 흔드는 동안 카드의 칸(`Col/Row`)은 그대로이고 화면 위치만 물리가 정한다. 모델이 바뀌는 것은 조립·회전 확정·마지막 칸 배치뿐이다. 흔드는 동안에는 **카드 조작, 단어 완성 확인, 자동 저장을 미루고**(끝난 뒤 한 번에), 흔들다 만들어진 **단어는 끝난 뒤 평소처럼 알림**(글로우, `WordCompleted`)이 간다. 모드가 가방으로 바뀌면 그 자리에서 멈추고 칸에 맞춘다.
-- 인스펙터(`InventoryView` ▸ 가방 흔들기): `shakeMergeChance`, `shakeSeconds`, `shakeSettleSeconds`, `shakeTossSpeed`, `shakeTossInterval`, `shakeSideways`, `shakeTossSpin`, `shakeGravity`, `shakeBounce`, `shakeFriction`, `shakeWorldOrigin`.
+- 인스펙터(`InventoryView` ▸ 가방 흔들기): `shakeMergeChance`, `shakeSeconds`, `shakeSettleSeconds`, `shakeTossSpeed`, `shakeTossInterval`, `shakeSideways`, `shakeTossSpin`, `shakeGravity`, `shakeBounce`, `shakeFriction`.
 - 이전 방식들은 모두 없앴다: 카드가 제자리에서 흔들린 뒤 결과를 한 번에 적용하던 순간 이동식 `InventoryModel.ShakeBag`(와 그 테스트), 직접 만든 간단한 원 충돌 시뮬레이션. 지금은 물리로 흔들리는 것만 보이고, 카드가 스스로 떠는 연출은 없다. 효과음·부딪힐 때 흔들림 같은 연출은 후속.
 
 ### 5.6 삭제(버리기) — 게임에서는 쓰레기통 방식 (확정)
@@ -591,6 +591,21 @@ Idle ──입력──▶ Move ──입력 없음──▶ Idle
 - **게임 의도**: 속성이 붙은 쪽이 더 강한 대신 **인벤토리 칸을 더 쓴다**는 선택(위험/보상)을 노린다. 합성 아이템의 실제 효과·수치는 아이템 DB 설계에서 정한다(미정).
 - 메뉴: `GameObject ▸ Hangeul ▸ Create Item DB Scene`(씬 생성 + Build Settings 등록), `DB Scene Button`(게임 씬에 한 번).
 - 코드: `Assets/Scripts/Game/DevTools`. 단어별 종류(음식/무기/장비)·효과 필드는 아직 없다(§13.7a, 아이템 DB 설계 때 추가).
+
+### 13.8b 전투 기반 (2026-10-14)
+- **체력은 정수**: `HitPoints`(`Hangeul.App`, 순수 규칙 — 깎기/회복/부활/최대치, EditMode 테스트)를 `Health`(`Hangeul.Game.Combat`)가 감싼다. 하트처럼 1, 2씩 깎는다(`DamageInfo.Amount`).
+- **피해 흐름**: 공격하는 쪽이 `DamageInfo`(피해량, 편 `Team`, 밀려나는 속도, 경직 시간, 속성 `Element`, 때린 오브젝트)를 만들어 맞은 콜라이더에서 찾은 `IDamageable.TakeDamage`를 부른다(`GetComponentInParent<IDamageable>()`). `Health`는 같은 편(Neutral 제외)·무적·이미 죽음이면 거절하고, 맞으면 `Damaged`(이후 체력이 0이면 `Died`)와 `Changed`를 발생시킨다.
+- **무적**: 한 번 맞으면 `invincibleSeconds` 동안 더 맞지 않는다(게임 시간 기준이라 일시정지 중에는 흐르지 않는다). 부활 직후에도 잠깐 무적(`GrantInvincibility`).
+- **플레이어**: `Health`가 없으면 `PlayerController`가 설정값(`maxHealth` 6, 무적 1초)으로 자동으로 붙인다. 맞으면 `PlayerHurtState`(경직 + 공격이 정한 속도로 밀려난 뒤 `hurtDeceleration`으로 멈춤), 체력이 0이면 `PlayerDeadState`(`respawnDelay` 뒤 `Respawn()`). 지금은 쓰러진 자리에서 되살아나며, **체크포인트로 돌아가는 것은 체크포인트를 만들 때 `Respawn()`에 넣는다**(B 단계).
+- **레이어**: `Hangeul ▸ Setup ▸ Combat Layers` 메뉴가 `Player`, `Enemy`, `PlayerAttack`, `EnemyAttack` 레이어를 추가하고 충돌 매트릭스를 정리한다(공격은 자기 편 몸·다른 공격과 부딪히지 않음, 벽/상대 몸과는 부딪힘). 씬의 플레이어를 Player 레이어로 옮긴다. `CombatLayers.TargetMask(team)`이 그 편의 공격이 맞출 몸의 마스크(Default 포함)를 준다. 벽 같은 월드는 Default.
+- **테스트**: `GameObject ▸ Hangeul ▸ Damage Zone (테스트용)`이 닿으면 피해를 주는 구역(`DamageZone`)을 만든다. 함정으로도 쓴다. 피해량/밀려남/경직은 인스펙터에서 조절.
+- 플레이어 피격 영역은 지금 발밑 작은 콜라이더다. 적의 공격 판정을 만들 때 몸통 크기의 피격 영역(Hurtbox)을 따로 두는 것을 검토한다.
+
+### 13.8a 일시정지 (확정, 2026-10-14)
+- **인벤토리를 열면 게임 시간이 멈춘다**(젤다식): `GamePause.Set(PauseReason.Inventory, true)` → `Time.timeScale = 0`. 플레이어·적·투사체·애니메이션·게임 월드 물리가 모두 멈춘다. 정지 이유는 플래그(`PauseReason`: Inventory, Dialogue, Menu)이고 하나라도 켜져 있으면 멈춘다(`GamePause`, `Hangeul.Game`).
+- **멈춘 동안에도 움직여야 하는 것은 `Time.unscaledDeltaTime`을 쓴다**: 인벤토리 패널 슬라이드, 카메라 이동(`InventoryCameraShift`), UI 연출(카드 등), 안내 문구, **가방 흔들기 물리**(독립 물리 씬을 수동 진행, §5.6a).
+- **게임 코드의 규칙**: 플레이어/적/투사체/게임 연출은 `Time.deltaTime`·`Time.fixedDeltaTime`(멈추면 같이 멈춤)을 쓰면 별도 처리 없이 정지가 적용된다. 정지 중에도 돌아야 하는 UI/연출만 `unscaled`를 쓴다.
+- 인벤토리가 열린 채 사라져도 정지가 남지 않게 `InventoryToggle.OnDestroy`에서 해제하고, 플레이를 시작할 때 `GamePause`를 초기화한다.
 
 ### 13.8 미해결
 - Interact 애니메이션(현재 Idle 재생).

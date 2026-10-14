@@ -49,7 +49,7 @@ namespace Hangeul.Game.Inventory
             float target = _open ? 1f : 0f;
             if (Mathf.Approximately(_t, target) && Mathf.Approximately(_velocity, 0f)) return;
 
-            _t = Mathf.SmoothDamp(_t, target, ref _velocity, smoothTime);
+            _t = Mathf.SmoothDamp(_t, target, ref _velocity, smoothTime, Mathf.Infinity, Time.unscaledDeltaTime);   // 게임 시간이 멈춰도 움직이도록
             if (Mathf.Abs(_t - target) < 0.001f) { _t = target; _velocity = 0f; }
             Apply();
         }

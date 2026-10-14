@@ -1,4 +1,5 @@
 using Hangeul.Game.FSM;
+using UnityEngine;
 
 namespace Hangeul.Game.Character
 {
@@ -87,5 +88,59 @@ namespace Hangeul.Game.Character
         public override void Enter() => Owner.Anim?.Play(PlayerAnim.Idle);
 
         public override void FixedTick(float fixedDeltaTime) => Owner.Decelerate(fixedDeltaTime);
+    }
+
+    /// <summary>
+    /// 맞은 직후. 공격이 정한 시간(<see cref="Combat.DamageInfo.StunSeconds"/>) 동안 조작할 수 없고,
+    /// 공격이 정한 속도(<see cref="Combat.DamageInfo.Knockback"/>)로 밀려난 뒤 서서히 멈춘다. 끝나면 Idle(체력이 0이면 Dead가 이 상태를 덮어쓴다).
+    /// </summary>
+    public sealed class PlayerHurtState : PlayerState
+    {
+        float _timer;
+
+        public PlayerHurtState(PlayerController owner) : base(owner) { }
+
+        public override void Enter()
+        {
+            var hit = Owner.Health.LastHit;
+            _timer = Mathf.Max(0.05f, hit.StunSeconds);
+            Owner.Anim?.Play(PlayerAnim.Idle);
+            Owner.Body.linearVelocity = hit.Knockback;
+        }
+
+        public override void Tick(float deltaTime)
+        {
+            _timer -= deltaTime;
+            if (_timer <= 0f) Owner.Fsm.ChangeState(Owner.Idle);
+        }
+
+        public override void FixedTick(float fixedDeltaTime) =>
+            Owner.ApproachVelocity(Vector2.zero, Owner.HurtDeceleration, fixedDeltaTime);
+    }
+
+    /// <summary>
+    /// 체력이 0이 됐을 때. 잠깐 쓰러져 있다가 <see cref="PlayerController.Respawn"/>으로 되살아난다.
+    /// (체크포인트가 생기기 전까지는 그 자리에서 되살아난다.)
+    /// </summary>
+    public sealed class PlayerDeadState : PlayerState
+    {
+        float _timer;
+
+        public PlayerDeadState(PlayerController owner) : base(owner) { }
+
+        public override void Enter()
+        {
+            _timer = Owner.RespawnDelay;
+            Owner.Anim?.Play(PlayerAnim.Idle);
+        }
+
+        public override void Tick(float deltaTime)
+        {
+            _timer -= deltaTime;
+            if (_timer <= 0f) Owner.Respawn();
+        }
+
+        public override void FixedTick(float fixedDeltaTime) =>
+            Owner.ApproachVelocity(Vector2.zero, Owner.HurtDeceleration, fixedDeltaTime);
     }
 }

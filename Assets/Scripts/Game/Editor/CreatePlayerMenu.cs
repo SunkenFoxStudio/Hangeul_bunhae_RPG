@@ -1,4 +1,5 @@
 using Hangeul.Game.Character;
+using Hangeul.Game.Combat;
 using UnityEditor;
 using UnityEngine;
 
@@ -12,6 +13,8 @@ namespace Hangeul.Game.Editor
         {
             var root = new GameObject("Player");
             Undo.RegisterCreatedObjectUndo(root, "Create Player");
+            int playerLayer = LayerMask.NameToLayer(CombatLayers.Player);   // Hangeul ▸ Setup ▸ Combat Layers를 실행했다면 Player 레이어로
+            if (playerLayer >= 0) root.layer = playerLayer;
 
             // 탑다운: 중력 없음, 회전 고정, 보간
             var body = root.AddComponent<Rigidbody2D>();
@@ -36,6 +39,8 @@ namespace Hangeul.Game.Editor
             var sr = visual.AddComponent<SpriteRenderer>();
             sr.sortingOrder = 0;
             var animator = visual.AddComponent<PlayerSpriteAnimator>();
+
+            CreateCombatMenus.AddPlayerHealth(root);   // 체력(하트 방식 정수). 인스펙터에서 최대 체력/무적 시간을 조절한다
 
             var controller = root.AddComponent<PlayerController>();
             var so = new SerializedObject(controller);

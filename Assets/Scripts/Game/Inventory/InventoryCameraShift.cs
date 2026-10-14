@@ -39,7 +39,7 @@ namespace Hangeul.Game.Inventory
         void LateUpdate()
         {
             float target = _shifted ? screenShift * ViewWidth() : 0f;
-            _shiftX = Mathf.SmoothDamp(_shiftX, target, ref _velocity, smoothTime);
+            _shiftX = Mathf.SmoothDamp(_shiftX, target, ref _velocity, smoothTime, Mathf.Infinity, Time.unscaledDeltaTime);   // 인벤토리를 열면 게임 시간이 멈추므로 멈추지 않는 시간으로
             // 카메라가 기준점보다 오른쪽을 비추면 플레이어는 화면 왼쪽에 보인다
             _offset.ShiftX = _shiftX;
         }

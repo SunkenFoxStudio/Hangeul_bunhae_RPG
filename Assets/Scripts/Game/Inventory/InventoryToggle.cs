@@ -7,7 +7,7 @@ namespace Hangeul.Game.Inventory
 {
     /// <summary>
     /// Tab 키로 인벤토리를 열고 닫는다. 열려 있는 동안 플레이어 조작을 잠그고(Locked 상태),
-    /// 카메라를 오른쪽으로 밀어 플레이어가 화면 왼쪽에 보이게 한다. 인벤토리 UI는 <see cref="onToggled"/>에 연결한다.
+    /// 카메라를 오른쪽으로 밀어 플레이어가 화면 왼쪽에 보이게 한다. 열려 있는 동안 게임 시간도 멈춘다(<see cref="GamePause"/>). 인벤토리 UI는 <see cref="onToggled"/>에 연결한다.
     /// (오른쪽에 표시할 패널을 켜고 끄는 일은 UI 쪽 담당)
     /// </summary>
     public sealed class InventoryToggle : MonoBehaviour
@@ -30,6 +30,8 @@ namespace Hangeul.Game.Inventory
             else if (player.IsFree) Open();   // 상호작용/대화 등 다른 잠금 중에는 열지 않는다
         }
 
+        void OnDestroy() => GamePause.Set(PauseReason.Inventory, false);   // 열린 채로 사라져도 게임이 멈춘 채 남지 않게
+
         public void Open() => Set(true);
         public void Close() => Set(false);
 
@@ -38,6 +40,7 @@ namespace Hangeul.Game.Inventory
             if (IsOpen == open) return;
             IsOpen = open;
             player.SetControlLocked(open);
+            GamePause.Set(PauseReason.Inventory, open);   // 열려 있는 동안 게임 시간이 멈춘다(UI, 카메라 이동, 가방 흔들기 물리는 멈추지 않는 시간으로 돈다)
             if (cameraShift != null) cameraShift.SetShifted(open);
             Toggled?.Invoke(open);
             onToggled.Invoke(open);

@@ -74,8 +74,6 @@ namespace Hangeul.UI
         [SerializeField, Range(0f, 1f)] float shakeBounce = 0.35f;
         [Tooltip("카드와 벽 사이 마찰.")]
         [SerializeField, Range(0f, 1f)] float shakeFriction = 0.35f;
-        [Tooltip("물리 시뮬레이션을 돌리는 월드 좌표(격자 왼쪽 위). 게임 월드의 물체와 부딪히지 않도록 멀리 떨어진 곳이어야 한다.")]
-        [SerializeField] Vector2 shakeWorldOrigin = new Vector2(2000f, 2000f);
 
         [Header("디버그")]
         [Tooltip("켜면 마우스를 누를 때마다 그 위치에서 클릭을 받는 UI 목록(위→아래)을 Console에 출력한다.")]
@@ -173,7 +171,7 @@ namespace Hangeul.UI
 
         void OnDestroy()
         {
-            if (_shakeWorld != null) Destroy(_shakeWorld.gameObject);   // 흔드는 도중에 사라지면 물리 월드도 치운다
+            if (_shakeWorld != null) _shakeWorld.Dispose();   // 흔드는 도중에 사라지면 물리 월드도 치운다
             if (Model == null) return;
             Model.Changed -= OnChanged;
             Model.WordCompleted -= OnWordCompleted;
@@ -275,7 +273,7 @@ namespace Hangeul.UI
             _shaking = true;
 
             if (_shakeSession.Finished) { UpdateShake(); return; }   // 흔들 카드가 없다
-            _shakeWorld = ShakeWorld.Create(_shakeSession, shakeWorldOrigin, Model.Grid.Cols, Model.Grid.Rows);
+            _shakeWorld = ShakeWorld.Create(_shakeSession, Model.Grid.Cols, Model.Grid.Rows);
         }
 
         // 물리를 한 프레임 진행해 세션에 반영하고, 카드 화면을 그 위치/회전에 맞춘다. 끝나면 정리한다.
@@ -287,7 +285,7 @@ namespace Hangeul.UI
             if (_shakeWorld != null)
             {
                 if (Model.Mode != InventoryMode.Assemble) _shakeWorld.Abort();   // 모드가 바뀌면 그 자리에서 멈추고 칸에 맞춘다
-                else _shakeWorld.Tick();
+                else _shakeWorld.Tick(Time.unscaledDeltaTime);   // 게임 시간이 멈춰 있어도(인벤토리 열림) 흔들리도록 멈추지 않는 시간으로 진행
             }
 
             foreach (var body in session.Bodies)
@@ -307,7 +305,7 @@ namespace Hangeul.UI
 
             if (!session.Finished) return;
             Debug.Log($"[InventoryView] 가방 흔들기: 조립 {session.Merged}장");
-            if (_shakeWorld != null) Destroy(_shakeWorld.gameObject);
+            if (_shakeWorld != null) _shakeWorld.Dispose();
             _shakeWorld = null;
             _shakeSession = null;
             _shaking = false;
