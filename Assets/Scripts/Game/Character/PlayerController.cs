@@ -2,6 +2,7 @@ using Hangeul.Game.Combat;
 using Hangeul.Game.FSM;
 using Hangeul.Game.Interaction;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace Hangeul.Game.Character
 {
@@ -53,6 +54,8 @@ namespace Hangeul.Game.Character
         public PlayerMoveState Move { get; private set; }
         public PlayerLockedState Locked { get; private set; }
         public PlayerInteractState Interact { get; private set; }
+        public PlayerAttackState Attack { get; private set; }
+        public PlayerMeleeAttack Melee { get; private set; }
         public PlayerHurtState Hurt { get; private set; }
         public PlayerDeadState Dead { get; private set; }
 
@@ -84,10 +87,15 @@ namespace Hangeul.Game.Character
                 Health.Configure(Team.Player, maxHealth, invincibleSeconds);
             }
 
+            // 공격 설정: 없으면 기본값으로 자동으로 붙인다(Hangeul ▸ Setup ▸ Player Attack 메뉴로 미리 붙이면 인스펙터에서 조절할 수 있다)
+            Melee = GetComponent<PlayerMeleeAttack>();
+            if (Melee == null) Melee = gameObject.AddComponent<PlayerMeleeAttack>();
+
             Idle = new PlayerIdleState(this);
             Move = new PlayerMoveState(this);
             Locked = new PlayerLockedState(this);
             Interact = new PlayerInteractState(this);
+            Attack = new PlayerAttackState(this);
             Hurt = new PlayerHurtState(this);
             Dead = new PlayerDeadState(this);
 
@@ -164,6 +172,21 @@ namespace Hangeul.Game.Character
         {
             if (!_input.InteractPressed || Sensor.Current == null) return false;
             Fsm.ChangeState(Interact);
+            return true;
+        }
+
+        /// <summary>바라보는 방향을 직접 정한다(공격 방향 등).</summary>
+        public void SetFacing(Facing facing) => Facing = facing;
+
+        /// <summary>
+        /// 공격 입력을 눌렀으면 Attack 상태로 전이한다. 전이했으면 true. Idle/Move 상태의 Tick에서 호출한다.
+        /// UI(버튼 등) 위에서 누른 클릭은 공격으로 치지 않는다.
+        /// </summary>
+        public bool TryStartAttack()
+        {
+            if (!_input.AttackPressed || Health.IsDead) return false;
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return false;
+            Fsm.ChangeState(Attack);
             return true;
         }
 

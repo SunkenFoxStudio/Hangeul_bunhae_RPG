@@ -14,10 +14,12 @@ namespace Hangeul.Game.Character
 
         [SerializeField] string interactAction = "Player/Interact";
         [SerializeField] string inventoryAction = "Player/Inventory";
+        [SerializeField] string attackAction = "Player/Attack";
 
         InputAction _move;
         InputAction _interact;
         InputAction _inventory;
+        InputAction _attack;
 
         public Vector2 Move => _move != null ? _move.ReadValue<Vector2>() : Vector2.zero;
 
@@ -26,6 +28,13 @@ namespace Hangeul.Game.Character
 
         /// <summary>이번 프레임에 인벤토리 열기/닫기 키(Tab)를 눌렀는지.</summary>
         public bool InventoryPressed => _inventory != null && _inventory.WasPressedThisFrame();
+
+        /// <summary>이번 프레임에 공격 입력(기본: 마우스 왼쪽 버튼)을 눌렀는지.</summary>
+        public bool AttackPressed => _attack != null && _attack.WasPressedThisFrame();
+
+        /// <summary>마우스 포인터의 화면 좌표(마우스가 없으면 화면 가운데).</summary>
+        public Vector2 PointerScreenPosition
+            => Mouse.current != null ? Mouse.current.position.ReadValue() : new Vector2(Screen.width / 2f, Screen.height / 2f);
 
         /// <summary>안내 UI에 띄울 상호작용 키 이름(예: "E"). 키보드 바인딩을 우선하고, 없으면 첫 바인딩.</summary>
         public string InteractKeyLabel
@@ -50,10 +59,12 @@ namespace Hangeul.Game.Character
             if (_interact == null) Debug.LogError($"PlayerInputReader: '{interactAction}' 액션을 찾을 수 없습니다.", this);
             _inventory = actions.FindAction(inventoryAction, throwIfNotFound: false);
             if (_inventory == null) Debug.LogError($"PlayerInputReader: '{inventoryAction}' 액션을 찾을 수 없습니다.", this);
+            _attack = actions.FindAction(attackAction, throwIfNotFound: false);
+            if (_attack == null) Debug.LogError($"PlayerInputReader: '{attackAction}' 액션을 찾을 수 없습니다.", this);
         }
 
-        void OnEnable() { _move?.Enable(); _interact?.Enable(); _inventory?.Enable(); }
-        void OnDisable() { _move?.Disable(); _interact?.Disable(); _inventory?.Disable(); }
+        void OnEnable() { _move?.Enable(); _interact?.Enable(); _inventory?.Enable(); _attack?.Enable(); }
+        void OnDisable() { _move?.Disable(); _interact?.Disable(); _inventory?.Disable(); _attack?.Disable(); }
 
 #if UNITY_EDITOR
         // 컴포넌트를 추가할 때 기본 액션 에셋을 자동으로 연결

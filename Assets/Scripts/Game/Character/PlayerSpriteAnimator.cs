@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Hangeul.Game.Character
 {
-    public enum PlayerAnim { Idle, Walk }
+    public enum PlayerAnim { Idle, Walk, Attack }
 
     /// <summary>
     /// 방향별 스프라이트 프레임을 직접 재생하는 가벼운 애니메이터(Animator Controller 불필요).
@@ -14,6 +14,8 @@ namespace Hangeul.Game.Character
         [SerializeField] SpriteRenderer target;
         [SerializeField] DirectionalClip idle = new DirectionalClip { fps = 6f };
         [SerializeField] DirectionalClip walk = new DirectionalClip { fps = 10f };
+        [Tooltip("공격 모션(한 번 재생). 프레임이 한 장뿐이면 공격하는 동안 그 장면이 계속 보이고, 비어 있으면 Idle이 보인다.")]
+        [SerializeField] DirectionalClip attack = new DirectionalClip { fps = 12f, loop = false };
 
         PlayerAnim _anim = PlayerAnim.Idle;
         Facing _facing = Facing.Down;
@@ -27,9 +29,10 @@ namespace Hangeul.Game.Character
             Refresh();
         }
 
-        public void Play(PlayerAnim anim)
+        /// <summary>애니메이션을 바꾼다. 이미 같은 애니메이션이면 그대로 두고, restart가 true면 처음부터 다시 재생한다.</summary>
+        public void Play(PlayerAnim anim, bool restart = false)
         {
-            if (anim == _anim && _clip != null) return;
+            if (anim == _anim && _clip != null && !restart) return;
             _anim = anim;
             _time = 0f;
             Refresh();
@@ -44,7 +47,10 @@ namespace Hangeul.Game.Character
 
         void Refresh()
         {
-            _clip = _anim == PlayerAnim.Walk && walk.HasFrames ? walk : idle;   // 걷기 프레임이 비어 있으면 Idle로 대체
+            // 걷기/공격 프레임이 비어 있으면 Idle로 대체
+            _clip = _anim == PlayerAnim.Walk && walk.HasFrames ? walk
+                  : _anim == PlayerAnim.Attack && attack.HasFrames ? attack
+                  : idle;
             _frames = _clip.Get(_facing);
             Apply();
         }

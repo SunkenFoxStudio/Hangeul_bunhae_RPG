@@ -601,6 +601,27 @@ Idle ──입력──▶ Move ──입력 없음──▶ Idle
 - **테스트**: `GameObject ▸ Hangeul ▸ Damage Zone (테스트용)`이 닿으면 피해를 주는 구역(`DamageZone`)을 만든다. 함정으로도 쓴다. 피해량/밀려남/경직은 인스펙터에서 조절.
 - 플레이어 피격 영역은 지금 발밑 작은 콜라이더다. 적의 공격 판정을 만들 때 몸통 크기의 피격 영역(Hurtbox)을 따로 두는 것을 검토한다.
 
+### 13.8c 플레이어 공격 (2026-10-14)
+- **입력**: `Player/Attack` 액션(기본: **마우스 왼쪽 버튼**). 템플릿에 있던 Enter 키 바인딩은 뺐다(게임패드/터치 바인딩은 템플릿 그대로 두었고 게임패드는 나중에 정한다). UI 위에서 누른 클릭은 공격으로 치지 않는다(`EventSystem.IsPointerOverGameObject`). Idle/Move 상태에서만 시작한다.
+- **방향**: 4방향. 기본은 바라보던 방향(`PlayerController.Facing`), `PlayerMeleeAttack.attackTowardsMouse`를 켜면 마우스가 있는 쪽의 상하좌우로 공격한다. 시작할 때 정해지면 끝까지 유지된다.
+- **시간표**: 준비(`windup` 0.08초) → 판정(`active` 0.12초) → 마무리(`recovery` 0.18초) (`AttackTimeline`, `Hangeul.App`, EditMode 테스트). **시간(초)으로만 정하므로 애니메이션 프레임 수와 무관**하다 — 지금처럼 방향별 첫 프레임 한 장뿐이어도 같은 타이밍으로 동작하고, 나중에 프레임 애니메이션이 들어와도 그대로 쓴다.
+- **판정**: 판정 구간에 공격 시작점(`originOffset`) 앞쪽으로 `reach` × `width`인 상자(`MeleeBox`)를 `Physics2D.OverlapBox`로 훑어, 상자 안의 `IDamageable`을 **공격 한 번에 한 번씩** 때린다(이미 때린 대상은 건너뜀, 자기 자신 제외, 같은 편은 `Health`가 거절). `CombatLayers.TargetMask(Team.Player)`(Enemy + Default)로 거른다. 피해량 `damage`(1), 밀려남 `knockbackSpeed`(공격 방향), 경직 `stunSeconds`는 `PlayerMeleeAttack` 인스펙터에서 조절. Scene 뷰에서 플레이어를 선택하면 4방향 판정 상자가 노란 선으로 보인다.
+- **공격 손맛(그래픽이 없어도)**: 준비·판정 동안 공격하는 쪽으로 살짝 나아가고(`lungeSpeed`) 마무리에서 멈춘다. 맞으면 `Hurt`가 공격을 끊는다.
+- **그래픽 슬롯**: ① `PlayerSpriteAnimator ▸ Attack`(방향별 공격 모션, 비어 있으면 Idle이 보임, 한 장이면 공격하는 동안 그 장면이 계속 보임) ② `Slash`(플레이어 자식) `AttackEffect ▸ Slash`(방향별 베기 이펙트, 프레임이 여러 장이면 판정 시간에 펼쳐 재생, 한 장이면 판정 시간 동안 보였다 사라짐; 스프라이트 Pivot이 판정 상자 중심에 놓이고 `Sprite Offset`으로 더 옮김). 이펙트 슬롯이 비어 있으면 판정 범위를 보여주는 **임시 반투명 사각형**이 나온다.
+- **메뉴**: `Hangeul ▸ Setup ▸ Player Attack`(씬의 플레이어에 `PlayerMeleeAttack` + `Slash` 붙이기, 컴포넌트를 인스펙터에서 보이게), `GameObject ▸ Hangeul ▸ Training Dummy (테스트용)`(맞으면 색이 변하고 Console에 피해가 적히는 표적, 죽으면 2초 뒤 되살아남).
+- 아직 없는 것: 연속 공격 입력 예약, 공격 중 방향 전환, 무기에 따른 피해/범위 변경(무기 단어는 E 단계), 히트스톱·화면 흔들림(D 단계).
+
+### 13.8d 적: 근접 추격형 샘플 (2026-10-14)
+- **구조**: `EnemyController`(루트: 이동·감지·피격 설정, FSM 소유) + `EnemyState` 상속 상태들(`Enemy/EnemyStates.cs`) + `EnemySpriteAnimator`(방향별 스프라이트 슬롯). 플레이어와 같은 방식의 단순 FSM(`FSM/StateMachine` 재사용). 위치: `Assets/Scripts/Game/Enemy`.
+- **상태**: `Idle`(대기·배회: 잠깐 서 있다가 원래 자리 `Home` 근처 `wanderRadius` 안의 한 점으로 천천히 걷기를 반복) → 플레이어가 **감지 거리** 안이면 `Chase`(플레이어 쪽으로 곧장 걷기, 벽에 닿으면 미끄러짐) → **포기 거리**보다 멀어지거나 플레이어가 죽으면 `Idle`. 맞으면 `Hurt`(공격이 정한 경직 시간과 밀려남 속도, 이 동안 접촉 피해 꺼짐, 끝나면 맞았으니 거리와 상관없이 알아채고 `Chase`), 체력이 0이면 `Dead`(충돌·접촉 피해를 끄고 드롭을 떨어뜨린 뒤 `deathSeconds` 동안 서서히 사라지고 오브젝트 삭제).
+- **감지**: `AggroTracker`(`Hangeul.App`, 순수 규칙·EditMode 테스트): 감지 거리 안에서 쫓기 시작하고 포기 거리보다 멀어져야 놓친다(두 거리가 달라 경계에서 깜빡이지 않음). Scene 뷰에서 적을 선택하면 감지(주황)/포기(노랑) 거리와 배회 범위(파랑)가 원으로 보인다.
+- **접촉 피해**: 자식 `ContactZone`의 `DamageZone`(Trigger, 몸보다 살짝 큼, EnemyAttack 레이어)이 닿은 `IDamageable`(플레이어)에 피해(기본 1)와 밀려남을 준다. 맞는 쪽의 무적 시간(`Health`) 때문에 그 간격으로만 맞는다. `EnemyController.contactZone`을 비우면 접촉 피해가 없다.
+- **피격 효과**: 맞으면 `EnemySpriteAnimator.Flash`로 잠깐 색이 변한다(`hitFlashSeconds`).
+- **그래픽 슬롯**: `EnemySpriteAnimator ▸ Idle / Move / Hurt / Dead`(방향별). 비어 있으면 Idle로, Idle도 비어 있으면 `Visual`의 `SpriteRenderer`에 넣은 스프라이트 한 장이 그대로 보인다 — 방향별 첫 프레임뿐인 지금 상태에서도 동작한다.
+- **드롭**: `EnemyController.drops`(프리팹 + 확률). 단어 아이템을 떨어뜨리려면 단어가 들어 있는 `WorldItem` 오브젝트를 프리팹으로 만들어 넣는다.
+- **메뉴**: `GameObject ▸ Hangeul ▸ Enemy (슬라임 샘플)`. 시간은 `Time.deltaTime`/`fixedDeltaTime` 기준이라 인벤토리를 열면 같이 멈춘다.
+- 아직 없는 것: 공격 전조가 있는 공격(돌진 등), 원거리 공격, 길 찾기(벽을 돌아 쫓아오기), 체력 바.
+
 ### 13.8a 일시정지 (확정, 2026-10-14)
 - **인벤토리를 열면 게임 시간이 멈춘다**(젤다식): `GamePause.Set(PauseReason.Inventory, true)` → `Time.timeScale = 0`. 플레이어·적·투사체·애니메이션·게임 월드 물리가 모두 멈춘다. 정지 이유는 플래그(`PauseReason`: Inventory, Dialogue, Menu)이고 하나라도 켜져 있으면 멈춘다(`GamePause`, `Hangeul.Game`).
 - **멈춘 동안에도 움직여야 하는 것은 `Time.unscaledDeltaTime`을 쓴다**: 인벤토리 패널 슬라이드, 카메라 이동(`InventoryCameraShift`), UI 연출(카드 등), 안내 문구, **가방 흔들기 물리**(독립 물리 씬을 수동 진행, §5.6a).

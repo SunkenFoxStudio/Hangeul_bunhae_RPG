@@ -26,6 +26,7 @@ namespace Hangeul.Game.Character
         public override void Tick(float deltaTime)
         {
             if (Owner.TryStartInteract()) return;
+            if (Owner.TryStartAttack()) return;
             if (Owner.HasMoveInput) Owner.Fsm.ChangeState(Owner.Move);
         }
 
@@ -46,6 +47,7 @@ namespace Hangeul.Game.Character
         public override void Tick(float deltaTime)
         {
             if (Owner.TryStartInteract()) return;
+            if (Owner.TryStartAttack()) return;
             if (!Owner.HasMoveInput) { Owner.Fsm.ChangeState(Owner.Idle); return; }
             Owner.UpdateFacingFromInput();
         }
@@ -142,5 +144,59 @@ namespace Hangeul.Game.Character
 
         public override void FixedTick(float fixedDeltaTime) =>
             Owner.ApproachVelocity(Vector2.zero, Owner.HurtDeceleration, fixedDeltaTime);
+    }
+
+    /// <summary>
+    /// 근접 공격. 준비 → 판정 → 마무리 시간표(<see cref="PlayerMeleeAttack.Timeline"/>)대로 흐른다. 시간은 애니메이션 프레임 수와 무관하다.
+    /// 방향은 시작할 때 정해지면 끝까지 유지된다. 판정 구간에는 앞쪽 상자 안의 피해 가능한 대상을 한 번씩 때린다.
+    /// 준비·판정 동안 살짝 앞으로 나아가고(lunge), 마무리에는 멈춘다. 맞으면 Hurt가 이 상태를 끊는다.
+    /// </summary>
+    public sealed class PlayerAttackState : PlayerState
+    {
+        readonly System.Collections.Generic.HashSet<Combat.IDamageable> _hit = new System.Collections.Generic.HashSet<Combat.IDamageable>();
+        float _t;
+        bool _effectShown;
+        Vector2 _dir;
+
+        public PlayerAttackState(PlayerController owner) : base(owner) { }
+
+        public override void Enter()
+        {
+            var melee = Owner.Melee;
+            Owner.SetFacing(melee.ChooseFacing(Owner));
+            _dir = FacingUtil.ToVector(Owner.Facing);
+            _t = 0f;
+            _effectShown = false;
+            _hit.Clear();
+            Owner.Anim?.Play(PlayerAnim.Attack, restart: true);
+        }
+
+        public override void Tick(float deltaTime)
+        {
+            var melee = Owner.Melee;
+            var timeline = melee.Timeline;
+            _t += deltaTime;
+
+            var phase = timeline.PhaseAt(_t);
+            // 프레임이 길어서 판정 구간을 건너뛰어도 한 번은 반드시 친다
+            if (phase == Hangeul.App.AttackPhase.Active || (phase >= Hangeul.App.AttackPhase.Recovery && !_effectShown))
+            {
+                if (!_effectShown) { melee.ShowEffect(Owner.Facing); _effectShown = true; }
+                melee.Strike(Owner.Facing, _hit);
+            }
+            if (phase == Hangeul.App.AttackPhase.Done)
+                Owner.Fsm.ChangeState(Owner.HasMoveInput ? (IState)Owner.Move : Owner.Idle);
+        }
+
+        public override void FixedTick(float fixedDeltaTime)
+        {
+            var phase = Owner.Melee.Timeline.PhaseAt(_t);
+            if (phase == Hangeul.App.AttackPhase.Recovery || phase == Hangeul.App.AttackPhase.Done)
+                Owner.Decelerate(fixedDeltaTime);
+            else
+                Owner.ApproachVelocity(_dir * Owner.Melee.LungeSpeed, 40f, fixedDeltaTime);   // 공격하는 쪽으로 살짝 나아간다
+        }
+
+        public override void Exit() => Owner.Melee.HideEffect();
     }
 }

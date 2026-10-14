@@ -1,6 +1,7 @@
 using System.Linq;
 using Hangeul.Game.Character;
 using Hangeul.Game.Combat;
+using Hangeul.Game.Enemy;
 using UnityEditor;
 using UnityEngine;
 
@@ -115,6 +116,135 @@ namespace Hangeul.Game.Editor
             so.FindProperty("maxHealth").intValue = 6;
             so.FindProperty("invincibleSeconds").floatValue = 1f;
             so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // ───── 플레이어 공격 ─────
+        [MenuItem("Hangeul/Setup/Player Attack")]
+        static void SetupPlayerAttack()
+        {
+            int count = 0;
+            foreach (var player in Object.FindObjectsByType<PlayerController>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (player.GetComponent<PlayerMeleeAttack>() != null) continue;
+                AddPlayerAttack(player.gameObject);
+                count++;
+            }
+            Debug.Log(count > 0 ? $"[Combat] 플레이어 {count}명에 공격 설정(PlayerMeleeAttack + Slash)을 붙였습니다. 씬을 저장하세요."
+                                 : "[Combat] 이미 모든 플레이어에 공격 설정이 있습니다.");
+        }
+
+        // 공격 설정(판정/시간/피해)과 베기 이펙트 오브젝트("Slash")를 붙인다. 인스펙터에서 보이고 슬롯에 그래픽을 넣을 수 있다.
+        internal static void AddPlayerAttack(GameObject player)
+        {
+            var melee = Undo.AddComponent<PlayerMeleeAttack>(player);
+
+            var slash = new GameObject("Slash");
+            Undo.RegisterCreatedObjectUndo(slash, "Create Slash");
+            slash.transform.SetParent(player.transform, false);
+            var renderer = slash.AddComponent<SpriteRenderer>();
+            renderer.sortingOrder = 1;
+            renderer.enabled = false;
+            var effect = slash.AddComponent<AttackEffect>();
+
+            var effectSo = new SerializedObject(effect);
+            effectSo.FindProperty("target").objectReferenceValue = renderer;
+            effectSo.ApplyModifiedPropertiesWithoutUndo();
+
+            var meleeSo = new SerializedObject(melee);
+            meleeSo.FindProperty("effect").objectReferenceValue = effect;
+            meleeSo.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        [MenuItem("GameObject/Hangeul/Training Dummy (테스트용)", false, 18)]
+        static void CreateTrainingDummy()
+        {
+            var go = new GameObject("TrainingDummy");
+            Undo.RegisterCreatedObjectUndo(go, "Create Training Dummy");
+            int enemyLayer = LayerMask.NameToLayer(CombatLayers.Enemy);   // Hangeul ▸ Setup ▸ Combat Layers를 실행했다면 Enemy 레이어
+            if (enemyLayer >= 0) go.layer = enemyLayer;
+
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+            sr.color = new Color(1f, 0.7f, 0.25f, 1f);
+            sr.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
+
+            var box = go.AddComponent<BoxCollider2D>();
+            box.size = sr.sprite != null ? (Vector2)sr.sprite.bounds.size : Vector2.one;   // 보이는 크기와 똑같이(콜라이더가 더 크면 투명한 벽처럼 느껴진다)
+
+            var health = go.AddComponent<Health>();
+            var so = new SerializedObject(health);
+            so.FindProperty("team").enumValueIndex = (int)Team.Enemy;
+            so.FindProperty("maxHealth").intValue = 5;
+            so.FindProperty("invincibleSeconds").floatValue = 0.2f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            go.AddComponent<TrainingDummy>();
+
+            var view = SceneView.lastActiveSceneView;
+            if (view != null) go.transform.position = new Vector3(view.pivot.x, view.pivot.y, 0f);
+            Selection.activeGameObject = go;
+            Debug.Log("훈련 인형을 만들었습니다. 플레이어로 공격하면 Console에 피해가 적힙니다(체력 5, 죽으면 2초 뒤 되살아남).");
+        }
+
+        // ───── 적 ─────
+        [MenuItem("GameObject/Hangeul/Enemy (슬라임 샘플)", false, 19)]
+        static void CreateSlime()
+        {
+            var root = new GameObject("Slime");
+            Undo.RegisterCreatedObjectUndo(root, "Create Slime");
+            int enemyLayer = LayerMask.NameToLayer(CombatLayers.Enemy);          // Hangeul ▸ Setup ▸ Combat Layers를 실행했다면 Enemy 레이어
+            if (enemyLayer >= 0) root.layer = enemyLayer;
+
+            // 탑다운: 중력 없음, 회전 고정, 보간
+            var body = root.AddComponent<Rigidbody2D>();
+            body.bodyType = RigidbodyType2D.Dynamic;
+            body.gravityScale = 0f;
+            body.freezeRotation = true;
+            body.mass = 3f;                                                       // 플레이어가 살짝 부딪혀도 많이 밀리지 않게
+            body.interpolation = RigidbodyInterpolation2D.Interpolate;
+            body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+            // 그림(임시: 초록 동그라미). 실제 스프라이트는 Visual의 SpriteRenderer에 넣는다.
+            var visual = new GameObject("Visual");
+            visual.transform.SetParent(root.transform, false);
+            visual.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
+            var sr = visual.AddComponent<SpriteRenderer>();
+            sr.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+            sr.color = new Color(0.45f, 0.85f, 0.4f, 1f);
+            var animator = visual.AddComponent<EnemySpriteAnimator>();
+
+            // 몸통(단단한 충돌). 보이는 그림과 같은 크기로
+            Vector2 size = sr.sprite != null ? (Vector2)sr.sprite.bounds.size * 0.5f : new Vector2(0.3f, 0.3f);
+            var box = root.AddComponent<BoxCollider2D>();
+            box.size = size;
+
+            // 몸통 접촉 피해: 몸보다 살짝 큰 Trigger. 피격/죽음 중에는 EnemyController가 끈다.
+            var zoneGo = new GameObject("ContactZone");
+            zoneGo.transform.SetParent(root.transform, false);
+            int attackLayer = LayerMask.NameToLayer(CombatLayers.EnemyAttack);
+            if (attackLayer >= 0) zoneGo.layer = attackLayer;
+            var zoneCol = zoneGo.AddComponent<BoxCollider2D>();
+            zoneCol.isTrigger = true;
+            zoneCol.size = size + new Vector2(0.04f, 0.04f);
+            var zone = zoneGo.AddComponent<DamageZone>();
+
+            var health = root.AddComponent<Health>();
+            var healthSo = new SerializedObject(health);
+            healthSo.FindProperty("team").enumValueIndex = (int)Team.Enemy;
+            healthSo.FindProperty("maxHealth").intValue = 3;
+            healthSo.FindProperty("invincibleSeconds").floatValue = 0.15f;
+            healthSo.ApplyModifiedPropertiesWithoutUndo();
+
+            var controller = root.AddComponent<EnemyController>();
+            var so = new SerializedObject(controller);
+            so.FindProperty("contactZone").objectReferenceValue = zone;
+            so.FindProperty("spriteAnimator").objectReferenceValue = animator;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            var view = SceneView.lastActiveSceneView;
+            if (view != null) root.transform.position = new Vector3(view.pivot.x, view.pivot.y, 0f);
+            Selection.activeGameObject = root;
+            Debug.Log("슬라임 샘플 적을 만들었습니다. 플레이어가 가까이 오면 쫓아오고, 닿으면 피해(1)를 줍니다. Visual의 SpriteRenderer에 그림을 넣으세요.");
         }
 
         [MenuItem("GameObject/Hangeul/Damage Zone (테스트용)", false, 17)]
