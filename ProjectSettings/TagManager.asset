@@ -13,10 +13,10 @@ TagManager:
   - UI
   - 
   - 
-  - 
-  - 
-  - 
-  - 
+  - Player
+  - Enemy
+  - PlayerAttack
+  - EnemyAttack
   - 
   - 
   - 
@@ -46,6 +46,9 @@ TagManager:
     locked: 0
   - name: Objects
     uniqueID: 2800530909
+    locked: 0
+  - name: test
+    uniqueID: 1525102623
     locked: 0
   m_RenderingLayers:
   - Default
