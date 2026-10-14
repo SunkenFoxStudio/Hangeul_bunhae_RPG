@@ -53,6 +53,30 @@ namespace Hangeul.UI
         [SerializeField] bool persist = true;
         [SerializeField] string saveFileName = InventorySaveStore.DefaultFileName;
 
+        [Header("가방 흔들기 (Unity Physics2D)")]
+        [Tooltip("부딪힌 두 카드가 합칠 수 있을 때 실제로 조립될 확률(0~1). 새로 부딪힐 때마다 한 번 굴린다. 완성된 단어의 카드는 항상 제외.")]
+        [SerializeField, Range(0f, 1f)] float shakeMergeChance = 1f;
+        [Tooltip("카드를 던져 올리는 시간(초). 이 시간 동안 Toss Interval마다 던진다.")]
+        [SerializeField, Min(0.1f)] float shakeSeconds = 1.6f;
+        [Tooltip("흔들기가 끝난 뒤 카드가 멈추기를 기다리는 최대 시간(초). 이 안에 멈추지 않아도 칸에 맞춘다.")]
+        [SerializeField, Min(0f)] float shakeSettleSeconds = 2.5f;
+        [Tooltip("던질 때 카드가 위로 튀어 오르는 속도(칸/초). 클수록 높이 튄다. 0이면 던지지 않고 중력으로 떨어지기만 한다.")]
+        [SerializeField, Min(0f)] float shakeTossSpeed = 9f;
+        [Tooltip("던지는 간격(초). 던지는 사이에는 중력으로 떨어지며 서로 부딪힌다.")]
+        [SerializeField, Min(0.2f)] float shakeTossInterval = 0.7f;
+        [Tooltip("던질 때 좌우로 흩어지는 정도(위로 던지는 속도에 대한 비율). 0이면 똑바로 위로.")]
+        [SerializeField, Range(0f, 1f)] float shakeSideways = 0.35f;
+        [Tooltip("던질 때 카드가 도는 세기(도/초). 0이면 돌지 않는다(충돌로 도는 것은 그대로).")]
+        [SerializeField, Min(0f)] float shakeTossSpin = 360f;
+        [Tooltip("아래로 당기는 중력(칸/초²). 0이면 둥둥 떠다닌다. 중력이 있으면 끝났을 때 카드가 아래쪽에 쌓인다.")]
+        [SerializeField, Min(0f)] float shakeGravity = 12f;
+        [Tooltip("카드와 벽이 튕기는 정도(0이면 붙고 1이면 그대로 튕김).")]
+        [SerializeField, Range(0f, 1f)] float shakeBounce = 0.35f;
+        [Tooltip("카드와 벽 사이 마찰.")]
+        [SerializeField, Range(0f, 1f)] float shakeFriction = 0.35f;
+        [Tooltip("물리 시뮬레이션을 돌리는 월드 좌표(격자 왼쪽 위). 게임 월드의 물체와 부딪히지 않도록 멀리 떨어진 곳이어야 한다.")]
+        [SerializeField] Vector2 shakeWorldOrigin = new Vector2(2000f, 2000f);
+
         [Header("디버그")]
         [Tooltip("켜면 마우스를 누를 때마다 그 위치에서 클릭을 받는 UI 목록(위→아래)을 Console에 출력한다.")]
         [SerializeField] bool logClickTargets;
@@ -149,6 +173,7 @@ namespace Hangeul.UI
 
         void OnDestroy()
         {
+            if (_shakeWorld != null) Destroy(_shakeWorld.gameObject);   // 흔드는 도중에 사라지면 물리 월드도 치운다
             if (Model == null) return;
             Model.Changed -= OnChanged;
             Model.WordCompleted -= OnWordCompleted;
@@ -217,30 +242,74 @@ namespace Hangeul.UI
 
         void OnRectTransformDimensionsChange() => _dirty = true;
 
-        // ───── 가방 흔들기 (조립 모드) ─────
+        // ───── 가방 흔들기 (조립 모드, Unity Physics2D) ─────
         public bool IsShaking => _shaking;
+        ShakeSession _shakeSession;
+        ShakeWorld _shakeWorld;
 
         /// <summary>
-        /// 모든 카드를 잠깐 흔든 뒤, 자모 카드들을 무작위로 회전/조립한다(InventoryModel.ShakeBag).
+        /// 가방을 흔든다: 주사위를 쥐고 위아래로 흔들듯이 카드들이 Unity 물리로 튕기고 구르며, 부딪혀서 합칠 수 있으면 조립된다
+        /// (ShakeWorld + ShakeSession). 끝나면 가장 가까운 빈 칸에 맞춘다. 완성된 단어의 카드는 가만히 있는다.
         /// 흔드는 동안에는 카드를 잡을 수 없다. 조립 모드에서만 동작한다.
         /// </summary>
         public void ShakeBag()
         {
             if (_shaking || _drag != null || Model.Mode != InventoryMode.Assemble) return;
-            StartCoroutine(ShakeRoutine());
+            if (_dirty) Relayout();
+            if (_cell <= 0f) return;
+
+            ClearFeedback();
+            _shakeSession = new ShakeSession(Model, new ShakeSettings
+            {
+                MergeChance = shakeMergeChance,
+                ShakeSeconds = shakeSeconds,
+                MaxSettleSeconds = shakeSettleSeconds,
+                TossSpeed = shakeTossSpeed,
+                TossInterval = shakeTossInterval,
+                Sideways = shakeSideways,
+                Spin = shakeTossSpin,
+                Gravity = shakeGravity,
+                Bounce = shakeBounce,
+                Friction = shakeFriction,
+            }, _rng);
+            _shaking = true;
+
+            if (_shakeSession.Finished) { UpdateShake(); return; }   // 흔들 카드가 없다
+            _shakeWorld = ShakeWorld.Create(_shakeSession, shakeWorldOrigin, Model.Grid.Cols, Model.Grid.Rows);
         }
 
-        System.Collections.IEnumerator ShakeRoutine()
+        // 물리를 한 프레임 진행해 세션에 반영하고, 카드 화면을 그 위치/회전에 맞춘다. 끝나면 정리한다.
+        void UpdateShake()
         {
-            _shaking = true;
-            foreach (var v in new List<CardView>(_views.Values)) v.Shake();
-            yield return new WaitForSecondsRealtime(0.35f);
+            var session = _shakeSession;
+            if (session == null) return;
 
-            if (Model.Mode == InventoryMode.Assemble)
+            if (_shakeWorld != null)
             {
-                var r = Model.ShakeBag(_rng);
-                Debug.Log($"[InventoryView] 가방 흔들기: 회전 {r.Rotated}장, 조립 {r.Merged}장");
+                if (Model.Mode != InventoryMode.Assemble) _shakeWorld.Abort();   // 모드가 바뀌면 그 자리에서 멈추고 칸에 맞춘다
+                else _shakeWorld.Tick();
             }
+
+            foreach (var body in session.Bodies)
+            {
+                if (body.Fixed || body.Dead || !_views.TryGetValue(body.Card.Id, out var v)) continue;
+                if (session.Finished)   // 마지막 칸으로 부드럽게 자리잡고 글자는 똑바로 선다
+                {
+                    // 몇 바퀴를 돌았든 가장 가까운 방향으로 돌아와 선다
+                    v.SetRotation(Mathf.DeltaAngle(0f, body.DisplayAngleDeg), 0f);
+                    v.SetRotation(0f, 0.2f);
+                    v.MoveTo(CellPos(body.Card), 0.12f);
+                    continue;
+                }
+                v.SetPosition(new Vector2((body.X - 0.5f) * _cell, (body.Y - 0.5f) * _cell));
+                v.SetRotation(body.DisplayAngleDeg, 0f);
+            }
+
+            if (!session.Finished) return;
+            Debug.Log($"[InventoryView] 가방 흔들기: 조립 {session.Merged}장");
+            if (_shakeWorld != null) Destroy(_shakeWorld.gameObject);
+            _shakeWorld = null;
+            _shakeSession = null;
             _shaking = false;
         }
 
@@ -331,7 +400,7 @@ namespace Hangeul.UI
 
         void Place(CardView v)
         {
-            if (IsDragging(v)) return;
+            if (IsDragging(v) || _shakeSession != null) return;   // 흔드는 동안 위치는 시뮬레이션이 정한다
             v.SetPosition(CellPos(v.Card));
         }
 
@@ -822,18 +891,20 @@ namespace Hangeul.UI
         void Update()
         {
             if (_drag != null) UpdateFeedback(Time.unscaledDeltaTime);
+            if (_shakeSession != null) UpdateShake();
 
-            if (_scanAt >= 0f && Time.unscaledTime >= _scanAt)
+            // 흔드는 동안에는 카드 칸이 그대로라서 단어 확인/저장을 미룬다(끝난 뒤 한 번에)
+            if (_scanAt >= 0f && Time.unscaledTime >= _scanAt && !_shaking)
             {
                 _scanAt = -1f;
                 Model.Scan(notify: true);
             }
 
             if (logClickTargets) LogClickTargets();
-            if (persist && _saveDirty && _drag == null && Time.unscaledTime - _lastChange > SaveDelay) SaveNow();
+            if (persist && _saveDirty && _drag == null && !_shaking && Time.unscaledTime - _lastChange > SaveDelay) SaveNow();
 
             var kb = Keyboard.current;
-            if (kb != null && kb.rKey.wasPressedThisFrame && Model.Mode == InventoryMode.Assemble && _last != null && _views.ContainsKey(_last.Card.Id) && IsInteractive() && !Typing())
+            if (kb != null && kb.rKey.wasPressedThisFrame && Model.Mode == InventoryMode.Assemble && _last != null && _views.ContainsKey(_last.Card.Id) && IsInteractive() && !Typing() && !_shaking)
                 QuickTransform(_last, false);
         }
 

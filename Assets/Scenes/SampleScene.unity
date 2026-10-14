@@ -15387,6 +15387,17 @@ MonoBehaviour:
   trashZone: {fileID: 1723098123}
   persist: 1
   saveFileName: inventory.json
+  shakeMergeChance: 1
+  shakeSeconds: 1
+  shakeSettleSeconds: 1
+  shakeTossSpeed: 9
+  shakeTossInterval: 0.7
+  shakeSideways: 1
+  shakeTossSpin: 360
+  shakeGravity: 12
+  shakeBounce: 1
+  shakeFriction: 0.35
+  shakeWorldOrigin: {x: 2000, y: 2000}
   logClickTargets: 1
 --- !u!1 &1025982637
 GameObject:

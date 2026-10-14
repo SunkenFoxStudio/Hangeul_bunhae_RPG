@@ -266,13 +266,29 @@ namespace Hangeul.Tests
         }
 
         [Test]
-        public void StackedWordCards_AreProtectedFromShake()
+        public void StackedWordCards_AreFixedWhileShaking()
         {
             var (m, _) = MakePrefix(6, 4);
             Put(m, '불', 0, 0); Put(m, '화', 0, 1); Put(m, '살', 1, 1);
-            m.PlaceJamo('ㄴ', 4, 3);                                  // 화 + ㄴ = 환이 되지만 완성된 단어라 막혀야 한다
-            var r = m.ShakeBag(new System.Random(1), mergeChance: 1f, rotateChance: 0f);
-            Assert.AreEqual(0, r.Merged);
+            var jamo = m.PlaceJamo('ㄴ', 4, 3);                       // 화 + ㄴ = 환이 되지만 완성된 단어라 막혀야 한다
+
+            var s = new ShakeSession(m, new ShakeSettings { MergeChance = 1f }, new System.Random(1));
+            Assert.AreEqual(3, s.Bodies.Count(b => b.Fixed));         // 위에 얹은 접두어(불)까지 포함해 세 장이 가만히 있는다
+            var hwa = s.Bodies.Single(b => b.Card.Letter == '화');
+            Assert.IsFalse(s.TryMerge(s.Bodies.Single(b => b.Card == jamo), hwa));
+            Assert.AreEqual('화', hwa.Card.Letter);
+        }
+
+        [Test]
+        public void FindAll_DoesNotChangeScannerState()
+        {
+            var (m, _) = Make(6, 4, "가방");
+            m.AddWord("가방");
+            int shownBefore = m.Scanner.Shown.Count;
+
+            Assert.AreEqual(1, m.Scanner.FindAll(m.Grid).Count);
+            Assert.AreEqual(shownBefore, m.Scanner.Shown.Count);
+            Assert.IsEmpty(m.Scan(true));      // 알림 기준도 그대로
         }
 
         [Test]
