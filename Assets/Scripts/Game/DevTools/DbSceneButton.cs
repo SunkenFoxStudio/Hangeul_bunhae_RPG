@@ -13,6 +13,12 @@ namespace Hangeul.Game.DevTools
         [SerializeField] Font font;
         [SerializeField] string targetScene = "ItemDbScene";
         [SerializeField] string label = "DB 관리";
+        [Tooltip("화면 오른쪽 위 모서리에서 떨어진 거리(1920×1080 기준 픽셀).")]
+        [SerializeField] Vector2 margin = new Vector2(16f, 16f);
+        [Tooltip("인벤토리가 열려 있는 동안은 숨긴다(오른쪽 위에 있는 인벤토리 버튼들과 겹치고, 실수로 눌러 장면이 넘어가는 것을 막는다).")]
+        [SerializeField] bool hideWhileInventoryOpen = true;
+
+        CanvasGroup _group;
 
         void Awake()
         {
@@ -20,7 +26,8 @@ namespace Hangeul.Game.DevTools
 
             if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
-            var canvasGo = new GameObject("DbSceneButtonCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            var canvasGo = new GameObject("DbSceneButtonCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster), typeof(CanvasGroup));
+            _group = canvasGo.GetComponent<CanvasGroup>();
             canvasGo.transform.SetParent(transform, false);
             var canvas = canvasGo.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -33,9 +40,9 @@ namespace Hangeul.Game.DevTools
             var go = new GameObject("Button", typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(canvasGo.transform, false);
             var rt = (RectTransform)go.transform;
-            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);   // 왼쪽 위
-            rt.pivot = new Vector2(0f, 1f);
-            rt.anchoredPosition = new Vector2(16f, -16f);
+            rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);   // 오른쪽 위
+            rt.pivot = new Vector2(1f, 1f);
+            rt.anchoredPosition = new Vector2(-margin.x, -margin.y);
             rt.sizeDelta = new Vector2(150f, 44f);
             var img = go.GetComponent<Image>();
             img.color = new Color(0.12f, 0.09f, 0.06f, 0.8f);
@@ -56,6 +63,15 @@ namespace Hangeul.Game.DevTools
             text.color = new Color(0.97f, 0.9f, 0.76f);
             text.alignment = TextAnchor.MiddleCenter;
             text.raycastTarget = false;
+        }
+
+        void Update()
+        {
+            if (_group == null) return;
+            bool hidden = hideWhileInventoryOpen && (GamePause.Reasons & PauseReason.Inventory) != 0;
+            _group.alpha = hidden ? 0f : 1f;
+            _group.blocksRaycasts = !hidden;
+            _group.interactable = !hidden;
         }
     }
 }

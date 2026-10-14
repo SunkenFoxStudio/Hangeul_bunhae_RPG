@@ -106,7 +106,7 @@ namespace Hangeul.Game.Character
         {
             var hit = Owner.Health.LastHit;
             _timer = Mathf.Max(0.05f, hit.StunSeconds);
-            Owner.Anim?.Play(PlayerAnim.Idle);
+            Owner.Anim?.PlayFitted(PlayerAnim.Hurt, _timer);   // 비어 있으면 Idle이 보인다
             Owner.Body.linearVelocity = hit.Knockback;
         }
 
@@ -121,25 +121,31 @@ namespace Hangeul.Game.Character
     }
 
     /// <summary>
-    /// 체력이 0이 됐을 때. 잠깐 쓰러져 있다가 <see cref="PlayerController.Respawn"/>으로 되살아난다.
-    /// (체크포인트가 생기기 전까지는 그 자리에서 되살아난다.)
+    /// 체력이 0이 됐을 때. 잠깐 쓰러져 있다가(<see cref="PlayerController.RespawnDelay"/>) 화면이 까맣게 덮이는 사이에
+    /// 마지막 체크포인트로 돌아가 되살아난다(<see cref="PlayerController.BeginRespawn"/>).
     /// </summary>
     public sealed class PlayerDeadState : PlayerState
     {
         float _timer;
+        bool _respawning;
 
         public PlayerDeadState(PlayerController owner) : base(owner) { }
 
         public override void Enter()
         {
             _timer = Owner.RespawnDelay;
-            Owner.Anim?.Play(PlayerAnim.Idle);
+            _respawning = false;
+            Owner.Anim?.Play(PlayerAnim.Dead, restart: true);   // 한 번 재생하고 마지막 장면에 머문다(비어 있으면 Idle)
         }
 
         public override void Tick(float deltaTime)
         {
+            if (_respawning) return;
             _timer -= deltaTime;
-            if (_timer <= 0f) Owner.Respawn();
+            if (_timer > 0f) return;
+
+            _respawning = true;
+            Owner.BeginRespawn();
         }
 
         public override void FixedTick(float fixedDeltaTime) =>
@@ -168,7 +174,8 @@ namespace Hangeul.Game.Character
             _t = 0f;
             _effectShown = false;
             _hit.Clear();
-            Owner.Anim?.Play(PlayerAnim.Attack, restart: true);
+            // 프레임이 몇 장이든 공격 한 번(준비+판정+마무리)의 시간 안에 모션 전체가 재생된다
+            Owner.Anim?.PlayFitted(PlayerAnim.Attack, melee.Timeline.Total);
         }
 
         public override void Tick(float deltaTime)

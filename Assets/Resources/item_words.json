@@ -555,13 +555,33 @@
             "word": "검",
             "category": "무기",
             "acceptsPrefix": true,
-            "prefixes": []
+            "prefixes": [
+                "나무",
+                "돌",
+                "불",
+                "철",
+                "얼음",
+                "독",
+                "화염",
+                "빙결",
+                "강화"
+            ]
         },
         {
             "word": "칼",
             "category": "무기",
             "acceptsPrefix": true,
-            "prefixes": []
+            "prefixes": [
+                "나무",
+                "돌",
+                "불",
+                "철",
+                "얼음",
+                "독",
+                "화염",
+                "빙결",
+                "강화"
+            ]
         },
         {
             "word": "활",
@@ -573,13 +593,33 @@
             "word": "창",
             "category": "무기",
             "acceptsPrefix": true,
-            "prefixes": []
+            "prefixes": [
+                "나무",
+                "돌",
+                "불",
+                "철",
+                "얼음",
+                "독",
+                "화염",
+                "빙결",
+                "강화"
+            ]
         },
         {
             "word": "도끼",
             "category": "무기",
             "acceptsPrefix": true,
-            "prefixes": []
+            "prefixes": [
+                "나무",
+                "돌",
+                "불",
+                "철",
+                "얼음",
+                "독",
+                "화염",
+                "빙결",
+                "강화"
+            ]
         },
         {
             "word": "단검",

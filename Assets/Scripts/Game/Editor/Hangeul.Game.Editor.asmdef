@@ -5,6 +5,7 @@
         "Hangeul.Game",
         "Hangeul.UI",
         "Unity.InputSystem",
+        "Unity.Cinemachine",
         "UnityEngine.UI"
     ],
     "includePlatforms": [

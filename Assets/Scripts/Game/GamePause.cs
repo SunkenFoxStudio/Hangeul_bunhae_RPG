@@ -11,6 +11,7 @@ namespace Hangeul.Game
         Inventory = 1,   // 인벤토리가 열려 있다
         Dialogue = 2,    // 대화 중(후속)
         Menu = 4,        // 일시정지 메뉴(후속)
+        HitStop = 8,     // 때리거나 맞는 순간의 아주 짧은 멈춤(타격감)
     }
 
     /// <summary>

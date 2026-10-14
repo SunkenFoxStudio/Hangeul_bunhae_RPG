@@ -1,5 +1,8 @@
 using Hangeul.Game.Combat;
+using Hangeul.Game.Feedback;
 using Hangeul.Game.FSM;
+using Hangeul.Game.World;
+using Unity.Cinemachine;
 using Hangeul.Game.Interaction;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -36,12 +39,15 @@ namespace Hangeul.Game.Character
         [SerializeField, Min(0f)] float respawnDelay = 1.5f;
         [Tooltip("되살아난 직후 무적 시간(초).")]
         [SerializeField, Min(0f)] float respawnInvincibleSeconds = 1.5f;
+        [Tooltip("죽은 뒤 체크포인트로 돌아갈 때 화면이 까맣게 덮이고 걷히는 시간(초, 각각).")]
+        [SerializeField, Min(0f)] float respawnFadeSeconds = 0.4f;
 
         [Header("Debug")]
         [SerializeField] string currentState;
 
         public Rigidbody2D Body { get; private set; }
-        public PlayerSpriteAnimator Anim => spriteAnimator;
+        /// <summary>상태가 쓰는 애니메이션 창구. 나중에 유니티 Animator로 바꿀 때는 이 인터페이스의 다른 구현으로 교체한다.</summary>
+        public IPlayerAnimator Anim => spriteAnimator;
         public StateMachine Fsm { get; } = new StateMachine();
 
         /// <summary>이번 프레임의 이동 입력(최대 길이 1, 데드존 적용).</summary>
@@ -91,6 +97,9 @@ namespace Hangeul.Game.Character
             Melee = GetComponent<PlayerMeleeAttack>();
             if (Melee == null) Melee = gameObject.AddComponent<PlayerMeleeAttack>();
 
+            // 타격감 연출(번쩍임, 깜빡임, 히트스톱, 화면 흔들림): 없으면 기본값으로 붙인다(Hangeul ▸ Setup ▸ Combat HUD & Feedback 메뉴로 미리 붙이면 인스펙터에서 보인다)
+            if (GetComponent<PlayerHitFeedback>() == null) gameObject.AddComponent<PlayerHitFeedback>();
+
             Idle = new PlayerIdleState(this);
             Move = new PlayerMoveState(this);
             Locked = new PlayerLockedState(this);
@@ -122,17 +131,46 @@ namespace Hangeul.Game.Character
         void OnDied(Health health) => Fsm.ChangeState(Dead);
 
         /// <summary>
-        /// 쓰러진 뒤 되살아난다: 체력을 채우고 잠깐 무적으로 Idle에 돌아온다.
-        /// 지금은 쓰러진 자리에서 되살아난다(체크포인트로 돌아가는 것은 체크포인트를 만들 때 이 함수에 넣는다).
+        /// 쓰러진 뒤 체크포인트로 돌아가는 연출을 시작한다: 화면이 까맣게 덮이고(<c>respawnFadeSeconds</c>), 그 사이에 체크포인트로 옮겨
+        /// 체력을 채운 뒤 화면이 걷힌다. 화면 페이드가 없으면(0초) 바로 돌아간다.
         /// </summary>
-        public void Respawn()
+        public void BeginRespawn()
         {
+            if (respawnFadeSeconds <= 0f) { RespawnAtCheckpoint(); return; }
+
+            var fader = ScreenFader.Instance;
+            fader.FadeOut(respawnFadeSeconds, () =>
+            {
+                RespawnAtCheckpoint();
+                fader.FadeIn(respawnFadeSeconds);
+            });
+        }
+
+        /// <summary>
+        /// 가장 최근에 켠 체크포인트(없으면 시작 위치)로 옮겨 체력을 가득 채우고 잠깐 무적으로 Idle에 돌아온다.
+        /// 카메라는 부드럽게 따라가지 않고 곧바로 옮겨진다.
+        /// </summary>
+        public void RespawnAtCheckpoint()
+        {
+            Vector2 destination = Checkpoints.Position ?? (Vector2)transform.position;
+            Vector2 delta = destination - (Vector2)transform.position;
+
+            Body.position = destination;
+            transform.position = destination;
+            Body.linearVelocity = Vector2.zero;
+            foreach (var cam in FindObjectsByType<CinemachineCamera>(FindObjectsSortMode.None))
+                cam.OnTargetObjectWarped(transform, delta);
+
             Health.Revive();
             Health.GrantInvincibility(respawnInvincibleSeconds);
             Fsm.ChangeState(Idle);
         }
 
-        void Start() => Fsm.Initialize(Idle);
+        void Start()
+        {
+            Checkpoints.SetDefault(transform.position);   // 체크포인트를 켜기 전에 죽으면 시작한 자리로 돌아온다
+            Fsm.Initialize(Idle);
+        }
 
         void Update()
         {

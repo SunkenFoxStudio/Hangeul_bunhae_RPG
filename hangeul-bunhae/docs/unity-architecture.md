@@ -622,6 +622,26 @@ Idle ──입력──▶ Move ──입력 없음──▶ Idle
 - **메뉴**: `GameObject ▸ Hangeul ▸ Enemy (슬라임 샘플)`. 시간은 `Time.deltaTime`/`fixedDeltaTime` 기준이라 인벤토리를 열면 같이 멈춘다.
 - 아직 없는 것: 공격 전조가 있는 공격(돌진 등), 원거리 공격, 길 찾기(벽을 돌아 쫓아오기), 체력 바.
 
+### 13.8e 하트 HUD · 타격감 연출 · 체크포인트 (2026-10-14)
+- **하트 HUD** (`Game/Hud`): `HeartDisplay`(`Hangeul.App`, EditMode 테스트)가 정수 체력을 **하트 한 칸 = 체력 2**(반 칸 표시, 젤다 방식)로 바꾼다: 최대 6이면 3칸, 현재 3이면 꽉 참·반 칸·빈 칸. 최대 체력이 홀수면 마지막 하트는 체력 1칸짜리. `HeartHudView`가 화면 왼쪽 위(`margin`)에 하트를 그리고 `Health.Changed`마다 갱신한다(하트 이미지는 실행할 때 코드로 만든다). 맞아서 체력이 줄면 잠깐 커졌다 돌아온다. **그림 슬롯**: `fullHeart`/`halfHeart`/`emptyHeart`(비면 임시 픽셀 하트 `HeartSprites`).
+- **타격감 연출** (`Game/Feedback`, `PlayerHitFeedback`): 값은 모두 인스펙터에서 조절(0이면 끔). ① 맞았을 때: 번쩍임, **히트스톱**(0.08초), **화면 흔들림**. ② 무적 시간 동안 깜빡임. ③ 공격이 적중했을 때(`PlayerMeleeAttack.Struck` 이벤트): 짧은 히트스톱(0.05초)과 작은 흔들림. 게임 규칙에는 관여하지 않고 이벤트(`Health.Damaged`, `Struck`)를 받아 보여주기만 한다.
+  - `HitStop`: `GamePause`의 `PauseReason.HitStop`을 멈추지 않는 시간으로 잠깐 켰다 끈다(인벤토리 정지와 서로 방해하지 않음, `HitStopRunner`가 해제).
+  - `CameraShake`/`CameraShakeExtension`: Cinemachine 확장으로 결과 위치를 흔든다. 값은 직렬화하지 않는 런타임 값이라 Play 중에 바뀌어도 Cinemachine 저장 확인창이 뜨지 않는다. 세기는 월드 단위(0.03 ≈ 3픽셀). 씬에 없으면 처음 흔들 때 자동으로 붙는다.
+- **체크포인트** (`Game/World`): `Checkpoint`(Trigger, 플레이어가 닿으면 켜지고 색이 바뀜, 이전 것은 꺼짐, `respawnPoint`로 되살아날 위치 지정 가능)와 `Checkpoints`(마지막으로 켠 체크포인트의 기록). 체크포인트를 켜지 않았다면 **시작한 자리가 기본 체크포인트**. 저장 파일에 남기는 것은 세이브 단계에서 한다(지금은 플레이를 다시 시작하면 초기화).
+- **죽음 → 부활**: 체력 0 → `PlayerDeadState`(`respawnDelay` 1.5초 쓰러져 있음) → `BeginRespawn()`: **화면이 까맣게 덮이고(`ScreenFader`, 0.4초)** 그 사이에 마지막 체크포인트로 옮겨(`RespawnAtCheckpoint`: 위치, 체력 가득, 잠깐 무적, 카메라는 `OnTargetObjectWarped`로 곧바로 이동) → 화면이 걷힌다. 살아 있던 적은 그대로 두고, 플레이어가 죽으면 쫓기를 멈추고 되살아나면 다시 감지한다. `ScreenFader`는 씬에 없으면 처음 쓸 때 자동으로 만든다(페이드 시간 `respawnFadeSeconds`가 0이면 바로 돌아감).
+- **메뉴**: `Hangeul ▸ Setup ▸ Combat HUD & Feedback`(플레이어에 `PlayerHitFeedback`, 카메라에 `CameraShakeExtension`, `HeartHUD`와 `ScreenFader` 오브젝트를 씬에 미리 만들어 인스펙터에서 보이게 함), `GameObject ▸ Hangeul ▸ Checkpoint`.
+- 아직 없는 것: 게임오버 화면(지금은 곧바로 체크포인트로 돌아감), 체크포인트 그림/효과, 체력 최대치 증가(하트 늘리기), 체크포인트 저장.
+
+### 13.8f 플레이어 애니메이션 (2026-10-14)
+- **방식**: Animator Controller 없이 `PlayerSpriteAnimator`가 방향별 프레임(`DirectionalClip`)을 직접 재생한다. 종류: `Idle / Walk / Attack / Hurt / Dead`. **비어 있는 슬롯은 Idle로 대체**한다(프레임이 한 장뿐이어도 동작).
+- **시트**: `Assets/Sprites/The Female Adventurer - Free`의 시트(방향별 384×64, 48×64 프레임 8장)는 이미 프레임별로 잘려 있다(`Idle_Down_0 … _7`). 왼쪽/오른쪽 방향은 시트의 `Left_Down` / `Right_Down`을 쓴다.
+- **프레임 자동 채우기**: `Hangeul ▸ Setup ▸ Player Animation (프레임 자동 채우기)`가 슬롯의 프레임을 번호 순서로 채운다(Idle, Walk, Attack ← 공격 그림이 없어 **임시로 Dash 시트**, Dead ← Death 시트). 기본은 **비어 있거나 한 장뿐인 칸만** 채워 직접 넣은 여러 장짜리를 건드리지 않고, `강제로 다시 채우기` 메뉴는 모두 덮어쓴다. Hurt는 시트가 없어 비워 둔다(Idle).
+- **동작 시간과 프레임 수는 별개**: `PlayFitted(anim, seconds)`는 프레임이 몇 장이든 전체가 정확히 `seconds`초 안에 한 번 재생되도록 속도를 맞춘다(`ClipMath.FpsToFit`/`FrameIndex`, EditMode 테스트). **공격**은 공격 시간표 전체(준비+판정+마무리)에, **피격**은 경직 시간에 맞춘다. 마지막 장면에는 머문다(loop 꺼짐). 걷기/대기는 슬롯의 `fps`로 반복 재생한다. 슬롯 모션이 비어 Idle로 대체될 때는 시간에 맞추지 않는다.
+- **죽음**: `PlayerDeadState`가 `Dead` 모션을 한 번 재생하고 마지막 장면에 머문다(체크포인트 부활 때 다시 Idle).
+- **발밑 그림자** (`PlayerShadow`, 플레이어 자식 `Shadow`): 평소에는 `Shadow.png` 한 장, **쓰러지는 동안에는 캐릭터와 같은 프레임 번호의 `Death_Shadow` 시트**(그림자가 작아지며 몸 모양이 됨)를 보여준다. 그림자 시트(48×64)는 캐릭터 프레임과 같은 크기라 캐릭터 그림(`Visual`)과 같은 위치에 놓으면 발밑에 맞는다. 단 그림자 시트는 PPU 100·캐릭터 시트는 PPU 16이라 메뉴가 **배율(100/16)을 맞춰** 월드 크기를 같게 한다. 정렬은 캐릭터와 같은 Sorting Layer에서 한 칸 아래(`Order − 1`). 메뉴: `Hangeul ▸ Setup ▸ Player Shadow (발밑 그림자)`.
+- **나중에 유니티 Animator(Animator Controller)로 바꾸기 위한 준비**: 상태(FSM)는 애니메이션을 `IPlayerAnimator`(`Play`, `PlayFitted`, `SetFacing`)로만 다룬다(`PlayerController.Anim`). 지금 구현은 코드로 프레임을 재생하는 `PlayerSpriteAnimator`이고, Animator로 바꿀 때는 같은 인터페이스를 구현한 컴포넌트(`PlayerAnimatorController` 같은)로 교체하면 **상태 코드는 그대로** 쓴다. 대응 방안: `Play` → 상태 이름/트리거 파라미터(`Idle/Walk/Attack/Hurt/Dead`), `SetFacing` → 방향 정수 파라미터(`Facing`: Down/Up/Left/Right, 방향별 Blend Tree 또는 상태), `PlayFitted(anim, seconds)` → `Animator.speed = 클립 길이 / seconds`(한 번 재생 상태), `CurrentAnim`/`CurrentFrameIndex`(그림자 동기화)는 `Animator.GetCurrentAnimatorStateInfo`의 정규화 시간으로 대체. 동작 시간(공격 시간표, 경직 시간)은 계속 코드의 시간표가 정하고 애니메이션은 거기에 속도를 맞추는 구조를 유지한다(애니메이션 이벤트로 판정을 켜지 않는다 → 클립을 바꿔도 판정이 흔들리지 않음). 적(`EnemySpriteAnimator`)도 같은 방식으로 바꿀 수 있게 만들어져 있다.
+- 아직 없는 것: 구르기(Dash)(당장은 만들지 않음, 필요할 때 다시 정함), Hurt 그림, 먼지 효과(`Dust`).
+
 ### 13.8a 일시정지 (확정, 2026-10-14)
 - **인벤토리를 열면 게임 시간이 멈춘다**(젤다식): `GamePause.Set(PauseReason.Inventory, true)` → `Time.timeScale = 0`. 플레이어·적·투사체·애니메이션·게임 월드 물리가 모두 멈춘다. 정지 이유는 플래그(`PauseReason`: Inventory, Dialogue, Menu)이고 하나라도 켜져 있으면 멈춘다(`GamePause`, `Hangeul.Game`).
 - **멈춘 동안에도 움직여야 하는 것은 `Time.unscaledDeltaTime`을 쓴다**: 인벤토리 패널 슬라이드, 카메라 이동(`InventoryCameraShift`), UI 연출(카드 등), 안내 문구, **가방 흔들기 물리**(독립 물리 씬을 수동 진행, §5.6a).

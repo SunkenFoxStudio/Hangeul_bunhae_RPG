@@ -2,8 +2,13 @@ using System.Linq;
 using Hangeul.Game.Character;
 using Hangeul.Game.Combat;
 using Hangeul.Game.Enemy;
+using Hangeul.Game.Feedback;
+using Hangeul.Game.Hud;
+using Hangeul.Game.World;
+using Unity.Cinemachine;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Hangeul.Game.Editor
 {
@@ -116,6 +121,83 @@ namespace Hangeul.Game.Editor
             so.FindProperty("maxHealth").intValue = 6;
             so.FindProperty("invincibleSeconds").floatValue = 1f;
             so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // ───── 하트 HUD / 타격감 연출 / 체크포인트 ─────
+        [MenuItem("Hangeul/Setup/Combat HUD & Feedback")]
+        static void SetupHudAndFeedback()
+        {
+            int made = 0;
+
+            // 플레이어: 맞았을 때 번쩍임/깜빡임/히트스톱/화면 흔들림
+            foreach (var player in Object.FindObjectsByType<PlayerController>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (player.GetComponent<PlayerHitFeedback>() != null) continue;
+                Undo.AddComponent<PlayerHitFeedback>(player.gameObject);
+                made++;
+            }
+
+            // 카메라 흔들림 확장
+            foreach (var cam in Object.FindObjectsByType<CinemachineCamera>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (cam.GetComponent<CameraShakeExtension>() != null) continue;
+                Undo.AddComponent<CameraShakeExtension>(cam.gameObject);
+                made++;
+            }
+
+            // 화면 왼쪽 위 하트
+            if (Object.FindFirstObjectByType<HeartHudView>(FindObjectsInactive.Include) == null)
+            {
+                var go = new GameObject("HeartHUD", typeof(Canvas), typeof(CanvasScaler));
+                Undo.RegisterCreatedObjectUndo(go, "Create Heart HUD");
+                var canvas = go.GetComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 3;   // 안내 UI(5), 인벤토리(10)보다 아래
+                var scaler = go.GetComponent<CanvasScaler>();
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920f, 1080f);
+                scaler.matchWidthOrHeight = 0.5f;
+                go.AddComponent<HeartHudView>();
+                made++;
+            }
+
+            // 죽어서 돌아갈 때의 화면 페이드
+            if (Object.FindFirstObjectByType<ScreenFader>(FindObjectsInactive.Include) == null)
+            {
+                var go = new GameObject("ScreenFader");
+                Undo.RegisterCreatedObjectUndo(go, "Create Screen Fader");
+                go.AddComponent<ScreenFader>().EnsureBuilt();
+                made++;
+            }
+
+            Debug.Log(made > 0 ? $"[Combat] 하트 HUD / 타격감 연출 / 화면 페이드 설정을 {made}개 추가했습니다. 씬을 저장하세요."
+                               : "[Combat] 이미 모두 설정되어 있습니다.");
+        }
+
+        [MenuItem("GameObject/Hangeul/Checkpoint", false, 20)]
+        static void CreateCheckpoint()
+        {
+            var go = new GameObject("Checkpoint");
+            Undo.RegisterCreatedObjectUndo(go, "Create Checkpoint");
+
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+            sr.color = new Color(0.6f, 0.6f, 0.6f, 1f);
+            go.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
+
+            var box = go.AddComponent<BoxCollider2D>();
+            box.isTrigger = true;
+            box.size = sr.sprite != null ? (Vector2)sr.sprite.bounds.size : Vector2.one;
+
+            var checkpoint = go.AddComponent<Checkpoint>();
+            var so = new SerializedObject(checkpoint);
+            so.FindProperty("sprite").objectReferenceValue = sr;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            var view = SceneView.lastActiveSceneView;
+            if (view != null) go.transform.position = new Vector3(view.pivot.x, view.pivot.y, 0f);
+            Selection.activeGameObject = go;
+            Debug.Log("체크포인트를 만들었습니다. 플레이어가 닿으면 켜져 색이 바뀌고, 죽으면 가장 최근에 켠 체크포인트에서 되살아납니다.");
         }
 
         // ───── 플레이어 공격 ─────

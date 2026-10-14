@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Hangeul.App;
 using Hangeul.Game.Combat;
@@ -50,6 +51,9 @@ namespace Hangeul.Game.Character
 
         readonly Collider2D[] _buffer = new Collider2D[24];
 
+        /// <summary>공격이 누군가를 실제로 때렸을 때(인자: 때린 대상 수). 타격감 연출(히트스톱, 화면 흔들림)이 받는다.</summary>
+        public event Action<int> Struck;
+
         public AttackTimeline Timeline => new AttackTimeline(windupSeconds, activeSeconds, recoverySeconds);
         public float LungeSpeed => lungeSpeed;
 
@@ -98,6 +102,7 @@ namespace Hangeul.Game.Character
                 var info = new DamageInfo(damage, Team.Player, dir * knockbackSpeed, stunSeconds, null, gameObject);
                 if (target.TakeDamage(info)) hits++;
             }
+            if (hits > 0) Struck?.Invoke(hits);
             return hits;
         }
 

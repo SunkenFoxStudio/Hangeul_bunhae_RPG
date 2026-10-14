@@ -40,13 +40,16 @@ namespace Hangeul.Game.Editor
             sr.sortingOrder = 0;
             var animator = visual.AddComponent<PlayerSpriteAnimator>();
 
-            CreateCombatMenus.AddPlayerHealth(root);
-            CreateCombatMenus.AddPlayerAttack(root);   // 공격 설정(판정/시간/피해)과 베기 이펙트 슬롯   // 체력(하트 방식 정수). 인스펙터에서 최대 체력/무적 시간을 조절한다
+            CreateCombatMenus.AddPlayerHealth(root);         // 체력(하트 방식 정수). 인스펙터에서 최대 체력/무적 시간을 조절한다
+            CreateCombatMenus.AddPlayerAttack(root);         // 공격 설정(판정/시간/피해)과 베기 이펙트 슬롯
+            root.AddComponent<PlayerHitFeedback>();          // 맞았을 때 번쩍임/깜빡임/히트스톱/화면 흔들림
 
             var controller = root.AddComponent<PlayerController>();
             var so = new SerializedObject(controller);
             so.FindProperty("spriteAnimator").objectReferenceValue = animator;
             so.ApplyModifiedPropertiesWithoutUndo();
+
+            PlayerAnimationSetup.AddPlayerShadow(root);   // 발밑 그림자
 
             Selection.activeGameObject = root;
         }
