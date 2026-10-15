@@ -15,6 +15,8 @@ namespace Hangeul.App
         public int schemaVersion;
         public List<string> categories = new List<string>();
         public List<ItemWordEntry> items = new List<ItemWordEntry>();
+        /// <summary>단어별 상세 수치. 수치를 따로 정한 단어만 들어 있다(옛 파일에는 없는 선택 항목이라 schemaVersion은 그대로다).</summary>
+        public List<WordStatsEntry> wordStats = new List<WordStatsEntry>();
     }
 
     [Serializable]
@@ -66,6 +68,14 @@ namespace Hangeul.App
         /// <summary>단어의 종류(무기/방어구/음식). 카테고리를 모르거나 쓰임이 없는 카테고리면 <see cref="ItemKind.None"/>.</summary>
         public ItemKind KindOf(string word) => ItemKinds.FromCategory(CategoryOf(word));
 
+        readonly Dictionary<string, ItemStats> _statsOf = new Dictionary<string, ItemStats>();
+
+        /// <summary>
+        /// 단어의 상세 수치(범위에 맞춰 둔 값, 고쳐 쓰지 말 것). 수치를 따로 정하지 않은 단어는 null — 게임은 그때 원래 설정을 쓴다.
+        /// 합성 단어('불화살')는 본체('화살')의 수치를 따른다.
+        /// </summary>
+        public ItemStats StatsOf(string word) => word != null && _statsOf.TryGetValue(word, out var s) ? s : null;
+
         /// <summary>파일 내용으로 집합을 만든다. 버전이 다르거나 비어 있으면 null. 잘못된/중복 단어는 건너뛴다.</summary>
         public static ItemWordSet FromFile(ItemWordsFile file, out int skipped)
         {
@@ -76,12 +86,22 @@ namespace Hangeul.App
             foreach (var item in file.items)
                 if (item == null || !set.Add(item.word, item.category)) skipped++;
 
+            // 단어별 상세 수치: 목록에 없는 단어의 것은 무시한다. 같은 단어가 두 번 있으면 먼저 나온 것이 우선.
+            if (file.wordStats != null)
+                foreach (var entry in file.wordStats)
+                    if (entry != null && entry.stats != null && set.Contains(entry.word) && !set._statsOf.ContainsKey(entry.word))
+                        set._statsOf[entry.word] = entry.stats.Clamped();
+
             // 접두어 규칙으로 생기는 합성 단어("불"+"화살" = "불화살")도 하나의 아이템 단어로 등록한다(카테고리는 본체의 것).
             // 이미 파일에 있는 단어와 겹치면 파일의 단어가 우선이다(합성 단어로 세지 않는다).
             foreach (var item in file.items)
                 foreach (var (prefix, compound) in PrefixPairsOf(file, item))
                 {
-                    if (set.Add(compound, item.category)) set._compounds.Add(compound);
+                    if (set.Add(compound, item.category))
+                    {
+                        set._compounds.Add(compound);
+                        if (set._statsOf.TryGetValue(item.word, out var baseStats)) set._statsOf[compound] = baseStats;   // 수치도 본체를 따른다
+                    }
                     if (!set._prefixesByBase.TryGetValue(item.word, out var list)) set._prefixesByBase[item.word] = list = new List<string>();
                     if (!list.Contains(prefix)) list.Add(prefix);   // 위에 얹어도 인정하는 접두어(MatchScanner의 '위 배치')
                 }

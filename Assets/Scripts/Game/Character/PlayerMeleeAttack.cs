@@ -11,7 +11,8 @@ namespace Hangeul.Game.Character
     /// 이 컴포넌트는 "얼마나 세게, 어디를, 언제까지" 때리는지와 실제 판정(<see cref="Strike"/>)을 맡는다.
     /// 판정은 시간(초)으로만 정하므로 공격 애니메이션 프레임이 한 장이어도, 나중에 애니메이션이 들어와도 똑같이 동작한다.
     /// Scene 뷰에서 이 컴포넌트가 붙은 오브젝트를 선택하면 4방향의 판정 상자가 노란 선으로 보인다.
-    /// 무기 아이템이 생기면 피해량/범위는 장착한 무기가 덮어쓴다(후속).
+    /// 무기 단어를 장착하고 그 단어에 상세 수치가 정해져 있으면(<see cref="UseWeaponStats"/>) 피해량·밀어내기·경직·범위·시간은 그 값을 쓰고,
+    /// 수치를 따로 정하지 않은 무기는 아래 인스펙터 값을 그대로 쓴다.
     /// </summary>
     [AddComponentMenu("Hangeul/Player Melee Attack")]
     public sealed class PlayerMeleeAttack : MonoBehaviour
@@ -54,7 +55,24 @@ namespace Hangeul.Game.Character
         /// <summary>공격이 누군가를 실제로 때렸을 때(인자: 때린 대상 수). 타격감 연출(히트스톱, 화면 흔들림)이 받는다.</summary>
         public event Action<int> Struck;
 
-        public AttackTimeline Timeline => new AttackTimeline(windupSeconds, activeSeconds, recoverySeconds);
+        // 장착한 무기 단어의 상세 수치. null이면 인스펙터 값을 쓴다.
+        ItemStats _weapon;
+
+        /// <summary>장착한 무기 단어의 수치를 적용한다. null이면(무기를 풀었거나 수치를 따로 정하지 않은 무기) 인스펙터 값으로 돌아간다.</summary>
+        public void UseWeaponStats(ItemStats stats) => _weapon = stats;
+
+        /// <summary>지금 무기 단어의 수치를 쓰고 있는지(인스펙터 값이 아니라).</summary>
+        public bool UsesWeaponStats => _weapon != null;
+
+        int Damage => _weapon != null ? _weapon.damage : damage;
+        float KnockbackSpeed => _weapon != null ? _weapon.knockback : knockbackSpeed;
+        float StunSeconds => _weapon != null ? _weapon.stun : stunSeconds;
+        float Reach => _weapon != null ? _weapon.reach : reach;
+        float Width => _weapon != null ? _weapon.width : width;
+
+        public AttackTimeline Timeline => _weapon != null
+            ? new AttackTimeline(_weapon.windup, _weapon.active, _weapon.recovery)
+            : new AttackTimeline(windupSeconds, activeSeconds, recoverySeconds);
         public float LungeSpeed => lungeSpeed;
 
         /// <summary>이번 공격의 방향: 마우스 조준이 켜져 있으면 마우스 쪽, 아니면 지금 바라보는 방향.</summary>
@@ -74,7 +92,7 @@ namespace Hangeul.Game.Character
         {
             Vector2 dir = FacingUtil.ToVector(facing);
             Vector2 origin = (Vector2)transform.position + originOffset;
-            var box = MeleeBox.Compute(dir.x, dir.y, origin.x, origin.y, reach, width);
+            var box = MeleeBox.Compute(dir.x, dir.y, origin.x, origin.y, Reach, Width);
             center = new Vector2(box.cx, box.cy);
             size = new Vector2(box.w, box.h);
         }
@@ -99,7 +117,7 @@ namespace Hangeul.Game.Character
                 if (target == null || (target is Component c && c.gameObject == gameObject)) continue;   // 자기 자신은 제외
                 if (!already.Add(target)) continue;
 
-                var info = new DamageInfo(damage, Team.Player, dir * knockbackSpeed, stunSeconds, null, gameObject);
+                var info = new DamageInfo(Damage, Team.Player, dir * KnockbackSpeed, StunSeconds, null, gameObject);
                 if (target.TakeDamage(info)) hits++;
             }
             if (hits > 0) Struck?.Invoke(hits);
@@ -111,7 +129,7 @@ namespace Hangeul.Game.Character
         {
             if (effect == null) effect = AttackEffect.CreateDefault(transform);
             GetBox(facing, out var center, out var size);
-            effect.Play(facing, center, size, activeSeconds + 0.04f);
+            effect.Play(facing, center, size, Timeline.Active + 0.04f);
         }
 
         public void HideEffect()

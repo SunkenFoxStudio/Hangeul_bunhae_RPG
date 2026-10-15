@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using Hangeul.App;
 using Hangeul.Domain;
 using Hangeul.UI;
@@ -16,6 +17,8 @@ namespace Hangeul.Game.DevTools
     /// 아이템 단어 DB(item_words.json)를 보고 고치는 디버그 화면(러프). UI는 실행할 때 코드로 만든다.
     /// 왼쪽: 카테고리 목록(클릭하면 그 카테고리만 보기, 빈 카테고리는 ×로 삭제, 새 카테고리 추가).
     /// 오른쪽: 단어 추가 줄(단어 + 카테고리 선택) 아래에 단어 목록(카테고리 버튼을 누르면 다음 카테고리로 바뀜, ×로 삭제).
+    /// 무기·음식 단어 줄에는 "상세 수치 열기" 버튼이 있어, 누르면 그 줄 아래에 밝은 배경의 수치 패널이 열리고 닫힌다
+    /// (무기: 피해량·밀어내기·경직·범위·시간, 음식: 회복량). 값을 확정(Enter나 다른 곳 클릭)할 때마다 저장한다.
     /// 바꿀 때마다 파일에 바로 저장한다. 파일 위치는 에디터에서는 Assets/Resources, 빌드에서는 게임 실행 파일 옆이다
     /// (<see cref="ItemWordsStore"/>) — 화면 아래에 위치가 보이고, 버튼으로 그 폴더를 열 수 있다.
     /// </summary>
@@ -35,11 +38,18 @@ namespace Hangeul.Game.DevTools
         static readonly Color Ink = new Color(0.97f, 0.9f, 0.76f, 1f);
         static readonly Color Dim = new Color(0.85f, 0.7f, 0.45f, 1f);
         static readonly Color Warn = new Color(1f, 0.6f, 0.45f, 1f);
+        // 상세 수치 패널: 어두운 목록 위에서 눈에 띄는 밝은 배경
+        static readonly Color StatsBg = new Color(0.93f, 0.88f, 0.74f, 1f);
+        static readonly Color StatsInk = new Color(0.17f, 0.11f, 0.07f, 1f);
+        static readonly Color StatsHint = new Color(0.17f, 0.11f, 0.07f, 0.65f);
+        static readonly Color StatsInputBg = new Color(1f, 0.99f, 0.95f, 1f);
 
         ItemWordsFile _file;
         bool _canSave = true;
         string _loadMessage;   // 불러오다 생긴 문제: 화면이 만들어진 뒤 상태줄에 보여준다
         string _filter;        // null = 전체
+        readonly HashSet<string> _openStats = new HashSet<string>();   // 상세 수치 패널이 열려 있는 단어(목록을 다시 그려도 유지)
+        readonly Dictionary<string, Text> _toggleLabels = new Dictionary<string, Text>();   // 단어 줄의 "상세 수치 열기/닫기" 글자(●를 바로 붙이고 떼기 위해)
 
         Text _status, _listHeader, _addCategoryLabel;
         InputField _wordInput, _categoryInput;
@@ -117,6 +127,19 @@ namespace Hangeul.Game.DevTools
             }
             _file.categories ??= new List<string>();
             _file.items ??= new List<ItemWordEntry>();
+            _file.wordStats ??= new List<WordStatsEntry>();
+            _file.wordStats.RemoveAll(w => w == null || string.IsNullOrEmpty(w.word));
+            foreach (var w in _file.wordStats) w.stats ??= new ItemStats();
+        }
+
+        // 삭제된 단어의 수치와 같은 단어의 중복 수치를 지운다.
+        void PruneStats()
+        {
+            var words = new HashSet<string>();
+            foreach (var it in _file.items) words.Add(it.word);
+            var seen = new HashSet<string>();
+            _file.wordStats.RemoveAll(w => w == null || w.stats == null || !words.Contains(w.word) || !seen.Add(w.word));
+            _openStats.RemoveWhere(w => !words.Contains(w));
         }
 
         // 접두어 카테고리에서 빠졌거나 삭제된 단어를 각 단어의 접두어 목록에서 지운다.
@@ -135,6 +158,7 @@ namespace Hangeul.Game.DevTools
         void Save(string message)
         {
             PrunePrefixes();
+            PruneStats();
             if (!_canSave) { SetStatus("목록 파일을 읽지 못했거나 형식(schemaVersion)이 달라 저장하지 않았습니다.", Warn); return; }
             if (ItemWordsStore.TryWrite(JsonUtility.ToJson(_file, true), out string error)) SetStatus(message + "  (저장됨)", Ink);
             else SetStatus($"{message}  (저장 실패: {error})", Warn);
@@ -320,6 +344,7 @@ namespace Hangeul.Game.DevTools
         void RefreshWords()
         {
             Clear(_wordContent);
+            _toggleLabels.Clear();
             int shown = 0;
             foreach (var it in _file.items)
             {
@@ -330,9 +355,196 @@ namespace Hangeul.Game.DevTools
                 AddLabel(row, entry.word, 32, Ink, 0f, 1f);
                 AddRowButton(row, string.IsNullOrEmpty(entry.category) ? "(없음)" : entry.category, 24, Ink, 220f, 0f, () => OpenCategoryPopup(entry));
                 AddPrefixControls(row, entry);
+                var kind = ItemKinds.FromCategory(entry.category);
+                AddStatsToggle(row, entry, kind);
                 AddRowButton(row, "×", 26, SoftRed, 56f, 0f, () => RemoveWord(entry));
+                if (kind != ItemKind.None && _openStats.Contains(entry.word)) AddStatsPanel(entry, kind);   // 그 단어 줄 바로 아래
             }
             _listHeader.text = $"단어 {shown}개  ·  {(_filter ?? "전체")}";
+        }
+
+        // ───── 상세 수치 ─────
+        // 수치를 읽고 고치는 방법(이름표, 정수 여부, 읽기, 쓰기). 값은 ItemStats가 범위에 맞춰 준다(Clamped).
+        readonly struct StatDef
+        {
+            public readonly string Label;
+            public readonly bool Integer;
+            public readonly System.Func<ItemStats, float> Get;
+            public readonly System.Action<ItemStats, float> Set;
+
+            public StatDef(string label, bool integer, System.Func<ItemStats, float> get, System.Action<ItemStats, float> set)
+            {
+                Label = label; Integer = integer; Get = get; Set = set;
+            }
+        }
+
+        static readonly StatDef DamageDef = new StatDef("피해량", true, s => s.damage, (s, v) => s.damage = Mathf.RoundToInt(v));
+        static readonly StatDef KnockbackDef = new StatDef("밀어내기", false, s => s.knockback, (s, v) => s.knockback = v);
+        static readonly StatDef StunDef = new StatDef("경직", false, s => s.stun, (s, v) => s.stun = v);
+        static readonly StatDef ReachDef = new StatDef("길이", false, s => s.reach, (s, v) => s.reach = v);
+        static readonly StatDef WidthDef = new StatDef("폭", false, s => s.width, (s, v) => s.width = v);
+        static readonly StatDef WindupDef = new StatDef("준비", false, s => s.windup, (s, v) => s.windup = v);
+        static readonly StatDef ActiveDef = new StatDef("판정", false, s => s.active, (s, v) => s.active = v);
+        static readonly StatDef RecoveryDef = new StatDef("마무리", false, s => s.recovery, (s, v) => s.recovery = v);
+        static readonly StatDef HealDef = new StatDef("회복량", true, s => s.heal, (s, v) => s.heal = Mathf.RoundToInt(v));
+
+        static readonly ItemStats DefaultStats = new ItemStats();   // 읽기 전용: 수치를 따로 정하지 않은 단어가 보여주는 기본값
+
+        ItemStats FindStats(string word)
+        {
+            foreach (var w in _file.wordStats)
+                if (w != null && w.word == word) return w.stats;
+            return null;
+        }
+
+        // 이 단어의 수치를 고치려고 가져온다. 아직 따로 정한 적이 없으면 기본값으로 새로 만들어 목록에 넣는다.
+        ItemStats StatsForEdit(string word)
+        {
+            var s = FindStats(word);
+            if (s != null) return s;
+            s = new ItemStats();
+            _file.wordStats.Add(new WordStatsEntry { word = word, stats = s });
+            return s;
+        }
+
+        static string FormatNumber(float v) => v.ToString("0.###", CultureInfo.InvariantCulture);
+
+        static bool TryParseNumber(string text, out float value)
+            => float.TryParse((text ?? "").Trim().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out value) && !float.IsInfinity(value);
+
+        // 무기·음식 줄 끝의 열기/닫기 버튼. 다른 종류의 단어는 칸만 비워 둬서 줄의 열이 맞는다.
+        void AddStatsToggle(RectTransform row, ItemWordEntry e, ItemKind kind)
+        {
+            const float Width = 210f;
+            if (kind == ItemKind.None) { AddLabel(row, "", 21, Dim, Width, 0f); return; }
+
+            bool open = _openStats.Contains(e.word);
+            var button = AddRowButton(row, ToggleText(e, open), 21, open ? Gold : Ink, Width, 0f, () =>
+            {
+                if (!_openStats.Remove(e.word)) _openStats.Add(e.word);
+                RefreshWords();
+            });
+            _toggleLabels[e.word] = button.GetComponentInChildren<Text>();
+        }
+
+        // ●는 이 단어만의 수치를 정해 둔 단어
+        string ToggleText(ItemWordEntry e, bool open)
+            => (FindStats(e.word) != null ? "● " : "") + (open ? "상세 수치 닫기" : "상세 수치 열기");
+
+        // 단어 줄 바로 아래에 열리는 밝은 배경의 수치 패널
+        void AddStatsPanel(ItemWordEntry e, ItemKind kind)
+        {
+            var panel = Rect("Stats", _wordContent, 0, 0, 1, 1, 0, 0, 0, 0);
+            Img(panel, StatsBg);
+            var v = panel.gameObject.AddComponent<VerticalLayoutGroup>();
+            v.padding = new RectOffset(28, 28, 14, 16);
+            v.spacing = 10f;
+            v.childControlWidth = v.childControlHeight = true;
+            v.childForceExpandWidth = true;
+            v.childForceExpandHeight = false;
+
+            // 맨 위 줄: 지금 수치가 기본값인지 이 단어만의 값인지 + 기본값으로 되돌리기
+            var head = NewPlainRow(panel, 40f);
+            var noteRt = Rect("Note", head, 0, 0, 1, 1, 0, 0, 0, 0);
+            var note = Txt(noteRt, "", 22, StatsHint, TextAnchor.MiddleLeft);
+            SetWidth(noteRt.gameObject, 0f, 1f);
+            var resetRt = Rect("Reset", head, 0, 0, 1, 1, 0, 0, 0, 0);
+            var reset = Btn(resetRt, "기본값으로", 22, Brown, () => ResetStats(e));
+            SetWidth(resetRt.gameObject, 170f, 0f);
+
+            void UpdateNote()
+            {
+                bool custom = FindStats(e.word) != null;
+                note.text = custom ? "이 단어만의 수치입니다." : "기본 수치입니다. 값을 고치면 이 단어만의 수치가 됩니다.";
+                reset.gameObject.SetActive(custom);
+                // 줄의 토글 글자에도 ●를 바로 붙인다(패널이 열려 있는 동안만 불리므로 '닫기' 글자)
+                if (_toggleLabels.TryGetValue(e.word, out var toggle) && toggle != null) toggle.text = ToggleText(e, true);
+            }
+            UpdateNote();
+
+            if (kind == ItemKind.Weapon)
+            {
+                AddStatRow(panel, e, "피해", null, UpdateNote, DamageDef, KnockbackDef, StunDef);
+                AddStatRow(panel, e, "범위 (유닛)", null, UpdateNote, ReachDef, WidthDef);
+                AddStatRow(panel, e, "시간 (초)", null, UpdateNote, WindupDef, ActiveDef, RecoveryDef);
+            }
+            else if (kind == ItemKind.Food)
+            {
+                AddStatRow(panel, e, "회복", "체력 2 = 하트 한 칸", UpdateNote, HealDef);
+            }
+        }
+
+        // 수치 패널의 한 줄: [묶음 이름] [이름표 + 입력칸] ×3 (모자라는 칸은 비워 둔다. 첫 빈칸에는 hint를 적는다)
+        void AddStatRow(RectTransform panel, ItemWordEntry e, string group, string hint, System.Action onChanged, params StatDef[] defs)
+        {
+            const int Columns = 3;
+            var row = NewPlainRow(panel, 52f);
+            var g = Rect("Group", row, 0, 0, 1, 1, 0, 0, 0, 0);
+            Txt(g, group, 24, StatsInk, TextAnchor.MiddleLeft);
+            SetWidth(g.gameObject, 150f, 0f);
+
+            foreach (var def in defs) AddStatCell(row, e, def, onChanged);
+            for (int i = defs.Length; i < Columns; i++)
+            {
+                var sp = Rect("Spacer", row, 0, 0, 1, 1, 0, 0, 0, 0);
+                if (i == defs.Length && !string.IsNullOrEmpty(hint)) Txt(sp, hint, 22, StatsHint, TextAnchor.MiddleLeft);
+                SetWidth(sp.gameObject, 0f, 1f);
+            }
+        }
+
+        void AddStatCell(RectTransform row, ItemWordEntry e, StatDef def, System.Action onChanged)
+        {
+            var cell = Rect("Stat", row, 0, 0, 1, 1, 0, 0, 0, 0);
+            var h = cell.gameObject.AddComponent<HorizontalLayoutGroup>();
+            h.spacing = 10f;
+            h.childAlignment = TextAnchor.MiddleLeft;
+            h.childControlWidth = h.childControlHeight = true;
+            h.childForceExpandWidth = false;
+            h.childForceExpandHeight = true;
+            SetWidth(cell.gameObject, 0f, 1f);
+
+            var labelRt = Rect("Label", cell, 0, 0, 1, 1, 0, 0, 0, 0);
+            Txt(labelRt, def.Label, 24, StatsInk, TextAnchor.MiddleLeft);
+            SetWidth(labelRt.gameObject, 112f, 0f);
+
+            var inputRt = Rect("Input", cell, 0, 0, 1, 1, 0, 0, 0, 0);
+            var field = MakeInput(inputRt, "", StatsInputBg, numbersOnly: true);
+            field.contentType = def.Integer ? InputField.ContentType.IntegerNumber : InputField.ContentType.DecimalNumber;
+            field.characterLimit = 8;
+            field.text = FormatNumber(def.Get(FindStats(e.word) ?? DefaultStats));
+            SetWidth(inputRt.gameObject, 150f, 0f);
+
+            // 칸을 벗어나거나 Enter를 눌러 입력이 끝날 때 확정한다. 목록을 다시 그리지 않아서 다음 칸을 바로 눌러 이어 고칠 수 있다.
+            field.onEndEdit.AddListener(_ => CommitStat(e, def, field, onChanged));
+        }
+
+        // 입력한 값을 숫자로 읽어 범위에 맞추고, 바뀌었으면 이 단어만의 수치로 저장한다. 숫자가 아니면 원래 값으로 되돌린다.
+        void CommitStat(ItemWordEntry e, StatDef def, InputField field, System.Action onChanged)
+        {
+            var current = FindStats(e.word) ?? DefaultStats;
+            if (!TryParseNumber(field.text, out float value))
+            {
+                field.text = FormatNumber(def.Get(current));
+                SetStatus("숫자를 입력하세요.", Warn);
+                return;
+            }
+
+            var edited = current.Clone();
+            def.Set(edited, value);
+            edited = edited.Clamped();
+            field.text = FormatNumber(def.Get(edited));   // 범위에 맞춰 바뀐 값을 그대로 보여준다
+            if (edited.SameAs(current)) return;           // 바뀐 게 없으면 '이 단어만의 수치'로 만들지 않는다
+
+            StatsForEdit(e.word).CopyFrom(edited);
+            Save($"{e.word}: {def.Label} {FormatNumber(def.Get(edited))}");
+            onChanged?.Invoke();
+        }
+
+        void ResetStats(ItemWordEntry e)
+        {
+            _file.wordStats.RemoveAll(w => w != null && w.word == e.word);
+            Save($"{e.word}: 기본 수치로 되돌림");
+            RefreshWords();
         }
 
         // 한 줄의 접두어 칸: [체크박스 접두어 가능] [붙을 수 있는 접두어 선택(창)]. 접두어 단어 자신에게는 쓰지 않는다.
@@ -494,10 +706,11 @@ namespace Hangeul.Game.DevTools
             return b;
         }
 
-        InputField MakeInput(RectTransform rt, string placeholderText)
+        InputField MakeInput(RectTransform rt, string placeholderText, Color? background = null, bool numbersOnly = false)
         {
-            Img(rt, new Color(0.95f, 0.9f, 0.78f, 1f));
-            var field = rt.gameObject.AddComponent<InputField>();
+            Img(rt, background ?? new Color(0.95f, 0.9f, 0.78f, 1f));
+            var field = rt.gameObject.AddComponent<SafeInputField>();   // 한글 입력기와 선택 영역이 겹칠 때 나는 유니티 예외를 피한다
+            field.NumbersOnly = numbersOnly;
             var dark = new Color(0.17f, 0.11f, 0.07f);
             var text = Txt(Rect("Text", rt, 0, 0, 1, 1, 12, 2, -12, -2), "", 26, dark, TextAnchor.MiddleLeft);
             var ph = Txt(Rect("Placeholder", rt, 0, 0, 1, 1, 12, 2, -12, -2), placeholderText, 24, new Color(dark.r, dark.g, dark.b, 0.45f), TextAnchor.MiddleLeft);
@@ -536,6 +749,22 @@ namespace Hangeul.Game.DevTools
             return content;
         }
 
+        // 배경 없는 가로 한 줄(수치 패널 안에서 쓴다). 높이는 고정, 안의 칸은 가로로 나란히.
+        static RectTransform NewPlainRow(RectTransform parent, float height)
+        {
+            var rt = Rect("Row", parent, 0, 0, 1, 1, 0, 0, 0, 0);
+            var h = rt.gameObject.AddComponent<HorizontalLayoutGroup>();
+            h.spacing = 16f;
+            h.childAlignment = TextAnchor.MiddleLeft;
+            h.childControlWidth = h.childControlHeight = true;
+            h.childForceExpandWidth = false;
+            h.childForceExpandHeight = true;
+            var le = rt.gameObject.AddComponent<LayoutElement>();
+            le.preferredHeight = height;
+            le.minHeight = height;
+            return rt;
+        }
+
         // 목록의 한 줄(가로로 배치). 높이는 고정.
         static RectTransform NewRow(RectTransform parent, float height, Color color)
         {
@@ -568,11 +797,12 @@ namespace Hangeul.Game.DevTools
             SetWidth(rt.gameObject, preferred, flexible);
         }
 
-        void AddRowButton(RectTransform row, string label, int size, Color color, float preferred, float flexible, UnityAction onClick)
+        Button AddRowButton(RectTransform row, string label, int size, Color color, float preferred, float flexible, UnityAction onClick)
         {
             var rt = Rect("Button", row, 0, 0, 1, 1, 0, 0, 0, 0);
-            TextButton(rt, label, size, color, onClick);   // color는 글자색
+            var button = TextButton(rt, label, size, color, onClick);   // color는 글자색
             SetWidth(rt.gameObject, preferred, flexible);
+            return button;
         }
     }
 }

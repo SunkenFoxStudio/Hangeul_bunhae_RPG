@@ -10,7 +10,8 @@ namespace Hangeul.Game.Character
     /// 플레이어가 인벤토리의 아이템을 쓰는 창구. 인벤토리 가방 모드에서 완성 단어를 플레이어 위로 끌어다 놓으면
     /// 무기는 장착/해제, 음식은 먹고(체력 회복) 카드가 사라진다. 방어구는 아직 쓰지 않는다(라벨만 표시).
     /// 또한 공격 가능 여부를 정한다: <see cref="requireWeapon"/>이 켜져 있으면 무기를 장착해야 공격할 수 있다(<see cref="CanAttack"/>).
-    /// 무기마다 달라지는 피해량/범위 같은 수치는 후속(지금은 장착하면 기본 근접 베기가 켜진다).
+    /// 장착한 무기 단어에 상세 수치(DB 관리 씬에서 정한 피해량·범위·시간 등)가 있으면 근접 공격(<see cref="PlayerMeleeAttack"/>)에 적용하고,
+    /// 수치를 따로 정하지 않은 무기는 근접 공격 컴포넌트의 기본 값으로 벤다. 음식은 단어에 정해진 회복량만큼 회복한다.
     /// 인벤토리 화면(<see cref="InventoryView"/>)과는 <see cref="IItemDropTarget"/>으로만 이어져 있다.
     /// </summary>
     [AddComponentMenu("Hangeul/Player Item User")]
@@ -31,7 +32,7 @@ namespace Hangeul.Game.Character
         [SerializeField] Sprite noWeaponIcon;
 
         [Header("음식")]
-        [Tooltip("음식 하나를 먹을 때 회복하는 체력(하트 한 칸 = 체력 2). 지금은 모든 음식이 같고, 단어마다 다른 수치는 아이템 DB 설계 때 DB로 옮긴다.")]
+        [Tooltip("회복량을 따로 정하지 않은 음식 하나를 먹을 때 회복하는 체력(하트 한 칸 = 체력 2). 단어마다의 회복량은 DB 관리 씬의 '상세 수치'에서 정한다.")]
         [SerializeField, Min(1)] int foodHeal = 2;
 
         [Header("끌어다 놓기")]
@@ -39,6 +40,8 @@ namespace Hangeul.Game.Character
         [SerializeField, Min(0f)] float dropPaddingPixels = 40f;
 
         Health _health;
+        PlayerMeleeAttack _melee;
+        InventoryModel _model;
         SpriteRenderer _sprite;
         bool _spriteSearched;
         FloatingNotice _notice;
@@ -69,14 +72,30 @@ namespace Hangeul.Game.Character
         void Start()
         {
             if (inventory == null) inventory = FindFirstObjectByType<InventoryView>(FindObjectsInactive.Include);
-            if (inventory != null) inventory.DropTarget = this;
+            if (inventory != null)
+            {
+                inventory.DropTarget = this;
+                _model = inventory.Model;
+                if (_model != null) _model.EquipmentChanged += ApplyWeaponStats;
+                ApplyWeaponStats();   // 저장된 장착이 이미 되살아나 있을 수 있다
+            }
             else if (requireWeapon)
                 Debug.LogWarning("[PlayerItemUser] 씬에서 InventoryView를 찾지 못했습니다. 무기를 장착할 수 없어 공격할 수 없습니다 (Require Weapon을 끄면 무기 없이 공격합니다).", this);
         }
 
         void OnDestroy()
         {
+            if (_model != null) _model.EquipmentChanged -= ApplyWeaponStats;
             if (inventory != null && ReferenceEquals(inventory.DropTarget, this)) inventory.DropTarget = null;
+        }
+
+        // 장착한 무기 단어의 상세 수치를 근접 공격에 넘긴다(수치를 따로 정하지 않았거나 무기를 풀었으면 null → 인스펙터 값)
+        void ApplyWeaponStats()
+        {
+            if (_melee == null) _melee = GetComponent<PlayerMeleeAttack>();
+            if (_melee == null || _model == null) return;
+            var equipped = _model.EquippedWeapon;
+            _melee.UseWeaponStats(equipped != null ? _model.Words.StatsOf(equipped.Word) : null);
         }
 
         // ───── IItemDropTarget ─────
@@ -117,8 +136,15 @@ namespace Hangeul.Game.Character
         public ItemUseAction Use(ItemDrop item)
         {
             var action = Decide(item);
-            if (action == ItemUseAction.Eat) Health.Heal(foodHeal);
+            if (action == ItemUseAction.Eat) Health.Heal(HealOf(item.Word));
             return action;
+        }
+
+        // 그 음식 단어에 정해 둔 회복량, 없으면 기본 회복량
+        int HealOf(string word)
+        {
+            var stats = inventory != null && inventory.Model != null ? inventory.Model.Words.StatsOf(word) : null;
+            return stats != null ? stats.heal : foodHeal;
         }
 
         ItemUseAction Decide(ItemDrop item)
