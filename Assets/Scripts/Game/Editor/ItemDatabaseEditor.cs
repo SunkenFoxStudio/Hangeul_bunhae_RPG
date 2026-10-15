@@ -34,6 +34,7 @@ namespace Hangeul.Game.Editor
         int _newWordCategory;
         CategoryType _newCategoryType = CategoryType.Plain;
         string _message;
+        ValidationReport _report;   // 마지막 검증 결과(고치고 나면 다시 눌러야 새로 고쳐진다)
         readonly HashSet<string> _open = new HashSet<string>();   // 펼쳐진 단어
 
         ItemDatabase Db => (ItemDatabase)target;
@@ -95,8 +96,60 @@ namespace Hangeul.Game.Editor
                 if (GUILayout.Button("JSON 내보내기...")) RunDialogAction(ItemDatabaseMenu.Export);
             }
 
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("검증 (문제 찾기)")) _report = ItemDatabaseValidator.Validate(Data);
+                if (_report != null && GUILayout.Button("검증 결과 닫기", GUILayout.Width(110))) _report = null;
+            }
+            DrawReport();
+
             if (!string.IsNullOrEmpty(_message)) EditorGUILayout.HelpBox(_message, MessageType.Info);
             EditorGUILayout.Space(4);
+        }
+
+        // ───── 검증 결과 ─────
+        const int MaxIssuesShown = 40;
+
+        void DrawReport()
+        {
+            if (_report == null) return;
+
+            int errors = _report.Count(IssueLevel.Error), warnings = _report.Count(IssueLevel.Warning), infos = _report.Count(IssueLevel.Info);
+            if (_report.Issues.Count == 0)
+            {
+                EditorGUILayout.HelpBox("검증: 문제가 없습니다.", MessageType.Info);
+                return;
+            }
+
+            EditorGUILayout.HelpBox($"검증 결과 — 오류 {errors} · 경고 {warnings} · 안내 {infos}  (고친 뒤에는 '검증'을 다시 누르세요)",
+                errors > 0 ? MessageType.Error : warnings > 0 ? MessageType.Warning : MessageType.Info);
+
+            int shown = 0;
+            foreach (var issue in _report.Issues)
+            {
+                if (shown++ >= MaxIssuesShown)
+                {
+                    EditorGUILayout.LabelField($"… 외 {_report.Issues.Count - MaxIssuesShown}개 (메뉴 Hangeul ▸ Setup ▸ Item DB ▸ 검증 으로 Console에서 전체를 볼 수 있습니다)", EditorStyles.miniLabel);
+                    break;
+                }
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.HelpBox(issue.Message, issue.Level == IssueLevel.Error ? MessageType.Error : issue.Level == IssueLevel.Warning ? MessageType.Warning : MessageType.None);
+                    if (issue.Word != null && GUILayout.Button(new GUIContent("보기", "단어 목록에서 이 단어를 찾아 펼친다"), GUILayout.Width(44), GUILayout.Height(38)))
+                        ShowWord(issue.Word);
+                }
+            }
+        }
+
+        // 단어 목록에서 그 단어만 보이게 하고 펼친다(화면 상태만 바꾼다)
+        void ShowWord(string word)
+        {
+            _showWords = true;
+            _search = word;
+            _categoryFilter = "";
+            _onlyCustom = false;
+            _onlyNoSprite = false;
+            _open.Add(word);
         }
 
         // 게임 연결 상태(열려 있는 씬의 InventoryView가 이 에셋을 읽는지). 1초에 한 번만 확인한다.

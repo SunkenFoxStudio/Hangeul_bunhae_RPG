@@ -616,7 +616,7 @@ Idle ──입력──▶ Move ──입력 없음──▶ Idle
   - 합성 단어를 나누는 법: `ItemWordSet.TryGetCompound('화염검') → 접두어 '화염' + 본체 '검'`. `PlayerItemUser`가 장착이 바뀔 때 접두어 단어의 수치로 `WeaponModifier.From`을 만들어 `PlayerMeleeAttack.UseWeapon(수치, 효과)`에 넘긴다. 접두어를 떼면(합성 단어가 깨지면) 장착이 풀리므로 효과도 함께 사라진다. 한 번에 접두어는 하나만 붙는다.
 - 코드: `App/ItemStats.cs`(`ItemStats`, `WordStatsEntry`, `PrefixEffectKind`, `DamageMode`), `App/WeaponModifier.cs`(접두어 효과 계산·확률·글자 색), `App/ColorHex.cs`(색 글자 다루기), `Game/Feedback/PopupText.cs`(속성 글자), `App/ItemWordSet.cs`(`wordStats` 읽기, `StatsOf`, `TryGetCompound`), `Game/DevTools/ItemDbManagerView.cs`(토글·패널), `UI/SafeInputField.cs`(입력칸), `Game/Character/PlayerMeleeAttack.cs`·`PlayerItemUser.cs`(적용). 테스트: `ItemStatsTests`, `WeaponModifierTests`, `ColorHexTests`.
 
-### 13.7e 게임 데이터 에셋 — JSON에서 엔진 안으로 (2026-10-16, 에셋 + 전용 인스펙터 + 게임 연결)
+### 13.7e 게임 데이터 에셋 — JSON에서 엔진 안으로 (2026-10-16, 에셋 + 전용 인스펙터 + 게임 연결 + 검증)
 - **방향**: 게임 안 DB 화면은 어디까지나 편한 시험용 도구이고 하는 일은 JSON 갱신이다. 데이터가 쌓였거나 게임이 완성됐을 때 엔진 메뉴로 그 데이터를 **엔진 안의 데이터 구조(ScriptableObject)**로 옮기고, 그 뒤 **메인 게임은 JSON에 관여하지 않는다**. 옮긴 뒤에도 동료가 JSON으로 단어를 더 추가하면 다시 가져올 수 있어야 한다. **게임은 에셋을 연결하면(아래 "게임 연결") 에셋을 읽고, 연결하지 않으면 지금처럼 JSON을 읽는다.**
 - **데이터 에셋** `ItemDatabase`(`Assets/Data/ItemDatabase.asset`, 메뉴가 처음 가져올 때 만든다): 안의 `ItemDatabaseData` 하나에 모든 것이 들어 있다.
   - `categories`: 카테고리 이름 + **종류**(`CategoryType`: 일반 / 무기 / 방어구 / 음식 / 접두어). 종류가 그 카테고리 단어의 목록과 수치 칸을 정한다. 카테고리 이름을 바꿔도 종류가 쓰인다(파일 쪽 `ItemWordsFile.categoryTypes`가 이름 짐작보다 우선하고, 짐작은 가져올 때 한 번만 쓴다).
@@ -634,6 +634,11 @@ Idle ──입력──▶ Move ──입력 없음──▶ Idle
   - 두 가져오기 모두 **아이템 스프라이트는 건드리지 않고, JSON에 없는 단어는 지우지 않는다.** 읽는 JSON은 `Assets/Resources/item_words.json`(게임 안 DB 화면이 고치는 파일). 같은 단어가 두 번 있으면 처음 것만, 결과는 요약창(추가·바뀜·그대로, 새 카테고리, 종류를 정해야 하는 카테고리)으로 알려 준다.
   - `게임 데이터 → JSON 내보내기...`: 저장 위치를 골라 JSON으로 쓴다(수치를 따로 정한 단어만 `wordStats`에, 카테고리 종류는 `categoryTypes`에). 백업, HTML 프로토타입, 동료에게 보낼 시작 파일용.
   - `카테고리 종류에 맞게 단어 정리`: 카테고리 종류를 바꾼 뒤 단어를 알맞은 목록으로 옮긴다(스프라이트·접두어 규칙 유지, 수치는 기본값을 따르는 상태로 시작).
+  - `검증 (문제 찾기)`: 데이터를 훑어 문제를 **오류 → 경고 → 안내** 순으로 Console에 적고(오류는 빨간색, 경고는 노란색, 항목을 누르면 에셋이 선택된다) 요약창을 띄운다. 에셋 인스펙터의 "검증 (문제 찾기)" 버튼은 같은 결과를 인스펙터 안에 보여 주고, 단어가 있는 항목의 "보기"를 누르면 단어 목록이 그 단어로 검색되어 펼쳐진다. 가져오기가 끝났을 때의 요약창에도 오류·경고 수가 한 줄 붙는다.
+    - **오류**(고쳐야 함): 같은 단어가 두 번 이상(목록이 달라도), 빈 단어, 한글 음절이 아닌 단어, 카테고리 목록에 없는 카테고리를 가리키는 단어, 같은 이름·빈 이름의 카테고리, 접두어 단어에 없는 접두어를 붙이도록 적은 규칙.
+    - **경고**(확인): 금지 음절이 든 단어(카드로 만들 수 없음), 카테고리 종류와 맞지 않는 목록에 있는 단어(→ "정리" 메뉴), 접두어 가능인데 붙일 접두어가 없는 단어, 같은 접두어가 두 번, `접두어 + 단어`가 이미 단어로 있는 합성 단어(있는 단어가 우선), 범위를 벗어나 게임이 자동으로 맞추는 수치(단어 자신의 값과 종류별 기본값), #RRGGBB가 아닌 글자 색, 목록의 빈 항목.
+    - **안내**: 아이템 스프라이트가 없는 단어 수(예시 몇 개), 단어가 없는 카테고리, 접두어 가능이 꺼져 있는데 접두어 목록이 남은 단어.
+    - 기본값을 따르는 단어는 자기 수치를 검사하지 않는다(쓰이지 않으므로). 규칙은 `UI/ItemDatabase/ItemDatabaseValidator.cs`(순수 규칙)에 있고 문제마다 고정된 이름(`Code`)이 있어 시험한다.
   - `게임 데이터 에셋 선택`.
 - **새 카테고리의 종류**: 동료가 DB 화면에서 '물약' 같은 새 카테고리를 만들면 JSON에는 이름만 있어 종류를 알 수 없다. 이름이 무기·방어구·음식·접두어·속성이거나 옛 일반 카테고리(추가한 단어·소모품·재료·잡화)면 자동으로 맞추고, 그 밖의 이름은 **일반으로 두고 요약창에 "종류를 정해야 하는 카테고리"로 알린다**. 에셋의 카테고리 목록에서 종류를 고르고 `카테고리 종류에 맞게 단어 정리`를 돌리면 단어가 알맞은 목록으로 옮겨진다. (후속 후보: DB 화면에서 카테고리를 만들 때 종류도 고르게 해 JSON에 적는 방법.)
 - **게임 규칙과의 연결**: 에셋은 `ToGameFile()`(= `ItemDatabaseData.ToFile(forGame: true)`)로 지금의 `ItemWordsFile`로 바뀐다 — 기본값을 따르는 단어도 기본값이 채워진 수치를 갖고, 카테고리 종류(`categoryTypes`)가 함께 들어 있다. `ItemWordSet`은 이 종류를 이름보다 먼저 쓴다(`KindOf`, 접두어 규칙). 그래서 `ItemWordSet`·`MatchScanner`·`InventoryModel` 등 기존 규칙과 테스트는 바뀌지 않는다.
@@ -643,8 +648,8 @@ Idle ──입력──▶ Move ──입력 없음──▶ Idle
   - **연결하면 달라지는 것**: 수치를 따로 정하지 않은 무기·음식·접두어도 에셋의 **기본값**으로 동작한다(전에는 무기가 `PlayerMeleeAttack`의 인스펙터 값, 음식이 `PlayerItemUser.foodHeal`을 썼다). 기본값의 처음 값이 지금 씬 값과 같아 동작은 그대로지만, 이 인스펙터 값들은 이제 무기 단어 없이 시험할 때(`Require Weapon` 끔)와 에셋을 연결하지 않았을 때만 쓰인다. 에셋의 카테고리 종류도 연결하면 게임에 쓰인다(이름이 아니라 종류로 무기·음식·접두어를 가린다).
   - 게임 안 DB 화면은 연결과 상관없이 계속 JSON을 고치므로, 그 변경을 에셋에 넣으려면 가져오기 메뉴를 쓴다.
 - **출시 빌드의 JSON 차단**: `ItemWordsStore.UsesExternalFile` — 개발 빌드(Development Build)에서만 exe 옆 `item_words.json`을 읽고 만든다. 출시 빌드는 읽지도 만들지도 않아 플레이어가 파일을 고쳐 수치를 바꿀 수 없다.
-- 코드: `App/WordStats.cs`(종류별 수치), `App/ItemWordSet.cs`(`CategoryType`, `categoryTypes`), `UI/ItemDatabase/ItemDatabaseData.cs`(종류별 단어 기록·변환·정리), `UI/ItemDatabase/ItemDatabaseImporter.cs`(가져오기 규칙), `UI/ItemDatabase/ItemDatabase.cs`(에셋), `Game/Editor/ItemDatabaseMenu.cs`(메뉴). `Game/Editor/ItemDatabaseEditor.cs`(전용 인스펙터). 편집 규칙(`TryAddWord`, `TryAddCategory`, `TryRenameCategory`, `TryRemoveCategory`, `ConvertTo`, `Reclassify`)은 `ItemDatabaseData`에 순수 함수로 있어 테스트한다. 테스트: `ItemDatabaseTests`.
-- **다음 단계**: ① (완료) 전용 인스펙터 ② (완료) 게임 연결 스위치 ③ 검증 메뉴(없는 단어를 가리키는 접두어, 중복, 종류 미정 카테고리, 스프라이트 없는 단어).
+- 코드: `App/WordStats.cs`(종류별 수치), `App/ItemWordSet.cs`(`CategoryType`, `categoryTypes`), `UI/ItemDatabase/ItemDatabaseData.cs`(종류별 단어 기록·변환·정리), `UI/ItemDatabase/ItemDatabaseImporter.cs`(가져오기 규칙), `UI/ItemDatabase/ItemDatabase.cs`(에셋), `Game/Editor/ItemDatabaseMenu.cs`(메뉴). `Game/Editor/ItemDatabaseEditor.cs`(전용 인스펙터). 편집 규칙(`TryAddWord`, `TryAddCategory`, `TryRenameCategory`, `TryRemoveCategory`, `ConvertTo`, `Reclassify`)은 `ItemDatabaseData`에 순수 함수로 있어 테스트한다. 테스트: `ItemDatabaseTests`, `ItemDatabaseValidatorTests`.
+- **다음 단계**: ① (완료) 전용 인스펙터 ② (완료) 게임 연결 스위치 ③ (완료) 검증 메뉴. 남은 것: 정식으로 에셋만 쓰게 되면 `Resources`의 `item_words.json`을 교환용 위치로 옮기기.
 
 ### 13.8b 전투 기반 (2026-10-14)
 - **체력은 정수**: `HitPoints`(`Hangeul.App`, 순수 규칙 — 깎기/회복/부활/최대치, EditMode 테스트)를 `Health`(`Hangeul.Game.Combat`)가 감싼다. 하트처럼 1, 2씩 깎는다(`DamageInfo.Amount`).

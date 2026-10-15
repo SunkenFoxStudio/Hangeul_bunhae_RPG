@@ -50,6 +50,47 @@ namespace Hangeul.Game.Editor
             }
         }
 
+        [MenuItem(Menu + "검증 (문제 찾기)", false, 22)]
+        static void Validate()
+        {
+            var db = Load();
+            if (db == null) { NoAsset(); return; }
+
+            var report = ItemDatabaseValidator.Validate(db.data);
+            LogReport(db, report);
+
+            int errors = report.Count(IssueLevel.Error), warnings = report.Count(IssueLevel.Warning), infos = report.Count(IssueLevel.Info);
+            var sb = new StringBuilder();
+            sb.AppendLine($"오류 {errors} · 경고 {warnings} · 안내 {infos}");
+            if (errors + warnings == 0) sb.AppendLine("고쳐야 할 문제가 없습니다.");
+            else
+            {
+                sb.AppendLine();
+                foreach (var issue in report.Issues.Where(i => i.Level != IssueLevel.Info).Take(10)) sb.AppendLine("· " + issue.Message);
+                int rest = errors + warnings - 10;
+                if (rest > 0) sb.AppendLine($"… 외 {rest}개");
+            }
+            sb.AppendLine();
+            sb.Append("전체 목록은 Console에 있고, 에셋 인스펙터의 '검증' 버튼으로도 볼 수 있습니다.");
+            EditorUtility.DisplayDialog("게임 데이터 검증", sb.ToString(), "확인");
+        }
+
+        // 검증 결과를 Console에 적는다(오류는 빨간색, 경고는 노란색). 항목을 누르면 에셋이 선택된다.
+        internal static void LogReport(UnityEngine.Object context, ValidationReport report)
+        {
+            foreach (var issue in report.Issues)
+            {
+                string line = "[ItemDB 검증] " + issue.Message;
+                switch (issue.Level)
+                {
+                    case IssueLevel.Error: Debug.LogError(line, context); break;
+                    case IssueLevel.Warning: Debug.LogWarning(line, context); break;
+                    default: Debug.Log(line, context); break;
+                }
+            }
+            if (report.Issues.Count == 0) Debug.Log("[ItemDB 검증] 문제가 없습니다.", context);
+        }
+
         [MenuItem(Menu + "카테고리 종류에 맞게 단어 정리", false, 21)]
         static void Reclassify()
         {
@@ -168,6 +209,10 @@ namespace Hangeul.Game.Editor
             EditorGUIUtility.PingObject(db);
 
             string summary = Summarize(mode, report, db.data.WordCount);
+            var validation = ItemDatabaseValidator.Validate(db.data);
+            int problems = validation.Count(IssueLevel.Error) + validation.Count(IssueLevel.Warning);
+            if (problems > 0)
+                summary += $"{Environment.NewLine}{Environment.NewLine}검증: 오류 {validation.Count(IssueLevel.Error)} · 경고 {validation.Count(IssueLevel.Warning)} — 메뉴 '검증 (문제 찾기)'로 자세히 볼 수 있습니다.";
             Debug.Log("[ItemDB] " + summary.Replace("\n", " / "));
             EditorUtility.DisplayDialog("가져오기 완료", summary, "확인");
         }
