@@ -40,6 +40,7 @@ namespace Hangeul.Game.Character
 
         Health _health;
         SpriteRenderer _sprite;
+        bool _spriteSearched;
         FloatingNotice _notice;
 
         Health Health => _health != null ? _health : (_health = GetComponent<Health>());
@@ -84,8 +85,9 @@ namespace Hangeul.Game.Character
             var cam = Camera.main;
             if (cam == null) return false;
 
-            if (_sprite == null)
+            if (_sprite == null && !_spriteSearched)   // 끄는 동안 포인터가 움직일 때마다 불리므로, 못 찾았어도 한 번만 찾는다
             {
+                _spriteSearched = true;
                 var animator = GetComponentInChildren<PlayerSpriteAnimator>();
                 _sprite = animator != null ? animator.GetComponent<SpriteRenderer>() : null;   // 플레이어 그림(공격 이펙트의 것이 아니라)
             }

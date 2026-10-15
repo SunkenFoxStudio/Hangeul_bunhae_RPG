@@ -68,12 +68,22 @@ namespace Hangeul.Domain
             return found;
         }
 
+        // 칸마다 카드가 있는지(행 * Cols + 열). 카드를 한 번만 훑어 만든다 — 칸마다 CardAt을 부르면 (칸 수 × 카드 수)가 된다.
+        bool[] Occupancy()
+        {
+            var taken = new bool[Cols * Rows];
+            foreach (var c in _cards)
+                if (InGrid(c.Col, c.Row)) taken[c.Row * Cols + c.Col] = true;
+            return taken;
+        }
+
         /// <summary>격자 맨 위 줄 왼쪽부터 읽는 순서(행→열)로 처음 만나는 빈 칸. 빈 칸이 없으면 false.</summary>
         public bool TryFindFirstEmpty(out (int col, int row) cell)
         {
+            var taken = Occupancy();
             for (int r = 0; r < Rows; r++)
                 for (int c = 0; c < Cols; c++)
-                    if (CardAt(c, r) == null) { cell = (c, r); return true; }
+                    if (!taken[r * Cols + c]) { cell = (c, r); return true; }
             cell = default;
             return false;
         }
@@ -89,11 +99,12 @@ namespace Hangeul.Domain
 
             if (!anchor.HasValue)
             {
+                var taken = Occupancy();
                 for (int r = 0; r < Rows; r++)
                     for (int x = 0; x <= Cols - n; x++)
                     {
                         bool ok = true;
-                        for (int k = 0; k < n && ok; k++) ok = IsFree(x + k, r);
+                        for (int k = 0; k < n && ok; k++) ok = !taken[r * Cols + x + k];
                         if (ok) { start = (x, r); return true; }
                     }
                 return false;

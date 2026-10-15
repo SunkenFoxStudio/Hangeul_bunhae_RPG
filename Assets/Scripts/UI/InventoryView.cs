@@ -373,8 +373,12 @@ namespace Hangeul.UI
                     // 쓸 수 있는 아이템(무기/방어구/음식)이면 덩어리를 감싸는 테두리를 카드마다 나눠 그린다
                     var kind = Model.KindOf(m);
                     bool equipped = kind == ItemKind.Weapon && Model.IsEquipped(m);
-                    var cells = new HashSet<(int, int)>();
-                    foreach (var c in cards) cells.Add((c.Col, c.Row));
+                    HashSet<(int, int)> cells = null;   // 바깥 가장자리를 가리는 칸 집합: 테두리를 그릴 때만 필요하다
+                    if (kind != ItemKind.None)
+                    {
+                        cells = new HashSet<(int, int)>();
+                        foreach (var c in cards) cells.Add((c.Col, c.Row));
+                    }
 
                     int p = m.PrefixLength;   // cards[0..p)가 접두어(윗줄), cards[p..)가 본체
                     for (int k = 0; k < cards.Count; k++)
@@ -771,6 +775,9 @@ namespace Hangeul.UI
         RectTransform _hintRect;
         Image _hintBg;
         Text _hintText;
+        string _hintShownText;      // 마지막으로 글자 배치를 계산한 문구·색·칸 크기(같으면 다시 계산하지 않는다)
+        bool _hintShownWarn;
+        float _hintShownCell;
 
         // 끌고 있는 덩어리에서 잡은 카드(topLeft, 레이어 좌표) 위에 짧은 안내 문구를 띄운다. text가 비면 숨긴다.
         void ShowHint(string text, Vector2 topLeft, bool warn)
@@ -808,15 +815,25 @@ namespace Hangeul.UI
                 _hintText.raycastTarget = false;
             }
 
-            float h = _cell * 0.42f;
-            _hintText.font = font;
-            _hintText.fontSize = Mathf.Max(8, Mathf.RoundToInt(h * 0.6f));
-            _hintText.color = warn ? new Color(1f, 0.72f, 0.5f) : Color.white;
-            _hintText.text = text;
-            _hintRect.sizeDelta = new Vector2(_hintText.preferredWidth + h * 0.8f, h);
+            // 이 함수는 끄는 동안 포인터가 움직일 때마다 불린다. 문구·색·칸 크기가 그대로면 글자 배치를 다시 계산하지 않고 위치만 따라간다.
+            if (text != _hintShownText || warn != _hintShownWarn || !Mathf.Approximately(_cell, _hintShownCell))
+            {
+                float h = _cell * 0.42f;
+                _hintText.font = font;
+                _hintText.fontSize = Mathf.Max(8, Mathf.RoundToInt(h * 0.6f));
+                _hintText.color = warn ? new Color(1f, 0.72f, 0.5f) : Color.white;
+                _hintText.text = text;
+                _hintRect.sizeDelta = new Vector2(_hintText.preferredWidth + h * 0.8f, h);
+                _hintShownText = text;
+                _hintShownWarn = warn;
+                _hintShownCell = _cell;
+            }
             _hintRect.anchoredPosition = new Vector2(topLeft.x + _cell * 0.5f, -topLeft.y + _cell * 0.1f);   // 첫 카드 바로 위
-            _hintRect.SetAsLastSibling();
-            _hintRect.gameObject.SetActive(true);
+            if (!_hintRect.gameObject.activeSelf)
+            {
+                _hintRect.SetAsLastSibling();   // 자기 Canvas(정렬 순서 +2)로 그려서 형제 순서는 켤 때만 맞추면 된다
+                _hintRect.gameObject.SetActive(true);
+            }
         }
 
         public void EndDrag(PointerEventData e)

@@ -177,7 +177,10 @@ namespace Hangeul.App
         {
             if (EquippedWeapon == null) return;
             foreach (var s in Scanner.Shown)
+            {
+                if (s.Word != EquippedWeapon.Word) continue;   // 이름부터 비교해, 다른 단어는 카드 아이디 목록을 만들지 않고 넘긴다
                 if (Words.KindOf(s.Word) == ItemKind.Weapon && EquippedWeapon.Matches(s.Word, IdsOf(s))) return;
+            }
             EquippedWeapon = null;
             EquipmentChanged?.Invoke();
         }
@@ -631,8 +634,10 @@ namespace Hangeul.App
             if (string.IsNullOrEmpty(data.equippedWord) || data.equippedCardIds == null || data.equippedCardIds.Count == 0) return;
             foreach (var s in Scanner.Shown)
             {
-                if (Words.KindOf(s.Word) != ItemKind.Weapon || !IsSameIds(data.equippedCardIds, IdsOf(s)) || s.Word != data.equippedWord) continue;
-                EquippedWeapon = new EquippedItem(s.Word, IdsOf(s));
+                if (s.Word != data.equippedWord || Words.KindOf(s.Word) != ItemKind.Weapon) continue;
+                var ids = IdsOf(s);
+                if (!IsSameIds(data.equippedCardIds, ids)) continue;
+                EquippedWeapon = new EquippedItem(s.Word, ids);
                 return;
             }
         }
