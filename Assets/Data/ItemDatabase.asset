@@ -235,22 +235,6 @@ MonoBehaviour:
         windup: 0.08
         active: 0.12
         recovery: 0.18
-    - word: "\uB098\uBB34\uCE7C"
-      category: "\uBB34\uAE30"
-      sprite: {fileID: 0}
-      order: 0
-      acceptsPrefix: 0
-      prefixes: []
-      useDefaults: 1
-      stats:
-        damage: 1
-        knockback: 4
-        stun: 0.3
-        reach: 1.27
-        width: 1.2
-        windup: 0.08
-        active: 0.12
-        recovery: 0.18
     - word: "\uB454\uAE30"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
