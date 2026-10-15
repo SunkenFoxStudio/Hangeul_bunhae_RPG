@@ -5,7 +5,8 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Hangeul.Domain",
-        "Hangeul.App"
+        "Hangeul.App",
+        "Hangeul.UI"
     ],
     "includePlatforms": [
         "Editor"

@@ -4,6 +4,7 @@
     "references": [
         "Hangeul.Game",
         "Hangeul.UI",
+        "Hangeul.App",
         "Unity.InputSystem",
         "Unity.Cinemachine",
         "UnityEngine.UI"

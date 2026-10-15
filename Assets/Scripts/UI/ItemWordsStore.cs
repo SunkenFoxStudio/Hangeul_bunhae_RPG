@@ -9,16 +9,20 @@ namespace Hangeul.UI
     /// 아이템 단어 목록(item_words.json)을 읽고 쓰는 곳. 어디에 두느냐가 실행 환경마다 다르다.
     /// <list type="bullet">
     /// <item><b>에디터</b>: 프로젝트 안의 <c>Assets/Resources/item_words.json</c>이 원본이다(DB 관리 씬이 바로 고친다).</item>
-    /// <item><b>빌드</b>: 게임 실행 파일(exe)이 있는 폴더의 <c>item_words.json</c>이 기준이다. 빌드에 구워 둔 목록(Resources)은 그 파일이 없을 때의 기본값일 뿐이다.
+    /// <item><b>개발 빌드(Development Build)</b>: 게임 실행 파일(exe)이 있는 폴더의 <c>item_words.json</c>이 기준이다. 빌드에 구워 둔 목록(Resources)은 그 파일이 없을 때의 기본값일 뿐이다.
     /// DB 관리 씬이 처음 열릴 때 기본값을 그 자리에 복사해 두고(<see cref="EnsureFile"/>), 이후 바꿀 때마다 그 파일을 갱신한다.
     /// 게임 씬(인벤토리)도 같은 파일을 읽어서 빌드 안에서 고친 단어가 바로 반영된다.
     /// 이 파일을 프로젝트의 <c>Assets/Resources/item_words.json</c>에 덮어쓰면 정식 목록이 된다.</item>
+    /// <item><b>출시 빌드</b>: exe 옆 파일을 읽거나 만들지 않는다(플레이어가 파일을 고쳐 수치를 바꾸는 것을 막는다). 빌드에 구워 둔 목록만 쓴다.</item>
     /// </list>
     /// </summary>
     public static class ItemWordsStore
     {
         public const string ResourceName = "item_words";
         public const string FileName = "item_words.json";
+
+        /// <summary>exe 옆의 목록 파일을 읽고 쓰는 곳인지: 개발 빌드만. 에디터는 프로젝트의 Resources 파일을 쓰고, 출시 빌드는 파일을 쓰지 않는다.</summary>
+        public static bool UsesExternalFile => !Application.isEditor && Debug.isDebugBuild;
 
         /// <summary>목록 파일의 위치. 에디터는 Assets/Resources 안, 빌드는 실행 파일 옆.</summary>
         public static string FilePath
@@ -40,12 +44,12 @@ namespace Hangeul.UI
         }
 
         /// <summary>
-        /// 지금 쓸 목록의 내용. 빌드에서는 실행 파일 옆 파일이 있으면 그것을(없거나 읽을 수 없으면 기본 목록을),
-        /// 에디터에서는 assigned(인스펙터에 직접 넣은 파일)가 있으면 그것을, 없으면 Resources의 것을 쓴다. 아무것도 없으면 null.
+        /// 지금 쓸 목록의 내용. 개발 빌드에서는 실행 파일 옆 파일이 있으면 그것을(없거나 읽을 수 없으면 기본 목록을),
+        /// 에디터와 출시 빌드에서는 assigned(인스펙터에 직접 넣은 파일)가 있으면 그것을, 없으면 Resources의 것을 쓴다. 아무것도 없으면 null.
         /// </summary>
         public static string ReadCurrent(TextAsset assigned = null)
         {
-            if (!Application.isEditor)
+            if (UsesExternalFile)
             {
                 string path = FilePath;
                 try
@@ -61,13 +65,13 @@ namespace Hangeul.UI
         }
 
         /// <summary>
-        /// 빌드에서 목록 파일이 아직 없으면 기본 목록을 그 자리에 복사해 둔다(에디터에서는 아무것도 하지 않는다).
+        /// 개발 빌드에서 목록 파일이 아직 없으면 기본 목록을 그 자리에 복사해 둔다(에디터와 출시 빌드에서는 아무것도 하지 않는다).
         /// 기본 목록도 없으면 만들지 않는다. 실패해도 게임을 멈추지 않고 이유를 error로 돌려준다.
         /// </summary>
         public static bool EnsureFile(out string error)
         {
             error = null;
-            if (Application.isEditor) return true;
+            if (!UsesExternalFile) return true;
             string path = FilePath;
             if (File.Exists(path)) return true;
             string builtIn = ReadBuiltIn();
