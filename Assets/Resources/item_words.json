@@ -837,12 +837,6 @@
             "prefixes": []
         },
         {
-            "word": "불함정",
-            "category": "소모품",
-            "acceptsPrefix": false,
-            "prefixes": []
-        },
-        {
             "word": "머니",
             "category": "소모품",
             "acceptsPrefix": false,
@@ -1407,7 +1401,50 @@
                 "windup": 0.07999999821186066,
                 "active": 0.11999999731779099,
                 "recovery": 0.18000000715255738,
-                "heal": 4
+                "heal": 4,
+                "prefixKind": 0,
+                "damageMode": 0,
+                "damageAmount": 0.0,
+                "elementChance": 0.0,
+                "elementColor": "#FF9E33"
+            }
+        },
+        {
+            "word": "화염",
+            "stats": {
+                "damage": 1,
+                "knockback": 4.0,
+                "stun": 0.30000001192092898,
+                "reach": 1.2699999809265137,
+                "width": 1.2000000476837159,
+                "windup": 0.07999999821186066,
+                "active": 0.11999999731779099,
+                "recovery": 0.18000000715255738,
+                "heal": 2,
+                "prefixKind": 1,
+                "damageMode": 0,
+                "damageAmount": 1.0,
+                "elementChance": 30.0,
+                "elementColor": "#FF9E33"
+            }
+        },
+        {
+            "word": "빙결",
+            "stats": {
+                "damage": 1,
+                "knockback": 4.0,
+                "stun": 0.30000001192092898,
+                "reach": 1.2699999809265137,
+                "width": 1.2000000476837159,
+                "windup": 0.07999999821186066,
+                "active": 0.11999999731779099,
+                "recovery": 0.18000000715255738,
+                "heal": 2,
+                "prefixKind": 1,
+                "damageMode": 0,
+                "damageAmount": 1.0,
+                "elementChance": 30.0,
+                "elementColor": "#5FD8FF"
             }
         }
     ]
