@@ -15684,6 +15684,7 @@ MonoBehaviour:
   gridLineWidth: 2
   gridAlternateColor: {r: 0.25, g: 0.16, b: 0.08, a: 0.1}
   itemWords: {fileID: 0}
+  itemDatabase: {fileID: 11400000, guid: f114521c22e41b14eae2e2edd4d66919, type: 2}
   trashZone: {fileID: 1723098123}
   persist: 1
   saveFileName: inventory.json
