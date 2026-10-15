@@ -11,7 +11,8 @@ namespace Hangeul.Game.Character
     /// 무기는 장착/해제, 음식은 먹고(체력 회복) 카드가 사라진다. 방어구는 아직 쓰지 않는다(라벨만 표시).
     /// 또한 공격 가능 여부를 정한다: <see cref="requireWeapon"/>이 켜져 있으면 무기를 장착해야 공격할 수 있다(<see cref="CanAttack"/>).
     /// 장착한 무기 단어에 상세 수치(DB 관리 씬에서 정한 피해량·범위·시간 등)가 있으면 근접 공격(<see cref="PlayerMeleeAttack"/>)에 적용하고,
-    /// 수치를 따로 정하지 않은 무기는 근접 공격 컴포넌트의 기본 값으로 벤다. 음식은 단어에 정해진 회복량만큼 회복한다.
+    /// 수치를 따로 정하지 않은 무기는 근접 공격 컴포넌트의 기본 값으로 벤다. 접두어가 붙은 무기('화염검')는 접두어의 효과도 함께 넘긴다.
+    /// 음식은 단어에 정해진 회복량만큼 회복한다.
     /// 인벤토리 화면(<see cref="InventoryView"/>)과는 <see cref="IItemDropTarget"/>으로만 이어져 있다.
     /// </summary>
     [AddComponentMenu("Hangeul/Player Item User")]
@@ -74,6 +75,7 @@ namespace Hangeul.Game.Character
             if (inventory == null) inventory = FindFirstObjectByType<InventoryView>(FindObjectsInactive.Include);
             if (inventory != null)
             {
+                PopupText.DefaultFont = inventory.Font;   // 적 머리 위 속성 글자도 인벤토리와 같은 한글 글꼴로
                 inventory.DropTarget = this;
                 _model = inventory.Model;
                 if (_model != null) _model.EquipmentChanged += ApplyWeaponStats;
@@ -94,8 +96,15 @@ namespace Hangeul.Game.Character
         {
             if (_melee == null) _melee = GetComponent<PlayerMeleeAttack>();
             if (_melee == null || _model == null) return;
+
             var equipped = _model.EquippedWeapon;
-            _melee.UseWeaponStats(equipped != null ? _model.Words.StatsOf(equipped.Word) : null);
+            if (equipped == null) { _melee.UseWeapon(null, null); return; }
+
+            var words = _model.Words;
+            WeaponModifier modifier = null;
+            if (words.TryGetCompound(equipped.Word, out string prefix, out _))   // '화염검' → 접두어 '화염'의 효과
+                modifier = WeaponModifier.From(prefix, words.StatsOf(prefix));
+            _melee.UseWeapon(words.StatsOf(equipped.Word), modifier);
         }
 
         // ───── IItemDropTarget ─────

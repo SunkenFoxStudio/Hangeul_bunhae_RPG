@@ -19,6 +19,8 @@ namespace Hangeul.Game.DevTools
     /// 오른쪽: 단어 추가 줄(단어 + 카테고리 선택) 아래에 단어 목록(카테고리 버튼을 누르면 다음 카테고리로 바뀜, ×로 삭제).
     /// 무기·음식 단어 줄에는 "상세 수치 열기" 버튼이 있어, 누르면 그 줄 아래에 밝은 배경의 수치 패널이 열리고 닫힌다
     /// (무기: 피해량·밀어내기·경직·범위·시간, 음식: 회복량). 값을 확정(Enter나 다른 곳 클릭)할 때마다 저장한다.
+    /// 접두어·속성 단어의 패널에서는 효과의 종류를 고른다 — 대미지 더하기(피해량에 더하기/곱하기) 또는 속성 묻히기(때릴 때 묻을 확률과
+    /// 적 머리 위에 뜨는 글자의 색).
     /// 바꿀 때마다 파일에 바로 저장한다. 파일 위치는 에디터에서는 Assets/Resources, 빌드에서는 게임 실행 파일 옆이다
     /// (<see cref="ItemWordsStore"/>) — 화면 아래에 위치가 보이고, 버튼으로 그 폴더를 열 수 있다.
     /// </summary>
@@ -358,7 +360,8 @@ namespace Hangeul.Game.DevTools
                 var kind = ItemKinds.FromCategory(entry.category);
                 AddStatsToggle(row, entry, kind);
                 AddRowButton(row, "×", 26, SoftRed, 56f, 0f, () => RemoveWord(entry));
-                if (kind != ItemKind.None && _openStats.Contains(entry.word)) AddStatsPanel(entry, kind);   // 그 단어 줄 바로 아래
+                if ((kind != ItemKind.None || ItemWordSet.IsPrefixCategory(entry.category)) && _openStats.Contains(entry.word))
+                    AddStatsPanel(entry, kind);   // 그 단어 줄 바로 아래
             }
             _listHeader.text = $"단어 {shown}개  ·  {(_filter ?? "전체")}";
         }
@@ -387,8 +390,17 @@ namespace Hangeul.Game.DevTools
         static readonly StatDef ActiveDef = new StatDef("판정", false, s => s.active, (s, v) => s.active = v);
         static readonly StatDef RecoveryDef = new StatDef("마무리", false, s => s.recovery, (s, v) => s.recovery = v);
         static readonly StatDef HealDef = new StatDef("회복량", true, s => s.heal, (s, v) => s.heal = Mathf.RoundToInt(v));
+        static readonly StatDef DamageAmountDef = new StatDef("값", false, s => s.damageAmount, (s, v) => s.damageAmount = v);
+        static readonly StatDef ElementChanceDef = new StatDef("확률(%)", false, s => s.elementChance, (s, v) => s.elementChance = v);
 
         static readonly ItemStats DefaultStats = new ItemStats();   // 읽기 전용: 수치를 따로 정하지 않은 단어가 보여주는 기본값
+        static readonly ItemStats DefaultElementStats = new ItemStats { prefixKind = PrefixEffectKind.Element };   // 속성 카테고리는 '속성 묻히기'(확률 0%)가 기본
+        const string ElementCategory = "속성";
+
+        // 수치를 따로 정하지 않은 단어가 보여주는 기본값(읽기 전용). 접두어·속성 단어의 기본은 효과 없음(더하기 0 / 확률 0%)이라 보이는 값과 게임 동작이 같다.
+        static ItemStats DefaultFor(ItemWordEntry e) => e.category == ElementCategory ? DefaultElementStats : DefaultStats;
+
+        ItemStats StatsOrDefault(ItemWordEntry e) => FindStats(e.word) ?? DefaultFor(e);
 
         ItemStats FindStats(string word)
         {
@@ -398,12 +410,12 @@ namespace Hangeul.Game.DevTools
         }
 
         // 이 단어의 수치를 고치려고 가져온다. 아직 따로 정한 적이 없으면 기본값으로 새로 만들어 목록에 넣는다.
-        ItemStats StatsForEdit(string word)
+        ItemStats StatsForEdit(ItemWordEntry e)
         {
-            var s = FindStats(word);
+            var s = FindStats(e.word);
             if (s != null) return s;
-            s = new ItemStats();
-            _file.wordStats.Add(new WordStatsEntry { word = word, stats = s });
+            s = DefaultFor(e).Clone();
+            _file.wordStats.Add(new WordStatsEntry { word = e.word, stats = s });
             return s;
         }
 
@@ -416,7 +428,7 @@ namespace Hangeul.Game.DevTools
         void AddStatsToggle(RectTransform row, ItemWordEntry e, ItemKind kind)
         {
             const float Width = 210f;
-            if (kind == ItemKind.None) { AddLabel(row, "", 21, Dim, Width, 0f); return; }
+            if (kind == ItemKind.None && !ItemWordSet.IsPrefixCategory(e.category)) { AddLabel(row, "", 21, Dim, Width, 0f); return; }
 
             bool open = _openStats.Contains(e.word);
             var button = AddRowButton(row, ToggleText(e, open), 21, open ? Gold : Ink, Width, 0f, () =>
@@ -455,14 +467,20 @@ namespace Hangeul.Game.DevTools
             void UpdateNote()
             {
                 bool custom = FindStats(e.word) != null;
-                note.text = custom ? "이 단어만의 수치입니다." : "기본 수치입니다. 값을 고치면 이 단어만의 수치가 됩니다.";
+                note.text = custom ? "이 단어만의 수치입니다."
+                    : ItemWordSet.IsPrefixCategory(e.category) ? "아직 효과를 정하지 않았습니다. 값을 고치면 이 단어만의 효과가 생깁니다."
+                    : "기본 수치입니다. 값을 고치면 이 단어만의 수치가 됩니다.";
                 reset.gameObject.SetActive(custom);
                 // 줄의 토글 글자에도 ●를 바로 붙인다(패널이 열려 있는 동안만 불리므로 '닫기' 글자)
                 if (_toggleLabels.TryGetValue(e.word, out var toggle) && toggle != null) toggle.text = ToggleText(e, true);
             }
             UpdateNote();
 
-            if (kind == ItemKind.Weapon)
+            if (ItemWordSet.IsPrefixCategory(e.category))
+            {
+                AddPrefixRows(panel, e, UpdateNote);
+            }
+            else if (kind == ItemKind.Weapon)
             {
                 AddStatRow(panel, e, "피해", null, UpdateNote, DamageDef, KnockbackDef, StunDef);
                 AddStatRow(panel, e, "범위 (유닛)", null, UpdateNote, ReachDef, WidthDef);
@@ -474,14 +492,185 @@ namespace Hangeul.Game.DevTools
             }
         }
 
+        const float PanelRowHeight = 52f;   // 수치 패널의 한 줄 높이(정사각형 버튼의 한 변도 이 값)
+
+        void AddGroupLabel(RectTransform row, string text)
+        {
+            var g = Rect("Group", row, 0, 0, 1, 1, 0, 0, 0, 0);
+            Txt(g, text, 24, StatsInk, TextAnchor.MiddleLeft);
+            SetWidth(g.gameObject, 150f, 0f);
+        }
+
+        // 둘 중 하나를 고르는 버튼. 지금 고른 것은 밝은 색에 ✔가 붙는다.
+        void AddChoice(RectTransform row, string label, bool selected, UnityAction onClick)
+        {
+            var rt = Rect("Choice", row, 0, 0, 1, 1, 0, 0, 0, 0);
+            Btn(rt, (selected ? "✔ " : "") + label, 24, selected ? BrownSel : Brown, onClick);
+            SetWidth(rt.gameObject, 190f, 0f);
+        }
+
+        // 기호 하나만 적은 정사각형 선택 버튼(+, ×). 줄 높이와 같은 폭이라 정사각형이 된다. 지금 고른 것은 밝은 바탕에 흰 글자.
+        void AddSquareChoice(RectTransform row, string symbol, bool selected, UnityAction onClick)
+        {
+            var rt = Rect("Choice", row, 0, 0, 1, 1, 0, 0, 0, 0);
+            var button = Btn(rt, symbol, 34, selected ? BrownSel : Brown, onClick);
+            button.GetComponentInChildren<Text>().color = selected ? Color.white : Ink;
+            SetWidth(rt.gameObject, PanelRowHeight, 0f);
+        }
+
+        // 접두어·속성 단어의 패널: 효과의 종류(대미지 더하기 / 속성 묻히기)를 고르고, 종류에 맞는 값을 적는다.
+        void AddPrefixRows(RectTransform panel, ItemWordEntry e, System.Action onChanged)
+        {
+            var stats = StatsOrDefault(e);
+
+            var kindRow = NewPlainRow(panel, 52f);
+            AddGroupLabel(kindRow, "종류");
+            AddChoice(kindRow, "대미지 더하기", stats.prefixKind == PrefixEffectKind.Damage, () => SetPrefixKind(e, PrefixEffectKind.Damage));
+            AddChoice(kindRow, "속성 묻히기", stats.prefixKind == PrefixEffectKind.Element, () => SetPrefixKind(e, PrefixEffectKind.Element));
+            var kindSpacer = Rect("Spacer", kindRow, 0, 0, 1, 1, 0, 0, 0, 0);
+            SetWidth(kindSpacer.gameObject, 0f, 1f);
+
+            if (stats.prefixKind == PrefixEffectKind.Damage)
+            {
+                // 이 접두어가 붙은 무기('강화검')의 피해량을 더하거나 곱한다. 예시 줄로 결과를 바로 보여준다.
+                var row = NewPlainRow(panel, 52f);
+                AddGroupLabel(row, "대미지");
+                AddSquareChoice(row, "+", stats.damageMode == DamageMode.Add, () => SetDamageMode(e, DamageMode.Add));        // 더하기
+                AddSquareChoice(row, "×", stats.damageMode == DamageMode.Multiply, () => SetDamageMode(e, DamageMode.Multiply));   // 곱하기
+
+                var exampleRt = Rect("Example", row, 0, 0, 1, 1, 0, 0, 0, 0);
+                var example = Txt(exampleRt, "", 22, StatsHint, TextAnchor.MiddleLeft);
+                SetWidth(exampleRt.gameObject, 0f, 1f);
+                void UpdateExample()
+                {
+                    var now = StatsOrDefault(e);
+                    example.text = $"예) 기본 피해량 3 → {WeaponModifier.ApplyDamage(3, now.damageMode, now.damageAmount)}";
+                }
+                UpdateExample();
+                // 값 칸은 예시 글자보다 앞에 오도록 순서를 바꾼다
+                AddStatCell(row, e, DamageAmountDef, () => { onChanged?.Invoke(); UpdateExample(); });
+                exampleRt.SetAsLastSibling();
+            }
+            else
+            {
+                // 때릴 때마다 이 확률로 단어(속성)가 적에게 묻고, 적 머리 위에 "단어!"가 뜬다
+                var row = NewPlainRow(panel, 52f);
+                AddGroupLabel(row, "속성");
+                AddStatCell(row, e, ElementChanceDef, onChanged);
+                var hintRt = Rect("Hint", row, 0, 0, 1, 1, 0, 0, 0, 0);
+                Txt(hintRt, $"때릴 때 이 확률로 묻으면 적 머리 위에 \"{e.word}!\"가 뜹니다", 22, StatsHint, TextAnchor.MiddleLeft);
+                SetWidth(hintRt.gameObject, 0f, 2f);
+
+                AddColorRow(panel, e, onChanged);
+            }
+        }
+
+        // 추천 색(눌러서 고른다). 첫 번째는 기본 색.
+        static readonly string[] ElementColorPresets =
+            { ColorHex.DefaultElement, "#FF5A4D", "#FFE04D", "#7CE35B", "#5FD8FF", "#5C8DFF", "#B678FF", "#FFFFFF" };
+
+        static Color ColorOfHex(string hex) => ColorUtility.TryParseHtmlString(hex, out var c) ? c : Color.white;
+
+        // 속성 글자의 색: 적 머리 위에 뜨는 모양 그대로의 미리보기 + #RRGGBB 입력칸 + 추천 색 버튼
+        void AddColorRow(RectTransform panel, ItemWordEntry e, System.Action onChanged)
+        {
+            var row = NewPlainRow(panel, PanelRowHeight);
+            AddGroupLabel(row, "글자 색");
+
+            // 미리보기: 게임처럼 어두운 곳 위의 "화염!"
+            var chipRt = Rect("Preview", row, 0, 0, 1, 1, 0, 0, 0, 0);
+            Img(chipRt, new Color(0.17f, 0.12f, 0.08f, 1f));
+            var preview = Txt(Rect("Text", chipRt, 0, 0, 1, 1, 6, 0, -6, 0), e.word + "!", 28, Color.white, TextAnchor.MiddleCenter);
+            preview.fontStyle = FontStyle.Bold;
+            SetWidth(chipRt.gameObject, 150f, 0f);
+
+            var hexRt = Rect("Hex", row, 0, 0, 1, 1, 0, 0, 0, 0);
+            var field = MakeInput(hexRt, "#RRGGBB", StatsInputBg, SafeInputField.InputKind.Hex);
+            field.characterLimit = 7;
+            SetWidth(hexRt.gameObject, 150f, 0f);
+
+            void Show(string hex)
+            {
+                field.text = hex;
+                preview.color = ColorOfHex(hex);
+            }
+            Show(ColorHex.NormalizeOr(StatsOrDefault(e).elementColor, ColorHex.DefaultElement));
+
+            void Choose(string hex)
+            {
+                var edited = StatsOrDefault(e).Clone();
+                edited.elementColor = hex;
+                bool changed = ApplyEdit(e, edited, $"{e.word}: 글자 색 {hex}");
+                Show(hex);
+                if (changed) onChanged?.Invoke();
+            }
+
+            field.onEndEdit.AddListener(_ =>
+            {
+                if (ColorHex.TryNormalize(field.text, out string hex)) Choose(hex);
+                else
+                {
+                    Show(ColorHex.NormalizeOr(StatsOrDefault(e).elementColor, ColorHex.DefaultElement));   // 색이 아니면 원래 색으로
+                    SetStatus("색은 #RRGGBB 형식으로 적어 주세요. 예) #FF9E33", Warn);
+                }
+            });
+
+            // 추천 색: 정사각형 버튼들. 레이아웃 그룹 없이 왼쪽부터 직접 놓는다.
+            const float Size = 44f, Step = 50f;
+            var paletteRt = Rect("Palette", row, 0, 0, 1, 1, 0, 0, 0, 0);
+            SetWidth(paletteRt.gameObject, ElementColorPresets.Length * Step, 0f);
+            for (int i = 0; i < ElementColorPresets.Length; i++)
+            {
+                string hex = ElementColorPresets[i];
+                var swatch = Rect("Swatch", paletteRt, 0, 0.5f, 0, 0.5f, i * Step, -Size / 2f, i * Step + Size, Size / 2f);
+                Btn(swatch, "", 20, ColorOfHex(hex), () => Choose(hex));
+            }
+
+            var spacer = Rect("Spacer", row, 0, 0, 1, 1, 0, 0, 0, 0);
+            SetWidth(spacer.gameObject, 0f, 1f);
+        }
+
+        // 효과의 종류를 바꾼다. 바로 효과가 보이도록 시작 값을 넣고(속성 묻히기 30%, 대미지 +1), 패널을 다시 그린다.
+        void SetPrefixKind(ItemWordEntry e, PrefixEffectKind kind)
+        {
+            var current = StatsOrDefault(e);
+            if (current.prefixKind == kind) return;
+            var edited = current.Clone();
+            edited.prefixKind = kind;
+            if (kind == PrefixEffectKind.Element) edited.elementChance = 30f;
+            else { edited.damageMode = DamageMode.Add; edited.damageAmount = 1f; }
+            ApplyEdit(e, edited, $"{e.word}: {(kind == PrefixEffectKind.Element ? "속성 묻히기" : "대미지 더하기")}");
+            RefreshWords();
+        }
+
+        // 더하기 ↔ 곱하기. 계산 방식이 바뀌면 같은 숫자의 뜻이 달라지므로 시작 값을 넣는다(더하기 +1, 곱하기 ×1.5).
+        void SetDamageMode(ItemWordEntry e, DamageMode mode)
+        {
+            var current = StatsOrDefault(e);
+            if (current.damageMode == mode) return;
+            var edited = current.Clone();
+            edited.damageMode = mode;
+            edited.damageAmount = mode == DamageMode.Multiply ? 1.5f : 1f;
+            ApplyEdit(e, edited, $"{e.word}: 대미지 {(mode == DamageMode.Multiply ? "곱하기" : "더하기")}");
+            RefreshWords();
+        }
+
+        // 범위에 맞춘 값이 지금과 다르면 이 단어만의 수치로 저장한다. 바뀌었으면 true.
+        bool ApplyEdit(ItemWordEntry e, ItemStats edited, string message)
+        {
+            edited = edited.Clamped();
+            if (edited.SameAs(StatsOrDefault(e))) return false;   // 바뀐 게 없으면 '이 단어만의 수치'로 만들지 않는다
+            StatsForEdit(e).CopyFrom(edited);
+            Save(message);
+            return true;
+        }
+
         // 수치 패널의 한 줄: [묶음 이름] [이름표 + 입력칸] ×3 (모자라는 칸은 비워 둔다. 첫 빈칸에는 hint를 적는다)
         void AddStatRow(RectTransform panel, ItemWordEntry e, string group, string hint, System.Action onChanged, params StatDef[] defs)
         {
             const int Columns = 3;
             var row = NewPlainRow(panel, 52f);
-            var g = Rect("Group", row, 0, 0, 1, 1, 0, 0, 0, 0);
-            Txt(g, group, 24, StatsInk, TextAnchor.MiddleLeft);
-            SetWidth(g.gameObject, 150f, 0f);
+            AddGroupLabel(row, group);
 
             foreach (var def in defs) AddStatCell(row, e, def, onChanged);
             for (int i = defs.Length; i < Columns; i++)
@@ -508,10 +697,10 @@ namespace Hangeul.Game.DevTools
             SetWidth(labelRt.gameObject, 112f, 0f);
 
             var inputRt = Rect("Input", cell, 0, 0, 1, 1, 0, 0, 0, 0);
-            var field = MakeInput(inputRt, "", StatsInputBg, numbersOnly: true);
+            var field = MakeInput(inputRt, "", StatsInputBg, SafeInputField.InputKind.Number);
             field.contentType = def.Integer ? InputField.ContentType.IntegerNumber : InputField.ContentType.DecimalNumber;
             field.characterLimit = 8;
-            field.text = FormatNumber(def.Get(FindStats(e.word) ?? DefaultStats));
+            field.text = FormatNumber(def.Get(StatsOrDefault(e)));
             SetWidth(inputRt.gameObject, 150f, 0f);
 
             // 칸을 벗어나거나 Enter를 눌러 입력이 끝날 때 확정한다. 목록을 다시 그리지 않아서 다음 칸을 바로 눌러 이어 고칠 수 있다.
@@ -521,7 +710,7 @@ namespace Hangeul.Game.DevTools
         // 입력한 값을 숫자로 읽어 범위에 맞추고, 바뀌었으면 이 단어만의 수치로 저장한다. 숫자가 아니면 원래 값으로 되돌린다.
         void CommitStat(ItemWordEntry e, StatDef def, InputField field, System.Action onChanged)
         {
-            var current = FindStats(e.word) ?? DefaultStats;
+            var current = StatsOrDefault(e);
             if (!TryParseNumber(field.text, out float value))
             {
                 field.text = FormatNumber(def.Get(current));
@@ -533,11 +722,7 @@ namespace Hangeul.Game.DevTools
             def.Set(edited, value);
             edited = edited.Clamped();
             field.text = FormatNumber(def.Get(edited));   // 범위에 맞춰 바뀐 값을 그대로 보여준다
-            if (edited.SameAs(current)) return;           // 바뀐 게 없으면 '이 단어만의 수치'로 만들지 않는다
-
-            StatsForEdit(e.word).CopyFrom(edited);
-            Save($"{e.word}: {def.Label} {FormatNumber(def.Get(edited))}");
-            onChanged?.Invoke();
+            if (ApplyEdit(e, edited, $"{e.word}: {def.Label} {FormatNumber(def.Get(edited))}")) onChanged?.Invoke();
         }
 
         void ResetStats(ItemWordEntry e)
@@ -706,11 +891,11 @@ namespace Hangeul.Game.DevTools
             return b;
         }
 
-        InputField MakeInput(RectTransform rt, string placeholderText, Color? background = null, bool numbersOnly = false)
+        InputField MakeInput(RectTransform rt, string placeholderText, Color? background = null, SafeInputField.InputKind kind = SafeInputField.InputKind.Text)
         {
             Img(rt, background ?? new Color(0.95f, 0.9f, 0.78f, 1f));
             var field = rt.gameObject.AddComponent<SafeInputField>();   // 한글 입력기와 선택 영역이 겹칠 때 나는 유니티 예외를 피한다
-            field.NumbersOnly = numbersOnly;
+            field.Kind = kind;
             var dark = new Color(0.17f, 0.11f, 0.07f);
             var text = Txt(Rect("Text", rt, 0, 0, 1, 1, 12, 2, -12, -2), "", 26, dark, TextAnchor.MiddleLeft);
             var ph = Txt(Rect("Placeholder", rt, 0, 0, 1, 1, 12, 2, -12, -2), placeholderText, 24, new Color(dark.r, dark.g, dark.b, 0.45f), TextAnchor.MiddleLeft);

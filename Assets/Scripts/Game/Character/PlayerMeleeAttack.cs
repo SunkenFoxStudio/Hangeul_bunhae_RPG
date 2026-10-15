@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Hangeul.App;
 using Hangeul.Game.Combat;
+using Hangeul.Game.Feedback;
 using UnityEngine;
 
 namespace Hangeul.Game.Character
@@ -11,8 +12,10 @@ namespace Hangeul.Game.Character
     /// 이 컴포넌트는 "얼마나 세게, 어디를, 언제까지" 때리는지와 실제 판정(<see cref="Strike"/>)을 맡는다.
     /// 판정은 시간(초)으로만 정하므로 공격 애니메이션 프레임이 한 장이어도, 나중에 애니메이션이 들어와도 똑같이 동작한다.
     /// Scene 뷰에서 이 컴포넌트가 붙은 오브젝트를 선택하면 4방향의 판정 상자가 노란 선으로 보인다.
-    /// 무기 단어를 장착하고 그 단어에 상세 수치가 정해져 있으면(<see cref="UseWeaponStats"/>) 피해량·밀어내기·경직·범위·시간은 그 값을 쓰고,
+    /// 무기 단어를 장착하고 그 단어에 상세 수치가 정해져 있으면(<see cref="UseWeapon"/>) 피해량·밀어내기·경직·범위·시간은 그 값을 쓰고,
     /// 수치를 따로 정하지 않은 무기는 아래 인스펙터 값을 그대로 쓴다.
+    /// 접두어가 붙은 무기('화염검', '강화검')는 접두어 효과(<see cref="WeaponModifier"/>)도 받는다: 피해량을 더하거나 곱하고,
+    /// 속성 묻히기는 때릴 때마다 확률을 굴려 성공하면 맞은 대상에 속성을 묻히고 그 머리 위에 "화염!"을 띄운다.
     /// </summary>
     [AddComponentMenu("Hangeul/Player Melee Attack")]
     public sealed class PlayerMeleeAttack : MonoBehaviour
@@ -50,6 +53,12 @@ namespace Hangeul.Game.Character
         [Tooltip("베기 이펙트를 그리는 오브젝트. 비워 두면 실행할 때 임시 이펙트(반투명 사각형)를 자동으로 만든다.")]
         [SerializeField] AttackEffect effect;
 
+        // 속성 글자 색을 읽지 못했을 때 쓰는 색(주황). 평소에는 속성 단어에 정해 둔 색을 쓴다.
+        static readonly Color FallbackElementColor = new Color(1f, 0.62f, 0.2f);
+
+        static Color ElementColorOf(WeaponModifier modifier)
+            => ColorUtility.TryParseHtmlString(modifier.ElementColor, out var color) ? color : FallbackElementColor;
+
         readonly Collider2D[] _buffer = new Collider2D[24];
 
         /// <summary>공격이 누군가를 실제로 때렸을 때(인자: 때린 대상 수). 타격감 연출(히트스톱, 화면 흔들림)이 받는다.</summary>
@@ -57,14 +66,27 @@ namespace Hangeul.Game.Character
 
         // 장착한 무기 단어의 상세 수치. null이면 인스펙터 값을 쓴다.
         ItemStats _weapon;
+        // 장착한 무기에 붙은 접두어의 효과(없으면 null)
+        WeaponModifier _modifier;
 
-        /// <summary>장착한 무기 단어의 수치를 적용한다. null이면(무기를 풀었거나 수치를 따로 정하지 않은 무기) 인스펙터 값으로 돌아간다.</summary>
-        public void UseWeaponStats(ItemStats stats) => _weapon = stats;
+        /// <summary>
+        /// 장착한 무기를 적용한다. stats는 무기 단어의 수치(null이면 인스펙터 값), modifier는 접두어 효과(없으면 null).
+        /// 무기를 풀었을 때는 둘 다 null로 부른다.
+        /// </summary>
+        public void UseWeapon(ItemStats stats, WeaponModifier modifier)
+        {
+            _weapon = stats;
+            _modifier = modifier;
+        }
 
         /// <summary>지금 무기 단어의 수치를 쓰고 있는지(인스펙터 값이 아니라).</summary>
         public bool UsesWeaponStats => _weapon != null;
 
-        int Damage => _weapon != null ? _weapon.damage : damage;
+        /// <summary>지금 장착한 무기에 붙은 접두어 효과(없으면 null).</summary>
+        public WeaponModifier Modifier => _modifier;
+
+        int BaseDamage => _weapon != null ? _weapon.damage : damage;
+        int Damage => _modifier != null ? _modifier.ApplyDamage(BaseDamage) : BaseDamage;   // 접두어가 피해량을 더하거나 곱한다
         float KnockbackSpeed => _weapon != null ? _weapon.knockback : knockbackSpeed;
         float StunSeconds => _weapon != null ? _weapon.stun : stunSeconds;
         float Reach => _weapon != null ? _weapon.reach : reach;
@@ -117,8 +139,14 @@ namespace Hangeul.Game.Character
                 if (target == null || (target is Component c && c.gameObject == gameObject)) continue;   // 자기 자신은 제외
                 if (!already.Add(target)) continue;
 
-                var info = new DamageInfo(Damage, Team.Player, dir * KnockbackSpeed, StunSeconds, null, gameObject);
-                if (target.TakeDamage(info)) hits++;
+                // 속성 묻히기: 맞은 대상마다 확률을 굴린다. 묻으면 피해 정보에 속성이 실리고 대상 머리 위에 "화염!"이 뜬다
+                string element = _modifier != null && _modifier.RollElement(UnityEngine.Random.value) ? _modifier.Element : null;
+                var info = new DamageInfo(Damage, Team.Player, dir * KnockbackSpeed, StunSeconds, element, gameObject);
+                if (target.TakeDamage(info))
+                {
+                    hits++;
+                    if (element != null && target is Component hitTarget) PopupText.Spawn(hitTarget.transform, element + "!", ElementColorOf(_modifier));
+                }
             }
             if (hits > 0) Struck?.Invoke(hits);
             return hits;

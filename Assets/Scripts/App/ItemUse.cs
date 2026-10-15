@@ -29,6 +29,18 @@ namespace Hangeul.App
             }
         }
 
+        /// <summary>카테고리 종류 → 아이템 종류. 일반·접두어 카테고리의 단어는 쓰임이 없다(None).</summary>
+        public static ItemKind FromType(CategoryType type)
+        {
+            switch (type)
+            {
+                case CategoryType.Weapon: return ItemKind.Weapon;
+                case CategoryType.Armor: return ItemKind.Armor;
+                case CategoryType.Food: return ItemKind.Food;
+                default: return ItemKind.None;
+            }
+        }
+
         /// <summary>가방 모드에서 단어 테두리 위에 쓰는 종류 이름. None은 빈 문자열(표시하지 않는다).</summary>
         public static string Label(ItemKind kind)
         {

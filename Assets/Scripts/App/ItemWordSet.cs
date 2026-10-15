@@ -9,6 +9,27 @@ namespace Hangeul.App
     /// 아이템 단어 목록 파일(data/item_words.json, schemaVersion 1)의 구조. JsonUtility로 바로 읽는다.
     /// 파일에 있는 syllables는 호환용 중복 정보라 읽지 않고, 단어에서 다시 계산한다.
     /// </summary>
+    /// <summary>
+    /// 카테고리가 담는 단어의 종류. 종류가 단어에 어떤 수치 칸이 있는지와 게임에서의 쓰임을 정한다
+    /// (무기는 근접 공격 수치, 음식은 회복량, 접두어는 다른 단어 앞에 붙어 효과를 더한다).
+    /// </summary>
+    public enum CategoryType
+    {
+        Plain = 0,    // 수치가 없는 일반 단어(재료, 소모품 등)
+        Weapon = 1,
+        Armor = 2,
+        Food = 3,
+        Prefix = 4,   // 접두어·속성: 다른 단어 앞에 붙는 단어
+    }
+
+    /// <summary>카테고리 이름과 그 종류. 파일에 적혀 있으면 카테고리 이름보다 이것이 우선한다(<see cref="ItemWordsFile.categoryTypes"/>).</summary>
+    [Serializable]
+    public sealed class CategoryTypeEntry
+    {
+        public string name;
+        public CategoryType type;
+    }
+
     [Serializable]
     public sealed class ItemWordsFile
     {
@@ -17,6 +38,12 @@ namespace Hangeul.App
         public List<ItemWordEntry> items = new List<ItemWordEntry>();
         /// <summary>단어별 상세 수치. 수치를 따로 정한 단어만 들어 있다(옛 파일에는 없는 선택 항목이라 schemaVersion은 그대로다).</summary>
         public List<WordStatsEntry> wordStats = new List<WordStatsEntry>();
+        /// <summary>
+        /// 카테고리별 종류(선택 항목). 적혀 있는 카테고리는 이 종류로 쓰고, 없는 카테고리는 이름으로 짐작한다
+        /// (<see cref="ItemKinds.FromCategory"/>, <see cref="ItemWordSet.IsPrefixCategory"/>: 무기·방어구·음식·접두어·속성).
+        /// 게임 데이터 에셋(ItemDatabase)이 만든 파일에는 항상 들어 있어서 카테고리 이름을 바꿔도 쓰임이 바뀌지 않는다.
+        /// </summary>
+        public List<CategoryTypeEntry> categoryTypes = new List<CategoryTypeEntry>();
     }
 
     [Serializable]
@@ -65,8 +92,18 @@ namespace Hangeul.App
         /// <summary>단어의 DB 카테고리. 합성 단어('불화살')는 본체('화살')의 카테고리를 따른다. 모르면 null.</summary>
         public string CategoryOf(string word) => word != null && _categoryOf.TryGetValue(word, out var c) ? c : null;
 
-        /// <summary>단어의 종류(무기/방어구/음식). 카테고리를 모르거나 쓰임이 없는 카테고리면 <see cref="ItemKind.None"/>.</summary>
-        public ItemKind KindOf(string word) => ItemKinds.FromCategory(CategoryOf(word));
+        readonly Dictionary<string, CategoryType> _typeOfCategory = new Dictionary<string, CategoryType>();
+
+        /// <summary>
+        /// 단어의 종류(무기/방어구/음식). 카테고리를 모르거나 쓰임이 없는 카테고리면 <see cref="ItemKind.None"/>.
+        /// 파일에 카테고리 종류가 적혀 있으면 그것을, 없으면 카테고리 이름으로 짐작한다.
+        /// </summary>
+        public ItemKind KindOf(string word)
+        {
+            string category = CategoryOf(word);
+            if (category != null && _typeOfCategory.TryGetValue(category, out var type)) return ItemKinds.FromType(type);
+            return ItemKinds.FromCategory(category);
+        }
 
         readonly Dictionary<string, ItemStats> _statsOf = new Dictionary<string, ItemStats>();
 
@@ -83,6 +120,10 @@ namespace Hangeul.App
             if (file == null || file.schemaVersion != 1 || file.items == null) return null;
 
             var set = new ItemWordSet();
+            if (file.categoryTypes != null)
+                foreach (var c in file.categoryTypes)
+                    if (c != null && !string.IsNullOrEmpty(c.name) && !set._typeOfCategory.ContainsKey(c.name)) set._typeOfCategory[c.name] = c.type;
+
             foreach (var item in file.items)
                 if (item == null || !set.Add(item.word, item.category)) skipped++;
 
@@ -100,6 +141,7 @@ namespace Hangeul.App
                     if (set.Add(compound, item.category))
                     {
                         set._compounds.Add(compound);
+                        set._compoundParts[compound] = (prefix, item.word);
                         if (set._statsOf.TryGetValue(item.word, out var baseStats)) set._statsOf[compound] = baseStats;   // 수치도 본체를 따른다
                     }
                     if (!set._prefixesByBase.TryGetValue(item.word, out var list)) set._prefixesByBase[item.word] = list = new List<string>();
@@ -109,6 +151,7 @@ namespace Hangeul.App
         }
 
         readonly HashSet<string> _compounds = new HashSet<string>();
+        readonly Dictionary<string, (string prefix, string baseWord)> _compoundParts = new Dictionary<string, (string, string)>();
         readonly Dictionary<string, List<string>> _prefixesByBase = new Dictionary<string, List<string>>();
         static readonly IReadOnlyList<string> NoPrefixes = new string[0];
 
@@ -122,10 +165,27 @@ namespace Hangeul.App
         /// <summary>접두어 규칙으로만 만들어진 단어인지(파일에 직접 적힌 단어는 false).</summary>
         public bool IsCompound(string word) => word != null && _compounds.Contains(word);
 
+        /// <summary>합성 단어를 접두어와 본체로 나눈다('화염검' → '화염', '검'). 합성 단어가 아니면 false.</summary>
+        public bool TryGetCompound(string word, out string prefix, out string baseWord)
+        {
+            if (word != null && _compoundParts.TryGetValue(word, out var parts)) { prefix = parts.prefix; baseWord = parts.baseWord; return true; }
+            prefix = baseWord = null;
+            return false;
+        }
+
         /// <summary>다른 단어 앞에 붙는 단어를 모아 둔 카테고리들(예: 접두어 = 레어·희귀, 속성 = 불·화염·얼음).</summary>
         public static readonly string[] PrefixCategories = { "접두어", "속성" };
 
         public static bool IsPrefixCategory(string category) => category != null && System.Array.IndexOf(PrefixCategories, category) >= 0;
+
+        // 파일에 카테고리 종류가 적혀 있으면 그것으로, 없으면 이름으로 접두어 카테고리인지 가린다
+        static bool IsPrefixCategoryIn(ItemWordsFile file, string category)
+        {
+            if (category != null && file.categoryTypes != null)
+                foreach (var c in file.categoryTypes)
+                    if (c != null && c.name == category) return c.type == CategoryType.Prefix;
+            return IsPrefixCategory(category);
+        }
 
         /// <summary>
         /// 한 단어에서 접두어 규칙으로 만들어지는 합성 단어들(접두어 + 단어). 접두어를 받는 단어가 아니거나,
@@ -140,12 +200,12 @@ namespace Hangeul.App
         public static IEnumerable<(string prefix, string compound)> PrefixPairsOf(ItemWordsFile file, ItemWordEntry item)
         {
             if (file?.items == null || item == null || !item.acceptsPrefix || item.prefixes == null) yield break;
-            if (IsPrefixCategory(item.category) || !IsValidWord(item.word)) yield break;
+            if (IsPrefixCategoryIn(file, item.category) || !IsValidWord(item.word)) yield break;
 
             foreach (var prefix in item.prefixes)
             {
                 if (!IsValidWord(prefix)) continue;
-                bool isPrefixWord = file.items.Exists(i => i != null && i.word == prefix && IsPrefixCategory(i.category));
+                bool isPrefixWord = file.items.Exists(i => i != null && i.word == prefix && IsPrefixCategoryIn(file, i.category));
                 if (isPrefixWord) yield return (prefix, prefix + item.word);
             }
         }
