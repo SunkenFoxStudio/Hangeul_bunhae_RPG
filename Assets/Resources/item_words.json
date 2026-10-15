@@ -1394,5 +1394,21 @@
             "acceptsPrefix": false,
             "prefixes": []
         }
+    ],
+    "wordStats": [
+        {
+            "word": "호박",
+            "stats": {
+                "damage": 1,
+                "knockback": 4.0,
+                "stun": 0.30000001192092898,
+                "reach": 1.2699999809265137,
+                "width": 1.2000000476837159,
+                "windup": 0.07999999821186066,
+                "active": 0.11999999731779099,
+                "recovery": 0.18000000715255738,
+                "heal": 4
+            }
+        }
     ]
 }
