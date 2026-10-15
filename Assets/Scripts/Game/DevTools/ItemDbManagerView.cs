@@ -565,10 +565,6 @@ namespace Hangeul.Game.DevTools
             }
         }
 
-        // 추천 색(눌러서 고른다). 첫 번째는 기본 색.
-        static readonly string[] ElementColorPresets =
-            { ColorHex.DefaultElement, "#FF5A4D", "#FFE04D", "#7CE35B", "#5FD8FF", "#5C8DFF", "#B678FF", "#FFFFFF" };
-
         static Color ColorOfHex(string hex) => ColorUtility.TryParseHtmlString(hex, out var c) ? c : Color.white;
 
         // 속성 글자의 색: 적 머리 위에 뜨는 모양 그대로의 미리보기 + #RRGGBB 입력칸 + 추천 색 버튼
@@ -618,10 +614,10 @@ namespace Hangeul.Game.DevTools
             // 추천 색: 정사각형 버튼들. 레이아웃 그룹 없이 왼쪽부터 직접 놓는다.
             const float Size = 44f, Step = 50f;
             var paletteRt = Rect("Palette", row, 0, 0, 1, 1, 0, 0, 0, 0);
-            SetWidth(paletteRt.gameObject, ElementColorPresets.Length * Step, 0f);
-            for (int i = 0; i < ElementColorPresets.Length; i++)
+            SetWidth(paletteRt.gameObject, ColorHex.ElementPresets.Length * Step, 0f);
+            for (int i = 0; i < ColorHex.ElementPresets.Length; i++)
             {
-                string hex = ElementColorPresets[i];
+                string hex = ColorHex.ElementPresets[i];
                 var swatch = Rect("Swatch", paletteRt, 0, 0.5f, 0, 0.5f, i * Step, -Size / 2f, i * Step + Size, Size / 2f);
                 Btn(swatch, "", 20, ColorOfHex(hex), () => Choose(hex));
             }

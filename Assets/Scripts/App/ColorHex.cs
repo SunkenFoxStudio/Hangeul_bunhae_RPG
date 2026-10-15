@@ -11,6 +11,10 @@ namespace Hangeul.App
         /// <summary>속성 글자의 기본 색(주황).</summary>
         public const string DefaultElement = "#FF9E33";
 
+        /// <summary>속성 글자 색의 추천 색(첫 번째는 기본 색). DB 화면과 인스펙터가 같은 버튼을 보여 준다.</summary>
+        public static readonly string[] ElementPresets =
+            { DefaultElement, "#FF5A4D", "#FFE04D", "#7CE35B", "#5FD8FF", "#5C8DFF", "#B678FF", "#FFFFFF" };
+
         /// <summary>
         /// '#' 유무와 대소문자, 짧은 3자리("#F80" = "#FF8800")를 받아 "#RRGGBB"(대문자)로 바로잡는다.
         /// 색이 아니면 false(hex는 null).

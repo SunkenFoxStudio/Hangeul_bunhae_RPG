@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Hangeul.App;
+using Hangeul.Domain;
 using UnityEngine;
 
 namespace Hangeul.UI
@@ -37,6 +38,8 @@ namespace Hangeul.UI
         public string category;
         [Tooltip("아이템 스프라이트(인벤토리·줍기 아이템 그림). JSON에서 가져와도 바뀌지 않는다.")]
         public Sprite sprite;
+        [Tooltip("목록에서 보이는 순서(클수록 위). 새로 추가한 단어가 가장 크다. JSON으로 내보낼 때도 이 순서(최근 추가가 맨 위)로 적는다.")]
+        public int order;
 
         public abstract WordKind Kind { get; }
 
@@ -289,6 +292,9 @@ namespace Hangeul.UI
 
         public int WordCount => AllWords().Count();
 
+        /// <summary>새 단어에 줄 순서 값: 지금 있는 어떤 단어보다 크다(목록의 맨 위에 온다).</summary>
+        public int NextOrder() => AllWords().Select(r => r.order).DefaultIfEmpty(0).Max() + 1;
+
         /// <summary>단어로 찾는다(어느 목록에 있든). 없으면 null.</summary>
         public WordRecord Find(string word)
         {
@@ -362,8 +368,31 @@ namespace Hangeul.UI
         }
 
         /// <summary>
+        /// 단어를 다른 종류의 기록으로 바꿔 알맞은 목록에 넣는다(단어, 카테고리, 스프라이트와 접두어 규칙은 유지, 수치는 기본값을 따르는 상태로 시작).
+        /// 이미 그 종류면 그대로 돌려준다. 바뀐 새 기록을 돌려준다(목록의 맨 끝에 들어간다).
+        /// </summary>
+        public WordRecord ConvertTo(WordRecord r, WordKind to)
+        {
+            if (r.Kind == to) return r;
+
+            var converted = Create(to);
+            converted.word = r.word;
+            converted.category = r.category;
+            converted.sprite = r.sprite;
+            converted.order = r.order;   // 종류가 바뀌어도 목록에서의 자리는 그대로
+            if (r is NormalWordRecord from && converted is NormalWordRecord target)
+            {
+                target.acceptsPrefix = from.acceptsPrefix;
+                target.prefixes = from.prefixes != null ? new List<string>(from.prefixes) : new List<string>();
+            }
+            Remove(r);
+            Add(converted);
+            return converted;
+        }
+
+        /// <summary>
         /// 카테고리의 종류가 바뀌었을 때, 단어를 그 종류에 맞는 목록으로 옮긴다(예: '물약' 카테고리를 음식으로 바꾸면 그 단어들이 음식 목록으로 가서
-        /// 회복량 칸이 생긴다). 단어, 카테고리, 스프라이트와 접두어 규칙은 유지하고 수치는 기본값을 따르는 상태로 시작한다. 옮긴 단어 수를 돌려준다.
+        /// 회복량 칸이 생긴다). 옮긴 단어 수를 돌려준다.
         /// </summary>
         public int Reclassify()
         {
@@ -372,21 +401,73 @@ namespace Hangeul.UI
             {
                 var expected = KindFor(TypeOfCategory(r.category), r.Kind);
                 if (expected == r.Kind) continue;
-
-                var converted = Create(expected);
-                converted.word = r.word;
-                converted.category = r.category;
-                converted.sprite = r.sprite;
-                if (r is NormalWordRecord from && converted is NormalWordRecord to)
-                {
-                    to.acceptsPrefix = from.acceptsPrefix;
-                    to.prefixes = from.prefixes != null ? new List<string>(from.prefixes) : new List<string>();
-                }
-                Remove(r);
-                Add(converted);
+                ConvertTo(r, expected);
                 moved++;
             }
             return moved;
+        }
+
+        // ───── 편집 (인스펙터가 쓴다) ─────
+        /// <summary>
+        /// 새 단어를 카테고리의 종류에 맞는 목록에 추가한다. 한글 음절로만 이루어져야 하고 금지 음절이 없어야 하며 이미 있는 단어가 아니어야 한다.
+        /// 실패하면 false와 이유(error)를 돌려준다.
+        /// </summary>
+        public bool TryAddWord(string word, string category, out WordRecord record, out string error)
+        {
+            record = null;
+            word = word?.Trim();
+            if (string.IsNullOrEmpty(word)) { error = "단어를 입력하세요."; return false; }
+            if (!ItemWordSet.IsValidWord(word)) { error = $"한글 음절로만 쓸 수 있습니다: {word}"; return false; }
+            foreach (char ch in word)
+                if (ForbiddenSyllables.IsBanned(ch)) { error = $"금지 음절('{ch}')이 들어 있습니다: {word}"; return false; }
+            if (Find(word) != null) { error = $"이미 있는 단어입니다: {word}"; return false; }
+            if (FindCategory(category) == null) { error = "먼저 단어를 넣을 카테고리를 고르세요."; return false; }
+
+            record = Create(KindFor(TypeOfCategory(category), WordKind.Plain));
+            record.word = word;
+            record.category = category;
+            record.order = NextOrder();   // 새 단어는 목록의 맨 위에
+            Add(record);
+            error = null;
+            return true;
+        }
+
+        /// <summary>카테고리를 추가한다. 이름이 비었거나 이미 있으면 false와 이유.</summary>
+        public bool TryAddCategory(string name, CategoryType type, out string error)
+        {
+            name = name?.Trim();
+            if (string.IsNullOrEmpty(name)) { error = "카테고리 이름을 입력하세요."; return false; }
+            if (FindCategory(name) != null) { error = $"이미 있는 카테고리입니다: {name}"; return false; }
+            categories.Add(new CategoryDef { name = name, type = type });
+            error = null;
+            return true;
+        }
+
+        /// <summary>카테고리 이름을 바꾸고, 그 카테고리의 단어들이 가리키는 이름도 함께 바꾼다. 이름이 비었거나 다른 카테고리와 겹치면 false와 이유.</summary>
+        public bool TryRenameCategory(string oldName, string newName, out string error)
+        {
+            newName = newName?.Trim();
+            var def = FindCategory(oldName);
+            if (def == null) { error = $"없는 카테고리입니다: {oldName}"; return false; }
+            if (string.IsNullOrEmpty(newName)) { error = "카테고리 이름을 입력하세요."; return false; }
+            if (newName == oldName) { error = null; return true; }
+            if (FindCategory(newName) != null) { error = $"이미 있는 카테고리입니다: {newName}"; return false; }
+
+            def.name = newName;
+            foreach (var r in AllWords()) if (r.category == oldName) r.category = newName;
+            error = null;
+            return true;
+        }
+
+        /// <summary>카테고리에 속한 단어 수.</summary>
+        public int WordCountIn(string category) => AllWords().Count(r => r.category == category);
+
+        /// <summary>단어가 없는 카테고리만 지운다. 단어가 있으면 false.</summary>
+        public bool TryRemoveCategory(string name)
+        {
+            var def = FindCategory(name);
+            if (def == null || WordCountIn(name) > 0) return false;
+            return categories.Remove(def);
         }
 
         // ───── 복사 ─────
@@ -421,7 +502,8 @@ namespace Hangeul.UI
                 file.categoryTypes.Add(new CategoryTypeEntry { name = c.name, type = c.type });
             }
 
-            foreach (var r in AllWords())
+            // 최근에 추가한 단어가 먼저 오게 적는다(DB 화면도 새 단어를 맨 위에 넣는다). 순서 값이 같으면 목록에 들어 있는 순서 그대로.
+            foreach (var r in AllWords().OrderByDescending(x => x.order))
             {
                 if (string.IsNullOrEmpty(r.word)) continue;
                 file.items.Add(r.ToEntry());

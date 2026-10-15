@@ -43,8 +43,10 @@ namespace Hangeul.UI
         [SerializeField] Color gridAlternateColor = new Color(0.25f, 0.16f, 0.08f, 0.10f);
 
         [Header("단어 / 쓰레기통")]
-        [Tooltip("아이템 단어 목록(item_words.json). 비워 두면 Resources/item_words를 찾는다.")]
+        [Tooltip("아이템 단어 목록(item_words.json). 비워 두면 Resources/item_words를 찾는다. 아래 게임 데이터 에셋이 연결돼 있으면 쓰지 않는다.")]
         [SerializeField] TextAsset itemWords;
+        [Tooltip("게임 데이터 에셋. 연결하면 JSON 대신 이 에셋에서 단어와 수치를 읽는다(개발 빌드에서는 exe 옆 JSON이 있으면 그것이 우선). 메뉴 Hangeul ▸ Setup ▸ Item DB ▸ '게임이 데이터 에셋을 읽게 연결'로 켜고 끈다.")]
+        [SerializeField] ItemDatabase itemDatabase;
         [Tooltip("카드를 끌어다 놓으면 삭제되는 영역. 없으면 삭제 기능이 없다.")]
         [SerializeField] TrashZone trashZone;
 
@@ -141,6 +143,9 @@ namespace Hangeul.UI
 
         public InventoryModel Model { get; private set; }
 
+        /// <summary>연결된 게임 데이터 에셋(없으면 null — 그때는 JSON에서 단어를 읽는다).</summary>
+        public ItemDatabase DataAsset => itemDatabase;
+
         /// <summary>인벤토리가 쓰는 글꼴(프로젝트 글꼴). 다른 화면 UI가 같은 글꼴을 쓰고 싶을 때 받아 간다.</summary>
         public Font Font => font;
 
@@ -207,24 +212,63 @@ namespace Hangeul.UI
         // ───── 단어 / 완성 ─────
         void LoadWords()
         {
-            // 빌드에서는 실행 파일 옆의 목록 파일(DB 관리 씬이 고친 것)이 우선이고, 에디터에서는 직접 넣은 파일이나 Resources의 것을 쓴다
-            string json = ItemWordsStore.ReadCurrent(itemWords);
+            var file = LoadWordsFile(out string source);
+            if (file == null) return;
+
+            var set = ItemWordSet.FromFile(file, out int skipped);
+            if (set == null) { Debug.LogWarning($"[InventoryView] 아이템 단어 목록 형식이 올바르지 않습니다 ({source}, schemaVersion 1 필요)."); return; }
+            if (skipped > 0) Debug.LogWarning($"[InventoryView] 아이템 단어 {skipped}개를 건너뛰었습니다 (한글 음절이 아니거나 중복).");
+            Debug.Log($"[InventoryView] 아이템 단어 {set.Count}개를 {source}에서 읽었습니다.");
+            Model.SetWords(set);
+        }
+
+        // 단어 목록의 출처:
+        //  - 게임 데이터 에셋이 연결돼 있으면 에셋을 읽는다. 개발 빌드에서 exe 옆 JSON(동료가 빌드 안에서 고친 단어)이 있으면 그것을 에셋 위에 덧씌운다 —
+        //    JSON에 적힌 단어와 수치는 JSON 값이 되고, 나머지(에셋의 기본값, 카테고리 종류, 에셋에서만 만든 단어)는 에셋 그대로다.
+        //    출시 빌드는 exe 옆 파일을 보지 않고 에셋만 읽어서 JSON을 전혀 읽지 않는다.
+        //  - 에셋이 없으면 예전처럼 JSON을 읽는다(개발 빌드의 exe 옆 파일 → 직접 넣은 파일 → Resources).
+        ItemWordsFile LoadWordsFile(out string source)
+        {
+            string externalJson = ItemWordsStore.ReadExternal();
+            var externalFile = externalJson != null ? ParseWordsFile(externalJson) : null;
+            if (externalFile != null && externalFile.schemaVersion != 1)
+            {
+                Debug.LogWarning("[InventoryView] exe 옆 단어 목록 형식이 올바르지 않아 쓰지 않습니다 (schemaVersion 1 필요).");
+                externalFile = null;
+            }
+
+            if (itemDatabase != null)
+            {
+                ItemWordsStore.RegisteredDatabase = itemDatabase;   // 개발 빌드의 DB 관리 씬이 시작 내용을 에셋에서 만들 수 있게
+                if (externalFile != null)
+                {
+                    source = "게임 데이터 에셋 + exe 옆 JSON";
+                    return ItemDatabaseImporter.OverlayForGame(itemDatabase.data, externalFile);
+                }
+                source = "게임 데이터 에셋";
+                return itemDatabase.ToGameFile();
+            }
+
+            if (externalFile != null) { source = "exe 옆 JSON"; return externalFile; }
+
+            source = "JSON";
+            string json = ItemWordsStore.ReadBundled(itemWords);
             if (json == null)
             {
                 Debug.LogWarning("[InventoryView] 아이템 단어 목록(item_words.json)이 없어 단어 완성 판정을 하지 않습니다.");
-                return;
+                return null;
             }
-            ItemWordsFile file;
-            try { file = JsonUtility.FromJson<ItemWordsFile>(json); }
+            return ParseWordsFile(json);
+        }
+
+        static ItemWordsFile ParseWordsFile(string json)
+        {
+            try { return JsonUtility.FromJson<ItemWordsFile>(json); }
             catch (System.Exception e)
             {
-                Debug.LogWarning("[InventoryView] 아이템 단어 목록(item_words.json)을 읽을 수 없어 단어 완성 판정을 하지 않습니다: " + e.Message);
-                return;
+                Debug.LogWarning("[InventoryView] 아이템 단어 목록(item_words.json)을 읽을 수 없습니다: " + e.Message);
+                return null;
             }
-            var set = ItemWordSet.FromFile(file, out int skipped);
-            if (set == null) { Debug.LogWarning("[InventoryView] 아이템 단어 목록 형식이 올바르지 않습니다 (schemaVersion 1 필요)."); return; }
-            if (skipped > 0) Debug.LogWarning($"[InventoryView] 아이템 단어 {skipped}개를 건너뛰었습니다 (한글 음절이 아니거나 중복).");
-            Model.SetWords(set);
         }
 
         void OnWordCompleted(WordMatch m)

@@ -55,6 +55,18 @@ namespace Hangeul.UI
             return CategoryType.Plain;
         }
 
+        /// <summary>
+        /// 게임 데이터(에셋)를 그대로 두고, 그 위에 JSON을 덧씌운 <b>게임이 쓰는 단어 파일</b>을 만든다(메모리에서만 — 에셋은 바뀌지 않는다).
+        /// 개발 빌드에서 동료가 DB 화면으로 고친 exe 옆 JSON을 게임에서 바로 쓰되, 에셋의 기본값·카테고리 종류·에셋에서만 만든 단어는 그대로 쓰기 위한 것이다.
+        /// 가져오기 메뉴의 "JSON 값으로 덮어쓰기"와 같은 규칙이다(JSON에 없는 단어는 에셋의 것이 그대로 남는다).
+        /// </summary>
+        public static ItemWordsFile OverlayForGame(ItemDatabaseData db, ItemWordsFile overlay)
+        {
+            var copy = db.DeepClone();
+            Import(overlay, copy, ImportMode.Overwrite);
+            return copy.ToFile(forGame: true);
+        }
+
         public static ImportReport Import(ItemWordsFile file, ItemDatabaseData db, ImportMode mode)
         {
             var report = new ImportReport();
@@ -86,6 +98,7 @@ namespace Hangeul.UI
 
             // 2) 단어
             var seen = new HashSet<string>();
+            var created = new List<WordRecord>();   // 이번에 새로 만든 단어(JSON에 적힌 순서대로)
             foreach (var item in file.items ?? new List<ItemWordEntry>())
             {
                 if (item == null || string.IsNullOrEmpty(item.word) || !seen.Add(item.word)) continue;   // 같은 단어가 또 나오면 처음 것만
@@ -94,16 +107,20 @@ namespace Hangeul.UI
                 var desired = Build(item, custom, db.TypeOfCategory(item.category));
                 var existing = db.Find(item.word);
 
-                if (existing == null) { db.Add(desired); report.AddedWords.Add(item.word); continue; }
+                if (existing == null) { db.Add(desired); created.Add(desired); report.AddedWords.Add(item.word); continue; }
                 if (mode == ImportMode.AddOnly) { report.Unchanged++; continue; }
 
                 desired.sprite = existing.sprite;   // 스프라이트는 에셋이 주인이다
                 if (existing.JsonEquals(desired)) { report.Unchanged++; continue; }
 
                 if (existing.Kind == desired.Kind) existing.CopyJsonFieldsFrom(desired);
-                else { db.Remove(existing); db.Add(desired); }   // 카테고리 종류가 달라져 다른 목록으로 옮겨진다
+                else { desired.order = existing.order; db.Remove(existing); db.Add(desired); }   // 카테고리 종류가 달라져 다른 목록으로 옮겨진다(목록에서의 자리는 그대로)
                 report.UpdatedWords.Add(item.word);
             }
+
+            // 새 단어는 기존 단어들보다 위에 놓되, JSON에 적힌 순서(DB 화면은 최근 단어를 맨 위에 적는다)를 그대로 지킨다
+            int top = db.NextOrder() + created.Count - 1;
+            for (int i = 0; i < created.Count; i++) created[i].order = top - i;
             return report;
         }
 

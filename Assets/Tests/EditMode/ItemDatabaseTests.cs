@@ -488,5 +488,252 @@ namespace Hangeul.Tests
             Assert.IsNull(db.Find("사과"));
             Assert.AreEqual(7, db.WordCount);
         }
+
+        // ───── 인스펙터가 쓰는 편집 규칙 ─────
+        [Test]
+        public void ConvertTo_ChangesTheKind_KeepingTheCommonFields()
+        {
+            var db = Import(SampleFile());
+            var sprite = NewSprite();
+            var sword = (WeaponWordRecord)db.Find("검");
+            sword.sprite = sprite;
+
+            var food = db.ConvertTo(sword, WordKind.Food);
+
+            Assert.IsInstanceOf<FoodWordRecord>(food);
+            Assert.AreSame(food, db.Find("검"));
+            Assert.AreEqual("무기", food.category);
+            Assert.AreSame(sprite, food.sprite);
+            CollectionAssert.AreEqual(new[] { "화염", "강화" }, ((FoodWordRecord)food).prefixes);   // 접두어 규칙 유지
+            Assert.IsTrue(((FoodWordRecord)food).useDefaults);
+            Assert.AreEqual(1, db.weapons.Count);   // 검은 무기 목록에서 빠졌다
+        }
+
+        [Test]
+        public void ConvertTo_SameKind_ReturnsTheSameRecord_AndSwitchesPrefixKinds()
+        {
+            var db = Import(SampleFile());
+            var fire = db.Find("화염");
+            Assert.AreSame(fire, db.ConvertTo(fire, WordKind.PrefixElement));
+
+            var asDamage = db.ConvertTo(fire, WordKind.PrefixDamage);
+            Assert.IsInstanceOf<PrefixDamageWordRecord>(asDamage);
+            Assert.AreEqual(0, db.prefixElements.Count);
+            Assert.AreEqual(2, db.prefixDamages.Count);   // 강화 + 화염
+        }
+
+        [Test]
+        public void TryAddWord_PutsTheWordInTheListOfItsCategoryType()
+        {
+            var db = Import(SampleFile());
+            Assert.IsTrue(db.TryAddWord(" 도끼 ", "무기", out var axe, out var error));
+            Assert.IsNull(error);
+            Assert.IsInstanceOf<WeaponWordRecord>(axe);
+            Assert.IsTrue(((WeaponWordRecord)axe).useDefaults);   // 처음엔 기본값을 따른다
+            Assert.AreSame(axe, db.Find("도끼"));
+
+            Assert.IsTrue(db.TryAddWord("불꽃", "속성", out var fire, out _));
+            Assert.IsInstanceOf<PrefixDamageWordRecord>(fire);   // 접두어 카테고리의 새 단어는 대미지 더하기로 시작(인스펙터에서 종류를 바꾼다)
+            Assert.IsTrue(db.TryAddWord("메모", "추가한 단어", out var plain, out _));
+            Assert.IsInstanceOf<PlainWordRecord>(plain);
+        }
+
+        [Test]
+        public void TryAddWord_RejectsBadInput_WithAReason()
+        {
+            var db = Import(SampleFile());
+            int before = db.WordCount;
+
+            Assert.IsFalse(db.TryAddWord("", "무기", out _, out var e1)); StringAssert.Contains("입력", e1);
+            Assert.IsFalse(db.TryAddWord("abc", "무기", out _, out var e2)); StringAssert.Contains("한글", e2);
+            Assert.IsFalse(db.TryAddWord("됬", "무기", out _, out var e3)); StringAssert.Contains("금지", e3);   // 됬 ✗ 됐 ○
+            Assert.IsFalse(db.TryAddWord("검", "무기", out _, out var e4)); StringAssert.Contains("이미", e4);
+            Assert.IsFalse(db.TryAddWord("도끼", "없는카테고리", out _, out var e5)); StringAssert.Contains("카테고리", e5);
+            Assert.IsFalse(db.TryAddWord("도끼", null, out _, out _));
+
+            Assert.AreEqual(before, db.WordCount);   // 아무것도 추가되지 않았다
+        }
+
+        [Test]
+        public void CategoryEditing_AddRenameRemove()
+        {
+            var db = Import(SampleFile());
+
+            Assert.IsTrue(db.TryAddCategory(" 마법책 ", CategoryType.Weapon, out _));
+            Assert.AreEqual(CategoryType.Weapon, db.TypeOfCategory("마법책"));
+            Assert.IsFalse(db.TryAddCategory("마법책", CategoryType.Plain, out var dup)); StringAssert.Contains("이미", dup);
+            Assert.IsFalse(db.TryAddCategory("  ", CategoryType.Plain, out _));
+
+            // 이름을 바꾸면 그 카테고리의 단어들도 따라간다
+            Assert.IsTrue(db.TryRenameCategory("무기", "칼과 활", out _));
+            Assert.AreEqual("칼과 활", db.Find("검").category);
+            Assert.AreEqual("칼과 활", db.Find("활").category);
+            Assert.AreEqual(CategoryType.Weapon, db.TypeOfCategory("칼과 활"));   // 종류는 그대로
+            Assert.IsNull(db.FindCategory("무기"));
+            Assert.IsFalse(db.TryRenameCategory("칼과 활", "음식", out var clash)); StringAssert.Contains("이미", clash);
+            Assert.IsFalse(db.TryRenameCategory("없는", "아무거나", out _));
+            Assert.IsTrue(db.TryRenameCategory("음식", "음식", out _));   // 같은 이름은 아무 일도 없다
+
+            // 단어가 남아 있는 카테고리는 지울 수 없다
+            Assert.AreEqual(2, db.WordCountIn("칼과 활"));
+            Assert.IsFalse(db.TryRemoveCategory("칼과 활"));
+            Assert.IsTrue(db.TryRemoveCategory("마법책"));
+            Assert.IsNull(db.FindCategory("마법책"));
+            Assert.IsFalse(db.TryRemoveCategory("마법책"));
+        }
+
+        [Test]
+        public void RenamingACategory_DoesNotChangeWhatItsWordsDoInTheGame()
+        {
+            var db = Import(SampleFile());
+            db.TryRenameCategory("무기", "칼과 활", out _);
+            var set = ItemWordSet.FromFile(db.ToFile(forGame: true), out _);
+            Assert.AreEqual(ItemKind.Weapon, set.KindOf("검"));   // 이름이 아니라 종류가 쓰인다
+        }
+
+        [Test]
+        public void ElementPresets_AreColors_StartingWithTheDefault()
+        {
+            Assert.AreEqual(ColorHex.DefaultElement, ColorHex.ElementPresets[0]);
+            foreach (var hex in ColorHex.ElementPresets) Assert.IsTrue(ColorHex.TryNormalize(hex, out _), hex);
+            Assert.AreEqual(ColorHex.ElementPresets.Length, ColorHex.ElementPresets.Distinct().Count());
+        }
+
+        // ───── 순서: 새 단어가 맨 위 ─────
+        [Test]
+        public void TryAddWord_PutsTheNewWordAtTheTopOfTheList()
+        {
+            var db = Import(SampleFile());
+            int before = db.AllWords().Max(r => r.order);
+            Assert.IsTrue(db.TryAddWord("도끼", "무기", out var axe, out _));
+            Assert.Greater(axe.order, before);
+
+            Assert.IsTrue(db.TryAddWord("메모", "추가한 단어", out var memo, out _));
+            Assert.Greater(memo.order, axe.order);   // 나중에 추가한 단어가 더 위
+
+            Assert.AreEqual("메모", db.ToFile(forGame: false).items[0].word);   // 내보내는 JSON에서도 맨 위
+        }
+
+        [Test]
+        public void Import_KeepsTheJsonOrder_AndExportWritesItBack()
+        {
+            var file = SampleFile();
+            var db = Import(file);
+            var exported = db.ToFile(forGame: false).items.Select(i => i.word).ToArray();
+            CollectionAssert.AreEqual(file.items.Select(i => i.word).ToArray(), exported);   // JSON의 순서가 그대로 돌아온다
+        }
+
+        [Test]
+        public void Import_NewWordsLandAboveTheExistingOnes_InTheirJsonOrder()
+        {
+            var db = Import(SampleFile());
+            var file = SampleFile();
+            file.items.Insert(0, Word("새것둘", "무기"));   // DB 화면은 새 단어를 맨 위에 넣는다
+            file.items.Insert(0, Word("새것하나", "음식"));
+
+            ItemDatabaseImporter.Import(file, db, ImportMode.AddOnly);
+
+            var order = db.ToFile(forGame: false).items.Select(i => i.word).ToArray();
+            Assert.AreEqual("새것하나", order[0]);
+            Assert.AreEqual("새것둘", order[1]);
+            Assert.AreEqual("검", order[2]);   // 원래 있던 단어들은 그 아래
+        }
+
+        [Test]
+        public void ConvertTo_AndReclassify_KeepTheWordsPlaceInTheList()
+        {
+            var db = Import(SampleFile());
+            int order = db.Find("활").order;
+            var moved = db.ConvertTo(db.Find("활"), WordKind.Food);
+            Assert.AreEqual(order, moved.order);
+
+            db.FindCategory("물약").type = CategoryType.Food;
+            int potionOrder = db.Find("체력물약").order;
+            db.Reclassify();
+            Assert.AreEqual(potionOrder, db.Find("체력물약").order);
+        }
+
+        [Test]
+        public void Overwrite_KindChange_KeepsTheOrder_AndDeepCloneCopiesIt()
+        {
+            var db = Import(SampleFile());
+            int order = db.Find("활").order;
+            var file = SampleFile();
+            file.items.First(i => i.word == "활").category = "음식";
+            ItemDatabaseImporter.Import(file, db, ImportMode.Overwrite);
+            Assert.AreEqual(order, db.Find("활").order);
+            Assert.AreEqual(order, db.DeepClone().Find("활").order);
+        }
+
+        // ───── 개발 빌드: exe 옆 JSON을 에셋 위에 덧씌워 읽기 ─────
+        [Test]
+        public void OverlayForGame_WithTheAssetsOwnExport_ChangesNothing()
+        {
+            var db = Import(SampleFile(Stats("검", new ItemStats { damage = 5 })));
+            db.defaultWeapon.damage = 3;
+            var seed = db.ToFile(forGame: false);   // DB 씬이 처음 만드는 exe 옆 파일의 내용
+
+            var overlaid = ItemWordSet.FromFile(ItemDatabaseImporter.OverlayForGame(db, seed), out _);
+            var plain = ItemWordSet.FromFile(db.ToFile(forGame: true), out _);
+
+            Assert.AreEqual(plain.Count, overlaid.Count);
+            foreach (var word in plain.Words)
+            {
+                Assert.AreEqual(plain.KindOf(word), overlaid.KindOf(word), word);
+                Assert.AreEqual(plain.StatsOf(word)?.damage, overlaid.StatsOf(word)?.damage, word);
+            }
+            Assert.AreEqual(5, overlaid.StatsOf("검").damage);   // 자기 값은 그대로
+            Assert.AreEqual(3, overlaid.StatsOf("활").damage);   // 기본값을 따르는 단어는 에셋의 기본값(3)
+        }
+
+        [Test]
+        public void OverlayForGame_ColleaguesNewWordsAreUsed_WhileAssetOnlyDataStays()
+        {
+            var db = Import(SampleFile());
+            db.defaultWeapon.damage = 3;
+            db.Add(new PlainWordRecord { word = "에셋단어", category = "추가한 단어" });   // 에셋에서만 만든 단어
+
+            var json = db.ToFile(forGame: false);
+            json.items.RemoveAll(i => i.word == "에셋단어");   // 동료의 빌드에는 없던 단어
+            json.items.Insert(0, Word("도끼", "무기"));         // 동료가 DB 화면에서 새로 추가한 단어
+
+            var set = ItemWordSet.FromFile(ItemDatabaseImporter.OverlayForGame(db, json), out _);
+
+            Assert.IsTrue(set.Contains("도끼"));
+            Assert.AreEqual(ItemKind.Weapon, set.KindOf("도끼"));
+            Assert.AreEqual(3, set.StatsOf("도끼").damage);   // 새 단어도 에셋의 무기 기본값을 따른다
+            Assert.IsTrue(set.Contains("에셋단어"));           // JSON에 없는 에셋의 단어는 그대로 남는다
+        }
+
+        [Test]
+        public void OverlayForGame_JsonValuesWinForTheWordsItDefines_AndTheAssetIsNotChanged()
+        {
+            var db = Import(SampleFile());
+            int before = db.WordCount;
+
+            var json = db.ToFile(forGame: false);
+            json.wordStats.Add(Stats("검", new ItemStats { damage = 9 }));   // 동료가 '검'의 수치를 고쳤다
+            var set = ItemWordSet.FromFile(ItemDatabaseImporter.OverlayForGame(db, json), out _);
+
+            Assert.AreEqual(9, set.StatsOf("검").damage);
+            Assert.AreEqual(before, db.WordCount);                                   // 에셋은 그대로
+            Assert.IsTrue(((WeaponWordRecord)db.Find("검")).useDefaults);
+        }
+
+        [Test]
+        public void OverlayForGame_KeepsTheAssetsCategoryTypes()
+        {
+            var db = Import(SampleFile());
+            db.FindCategory("물약").type = CategoryType.Food;
+            db.Reclassify();
+
+            var json = db.ToFile(forGame: false);
+            json.categoryTypes.RemoveAll(c => c.name == "물약");   // 종류가 적히지 않은 옛 JSON
+            json.items.Insert(0, Word("마나물약", "물약"));          // 같은 카테고리에 새 단어
+
+            var set = ItemWordSet.FromFile(ItemDatabaseImporter.OverlayForGame(db, json), out _);
+            Assert.AreEqual(ItemKind.Food, set.KindOf("체력물약"));
+            Assert.AreEqual(ItemKind.Food, set.KindOf("마나물약"));   // 에셋이 정해 둔 카테고리 종류(음식)를 따른다
+        }
     }
 }

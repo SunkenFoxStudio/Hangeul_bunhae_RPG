@@ -21,6 +21,16 @@ namespace Hangeul.UI
         public const string ResourceName = "item_words";
         public const string FileName = "item_words.json";
 
+        /// <summary>
+        /// 게임이 읽고 있는 게임 데이터 에셋(없으면 null). 인벤토리(<see cref="InventoryView"/>)가 단어를 읽을 때 알려 주고, 개발 빌드에서
+        /// DB 관리 씬이 처음 만드는 exe 옆 파일의 시작 내용을 이 에셋에서 만드는 데 쓴다(씬이 바뀌어도 유지된다).
+        /// </summary>
+        public static ItemDatabase RegisteredDatabase;
+
+        // 에디터에서 도메인 다시 불러오기를 끄고 실행해도 지난 실행의 에셋을 붙잡지 않도록
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => RegisteredDatabase = null;
+
         /// <summary>exe 옆의 목록 파일을 읽고 쓰는 곳인지: 개발 빌드만. 에디터는 프로젝트의 Resources 파일을 쓰고, 출시 빌드는 파일을 쓰지 않는다.</summary>
         public static bool UsesExternalFile => !Application.isEditor && Debug.isDebugBuild;
 
@@ -48,25 +58,34 @@ namespace Hangeul.UI
         /// 에디터와 출시 빌드에서는 assigned(인스펙터에 직접 넣은 파일)가 있으면 그것을, 없으면 Resources의 것을 쓴다. 아무것도 없으면 null.
         /// </summary>
         public static string ReadCurrent(TextAsset assigned = null)
+            => ReadExternal() ?? ReadBundled(assigned);
+
+        /// <summary>exe 옆 파일을 보지 않고, 직접 넣은 파일(assigned)이나 빌드에 구워 둔 기본 목록의 내용. 없으면 null.</summary>
+        public static string ReadBundled(TextAsset assigned = null) => assigned != null ? assigned.text : ReadBuiltIn();
+
+        /// <summary>
+        /// 개발 빌드에서 exe 옆 목록 파일이 있으면 그 내용(동료가 빌드 안에서 고친 단어). 에디터, 출시 빌드, 파일이 없거나 읽을 수 없을 때는 null.
+        /// 게임 데이터 에셋이 연결돼 있어도 이 파일이 있으면 개발 빌드에서는 이것이 우선한다.
+        /// </summary>
+        public static string ReadExternal()
         {
-            if (UsesExternalFile)
+            if (!UsesExternalFile) return null;
+            string path = FilePath;
+            try
             {
-                string path = FilePath;
-                try
-                {
-                    if (File.Exists(path)) return File.ReadAllText(path);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning($"[ItemWordsStore] {path} 파일을 읽을 수 없어 빌드에 들어 있는 기본 목록을 씁니다: {e.Message}");
-                }
+                if (File.Exists(path)) return File.ReadAllText(path);
             }
-            return assigned != null ? assigned.text : ReadBuiltIn();
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[ItemWordsStore] {path} 파일을 읽을 수 없어 다른 단어 목록을 씁니다: {e.Message}");
+            }
+            return null;
         }
 
         /// <summary>
-        /// 개발 빌드에서 목록 파일이 아직 없으면 기본 목록을 그 자리에 복사해 둔다(에디터와 출시 빌드에서는 아무것도 하지 않는다).
-        /// 기본 목록도 없으면 만들지 않는다. 실패해도 게임을 멈추지 않고 이유를 error로 돌려준다.
+        /// 개발 빌드에서 목록 파일이 아직 없으면 시작 내용을 그 자리에 만들어 둔다(에디터와 출시 빌드에서는 아무것도 하지 않는다).
+        /// 시작 내용은 게임이 읽고 있는 게임 데이터 에셋(<see cref="RegisteredDatabase"/>)을 JSON으로 내보낸 것이고, 에셋이 없으면 빌드에 구워 둔 기본 목록이다.
+        /// 시작 내용이 없으면 만들지 않는다. 실패해도 게임을 멈추지 않고 이유를 error로 돌려준다.
         /// </summary>
         public static bool EnsureFile(out string error)
         {
@@ -74,9 +93,11 @@ namespace Hangeul.UI
             if (!UsesExternalFile) return true;
             string path = FilePath;
             if (File.Exists(path)) return true;
-            string builtIn = ReadBuiltIn();
-            if (builtIn == null) return true;   // 복사할 기본값이 없다 — 첫 저장 때 만들어진다
-            return TryWrite(builtIn, out error);
+            string seed = RegisteredDatabase != null
+                ? JsonUtility.ToJson(RegisteredDatabase.data.ToFile(forGame: false), true)   // 에셋에서만 만든 단어와 수치도 DB 화면에 보이도록
+                : ReadBuiltIn();
+            if (seed == null) return true;   // 시작 내용이 없다 — 첫 저장 때 만들어진다
+            return TryWrite(seed, out error);
         }
 
         /// <summary>목록 파일에 저장한다(쓰다가 끊겨도 기존 파일이 남도록 임시 파일을 거친다). 실패하면 이유를 error로 돌려준다.</summary>

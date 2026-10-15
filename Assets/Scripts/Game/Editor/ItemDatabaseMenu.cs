@@ -5,6 +5,7 @@ using System.Text;
 using Hangeul.App;
 using Hangeul.UI;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace Hangeul.Game.Editor
@@ -28,7 +29,7 @@ namespace Hangeul.Game.Editor
         static void ImportOverwrite() => Import(ImportMode.Overwrite);
 
         [MenuItem(Menu + "게임 데이터 → JSON 내보내기...", false, 20)]
-        static void Export()
+        internal static void Export()
         {
             var db = Load();
             if (db == null) { NoAsset(); return; }
@@ -64,6 +65,57 @@ namespace Hangeul.Game.Editor
             EditorUtility.DisplayDialog("카테고리 종류에 맞게 단어 정리", message, "확인");
         }
 
+        // ───── 게임 연결 ─────
+        const string ConnectMenu = Menu + "게임이 데이터 에셋을 읽게 연결";
+
+        /// <summary>열려 있는 씬의 인벤토리(InventoryView)가 게임 데이터 에셋을 읽는지.</summary>
+        internal enum Connection { NoInventory, NotConnected, Connected }
+
+        internal static Connection GetConnection()
+        {
+            var views = FindViews();
+            if (views.Length == 0) return Connection.NoInventory;
+            var db = Load();
+            return db != null && views.All(v => v.DataAsset == db) ? Connection.Connected : Connection.NotConnected;
+        }
+
+        [MenuItem(ConnectMenu, false, 30)]
+        internal static void ToggleConnection()
+        {
+            var views = FindViews();
+            if (views.Length == 0)
+            {
+                EditorUtility.DisplayDialog("연결", "열려 있는 씬에 InventoryView가 없습니다.\nSampleScene을 연 뒤 다시 실행하세요.", "확인");
+                return;
+            }
+            var db = Load();
+            if (db == null) { NoAsset(); return; }
+
+            bool connected = GetConnection() == Connection.Connected;
+            foreach (var view in views)
+            {
+                var so = new SerializedObject(view);
+                so.FindProperty("itemDatabase").objectReferenceValue = connected ? null : db;
+                so.ApplyModifiedProperties();
+                EditorSceneManager.MarkSceneDirty(view.gameObject.scene);
+            }
+            string message = connected
+                ? "연결을 껐습니다. 게임이 JSON(Assets/Resources/item_words.json)에서 단어를 읽습니다."
+                : "연결했습니다. 게임이 JSON 대신 게임 데이터 에셋에서 단어와 수치를 읽습니다.";
+            Debug.Log($"[ItemDB] {message} 씬을 저장하세요.");
+        }
+
+        // 메뉴 항목 앞에 체크 표시: 지금 연결돼 있는지
+        [MenuItem(ConnectMenu, true)]
+        static bool ToggleConnectionValidate()
+        {
+            UnityEditor.Menu.SetChecked(ConnectMenu, GetConnection() == Connection.Connected);
+            return true;
+        }
+
+        static InventoryView[] FindViews()
+            => UnityEngine.Object.FindObjectsByType<InventoryView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
         [MenuItem(Menu + "게임 데이터 에셋 선택", false, 40)]
         static void Select()
         {
@@ -74,7 +126,7 @@ namespace Hangeul.Game.Editor
         }
 
         // ───── 가져오기 ─────
-        static void Import(ImportMode mode)
+        internal static void Import(ImportMode mode)
         {
             if (!File.Exists(JsonPath))
             {
