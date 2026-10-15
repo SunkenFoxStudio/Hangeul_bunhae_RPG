@@ -62,14 +62,44 @@ namespace Hangeul.Tests
         }
 
         [Test]
-        public void FindRun_CenterRow_AndAnchor()
+        public void FindRun_TopLeftFirst_AndAnchor()
         {
             var g = new GridModel(10, 10);
             Assert.IsTrue(g.TryFindRun(4, null, out var s));
-            Assert.AreEqual((3, 4), s);   // 가운데 줄((10-1)/2=4.5 → 4가 먼저), 가운데 정렬
+            Assert.AreEqual((0, 0), s);   // 앵커가 없으면 맨 위 줄 왼쪽부터
 
             Assert.IsTrue(g.TryFindRun(3, (7, 0), out s));
-            Assert.AreEqual((7, 0), s);
+            Assert.AreEqual((7, 0), s);   // 앵커가 있으면 그 가까이
+        }
+
+        [Test]
+        public void FindRun_WithoutAnchor_SkipsToTheFirstRoomThatFits()
+        {
+            var g = new GridModel(5, 3);
+            g.Add(Card.NewJamo(1, 'ㄱ', 2, 0));     // 맨 윗줄은 [빈][빈][막힘][빈][빈]
+            Assert.IsTrue(g.TryFindRun(2, null, out var s));
+            Assert.AreEqual((0, 0), s);              // 두 칸이 들어가는 맨 왼쪽 자리
+            Assert.IsTrue(g.TryFindRun(3, null, out s));
+            Assert.AreEqual((0, 1), s);              // 윗줄에는 세 칸이 들어가지 않아 다음 줄로
+        }
+
+        [Test]
+        public void FindFirstEmpty_ReadsRowsTopDown()
+        {
+            var g = new GridModel(3, 2);
+            g.Add(Card.NewJamo(1, 'ㄱ', 0, 0));
+            g.Add(Card.NewJamo(2, 'ㄱ', 1, 0));
+            Assert.IsTrue(g.TryFindFirstEmpty(out var cell));
+            Assert.AreEqual((2, 0), cell);
+
+            g.Add(Card.NewJamo(3, 'ㄱ', 2, 0));
+            Assert.IsTrue(g.TryFindFirstEmpty(out cell));
+            Assert.AreEqual((0, 1), cell);
+
+            g.Add(Card.NewJamo(4, 'ㄱ', 0, 1));
+            g.Add(Card.NewJamo(5, 'ㄱ', 1, 1));
+            g.Add(Card.NewJamo(6, 'ㄱ', 2, 1));
+            Assert.IsFalse(g.TryFindFirstEmpty(out _));
         }
 
         [Test]
@@ -175,14 +205,49 @@ namespace Hangeul.Tests
         }
 
         [Test]
-        public void AddWord_PlacesRunOnCenterRow()
+        public void AddWord_PlacesRunFromTheTopLeft()
         {
             var (m, _) = Make();
             var r = m.AddWord("가방");
             Assert.AreEqual(2, r.Added);
             var cards = m.Grid.Cards;
-            Assert.AreEqual(new[] { (4, 4), (5, 4) }, cards.Select(c => (c.Col, c.Row)).ToArray());
+            Assert.AreEqual(new[] { (0, 0), (1, 0) }, cards.Select(c => (c.Col, c.Row)).ToArray());
             Assert.AreEqual("가방", new string(cards.Select(c => c.Letter.Value).ToArray()));
+        }
+
+        [Test]
+        public void AddWord_FillsEmptySpaceFromTheTop_SkippingWhatIsTaken()
+        {
+            var (m, _) = Make(5, 3);
+            m.AddWord("가방");                                        // (0,0) (1,0)
+            m.AddWord("나무");                                        // (2,0) (3,0)
+            Assert.AreEqual(new[] { (2, 0), (3, 0) }, m.Grid.Cards.Skip(2).Select(c => (c.Col, c.Row)).ToArray());
+
+            m.AddWord("다라마");                                      // 윗줄에 3칸이 남지 않아 다음 줄 왼쪽부터
+            Assert.AreEqual(new[] { (0, 1), (1, 1), (2, 1) }, m.Grid.Cards.Skip(4).Select(c => (c.Col, c.Row)).ToArray());
+
+            m.AddWord("바");                                          // 한 글자는 윗줄의 남은 빈 칸으로
+            Assert.AreEqual((4, 0), (m.Grid.Cards.Last().Col, m.Grid.Cards.Last().Row));
+        }
+
+        [Test]
+        public void AddWord_WithAnchor_StillGoesNearTheAnchor()
+        {
+            var (m, _) = Make();
+            m.AddWord("가방", (4, 5));
+            Assert.AreEqual(new[] { (4, 5), (5, 5) }, m.Grid.Cards.Select(c => (c.Col, c.Row)).ToArray());
+        }
+
+        [Test]
+        public void AddWord_WhenNoRunFits_ScattersIntoTheFirstEmptyCellsFromTheTop()
+        {
+            var (m, _) = Make(4, 2);
+            m.PlaceJamo('ㄱ', 1, 0);              // 윗줄 [빈][막힘][빈][빈]
+            m.PlaceJamo('ㄱ', 2, 1);              // 아랫줄 [빈][빈][막힘][빈] — 세 글자가 이어 들어갈 자리가 없다
+            var r = m.AddWord("가나다");
+            Assert.AreEqual(3, r.Added);
+            var added = m.Grid.Cards.Skip(2).Select(c => (c.Col, c.Row)).ToArray();
+            Assert.AreEqual(new[] { (0, 0), (2, 0), (3, 0) }, added);
         }
 
         [Test]
@@ -338,9 +403,9 @@ namespace Hangeul.Tests
         public void Merge_Banned_ChangesNothing()
         {
             var (m, _) = Make();
-            m.AddWord("되");
+            m.AddWord("되");                                   // 맨 위 왼쪽 (0,0)에 놓인다
             var dwe = m.Grid.Cards[0];
-            var ss = m.PlaceJamo('ㅆ', 0, 0);
+            var ss = m.PlaceJamo('ㅆ', 5, 5);
             Assert.AreEqual(CombineOutcome.Banned, m.TryMerge(ss, dwe));
             Assert.AreEqual(2, m.Grid.Cards.Count);
             Assert.AreEqual('\0', dwe.S.Jong);

@@ -12,6 +12,12 @@
     ],
     "items": [
         {
+            "word": "호박",
+            "category": "음식",
+            "acceptsPrefix": false,
+            "prefixes": []
+        },
+        {
             "word": "담배",
             "category": "추가한 단어",
             "acceptsPrefix": false,

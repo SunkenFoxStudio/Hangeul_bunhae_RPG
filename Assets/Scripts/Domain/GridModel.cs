@@ -68,17 +68,39 @@ namespace Hangeul.Domain
             return found;
         }
 
+        /// <summary>격자 맨 위 줄 왼쪽부터 읽는 순서(행→열)로 처음 만나는 빈 칸. 빈 칸이 없으면 false.</summary>
+        public bool TryFindFirstEmpty(out (int col, int row) cell)
+        {
+            for (int r = 0; r < Rows; r++)
+                for (int c = 0; c < Cols; c++)
+                    if (CardAt(c, r) == null) { cell = (c, r); return true; }
+            cell = default;
+            return false;
+        }
+
         /// <summary>
-        /// 한 줄에 n칸 연속으로 빈 자리. anchor가 없으면 격자 가운데 줄부터, 있으면 anchor와 가까운 줄/위치부터.
-        /// 반환은 시작 칸.
+        /// 한 줄에 n칸 연속으로 빈 자리. anchor가 없으면 맨 위 줄 왼쪽부터 읽는 순서로 처음 들어가는 자리,
+        /// 있으면 anchor와 가까운 줄/위치부터. 반환은 시작 칸.
         /// </summary>
         public bool TryFindRun(int n, (int col, int row)? anchor, out (int col, int row) start)
         {
             start = default;
             if (n < 1 || n > Cols) return false;
 
-            double anchorRow = anchor.HasValue ? anchor.Value.row : (Rows - 1) / 2.0;
-            int anchorCol = anchor.HasValue ? anchor.Value.col : (Cols - n) / 2;   // (Cols-n)>=0 이므로 정수 나눗셈 = floor
+            if (!anchor.HasValue)
+            {
+                for (int r = 0; r < Rows; r++)
+                    for (int x = 0; x <= Cols - n; x++)
+                    {
+                        bool ok = true;
+                        for (int k = 0; k < n && ok; k++) ok = IsFree(x + k, r);
+                        if (ok) { start = (x, r); return true; }
+                    }
+                return false;
+            }
+
+            double anchorRow = anchor.Value.row;
+            int anchorCol = anchor.Value.col;
 
             var rows = Enumerable.Range(0, Rows).OrderBy(r => Math.Abs(r - anchorRow)).ToList();   // OrderBy는 안정 정렬
             int ideal = Clamp(anchorCol, 0, Cols - n);

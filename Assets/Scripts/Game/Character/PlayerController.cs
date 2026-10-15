@@ -62,6 +62,8 @@ namespace Hangeul.Game.Character
         public PlayerInteractState Interact { get; private set; }
         public PlayerAttackState Attack { get; private set; }
         public PlayerMeleeAttack Melee { get; private set; }
+        /// <summary>인벤토리 아이템 사용(무기 장착, 음식 먹기)과 공격 가능 여부. 무기를 장착해야 공격할 수 있다.</summary>
+        public PlayerItemUser Items { get; private set; }
         public PlayerHurtState Hurt { get; private set; }
         public PlayerDeadState Dead { get; private set; }
 
@@ -96,6 +98,10 @@ namespace Hangeul.Game.Character
             // 공격 설정: 없으면 기본값으로 자동으로 붙인다(Hangeul ▸ Setup ▸ Player Attack 메뉴로 미리 붙이면 인스펙터에서 조절할 수 있다)
             Melee = GetComponent<PlayerMeleeAttack>();
             if (Melee == null) Melee = gameObject.AddComponent<PlayerMeleeAttack>();
+
+            // 아이템 사용: 없으면 기본값으로 자동으로 붙인다(직접 붙이면 "무기 필수"나 음식 회복량을 인벤토리에서 조절할 수 있다)
+            Items = GetComponent<PlayerItemUser>();
+            if (Items == null) Items = gameObject.AddComponent<PlayerItemUser>();
 
             // 타격감 연출(번쩍임, 깜빡임, 히트스톱, 화면 흔들림): 없으면 기본값으로 붙인다(Hangeul ▸ Setup ▸ Combat HUD & Feedback 메뉴로 미리 붙이면 인스펙터에서 보인다)
             if (GetComponent<PlayerHitFeedback>() == null) gameObject.AddComponent<PlayerHitFeedback>();
@@ -218,12 +224,14 @@ namespace Hangeul.Game.Character
 
         /// <summary>
         /// 공격 입력을 눌렀으면 Attack 상태로 전이한다. 전이했으면 true. Idle/Move 상태의 Tick에서 호출한다.
-        /// UI(버튼 등) 위에서 누른 클릭은 공격으로 치지 않는다.
+        /// UI(버튼 등) 위에서 누른 클릭은 공격으로 치지 않는다. 무기를 장착하지 않았으면 공격할 수 없고,
+        /// 공격하려 했다는 것을 알림으로 알려 준다(<see cref="PlayerItemUser.CanAttack"/>, <see cref="PlayerItemUser.NotifyNoWeapon"/>).
         /// </summary>
         public bool TryStartAttack()
         {
             if (!_input.AttackPressed || Health.IsDead) return false;
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return false;
+            if (!Items.CanAttack) { Items.NotifyNoWeapon(); return false; }
             Fsm.ChangeState(Attack);
             return true;
         }

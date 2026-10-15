@@ -58,6 +58,12 @@ namespace Hangeul.App
         public InventoryMode Mode { get; private set; }
         /// <summary>조작으로 단어가 새로 완성됐을 때(단어 추가/불러오기/격자 크기 변경으로 이미 완성돼 있던 것은 알리지 않는다). 본편이 구독해 아이템 지급 등을 처리한다.</summary>
         public event Action<WordMatch> WordCompleted;
+        /// <summary>지금 쓰는 아이템 단어 목록(단어 → 카테고리 → 종류). 완성 판정과 같은 집합이다.</summary>
+        public ItemWordSet Words { get; private set; } = new ItemWordSet();
+        /// <summary>장착 중인 무기(없으면 null). 단어가 깨지면 다음 스캔에서 저절로 풀린다.</summary>
+        public EquippedItem EquippedWeapon { get; private set; }
+        /// <summary>장착 상태가 바뀔 때(장착, 해제, 단어가 깨져서 풀림, 불러오기). 가방 모드 화면이 표시를 다시 그리는 시점.</summary>
+        public event Action EquipmentChanged;
 
         public InventoryModel(int cols = 10, int rows = 10) { Grid = new GridModel(cols, rows); }
 
@@ -72,7 +78,8 @@ namespace Hangeul.App
         /// <summary>완성 판정에 쓸 단어 목록을 바꾼다. 이미 완성돼 있던 단어는 알리지 않는다.</summary>
         public void SetWords(ItemWordSet words)
         {
-            Scanner.SetWords(words);
+            Words = words ?? new ItemWordSet();
+            Scanner.SetWords(Words);
             Scan(notify: false);
         }
 
@@ -83,9 +90,96 @@ namespace Hangeul.App
         public IReadOnlyList<WordMatch> Scan(bool notify)
         {
             var fresh = Scanner.Scan(Grid, notify);
+            ValidateEquipment();          // 화면이 Shown을 다시 읽기 전에, 깨진 단어의 장착을 먼저 푼다
             Scanned?.Invoke();
             foreach (var m in fresh) WordCompleted?.Invoke(m);
             return fresh;
+        }
+
+        // ───── 아이템 사용: 장착 / 먹기 ─────
+        /// <summary>완성 단어의 종류(무기/방어구/음식). 쓰임이 없으면 None.</summary>
+        public ItemKind KindOf(WordMatch m) => Words.KindOf(m.Word);
+
+        // 단어를 이루는 카드의 아이디(읽는 순서: 접두어 → 본체). 카드가 하나라도 없으면 null.
+        List<int> IdsOf(WordMatch m)
+        {
+            var ids = new List<int>();
+            foreach (var (col, row) in m.Cells())
+            {
+                var card = Grid.CardAt(col, row);
+                if (card == null) return null;
+                ids.Add(card.Id);
+            }
+            return ids;
+        }
+
+        /// <summary>완성 단어를 이루는 카드들(읽는 순서). 카드가 없어졌으면 null.</summary>
+        public IReadOnlyList<Card> CardsOf(WordMatch m)
+        {
+            var cards = new List<Card>();
+            foreach (var (col, row) in m.Cells())
+            {
+                var card = Grid.CardAt(col, row);
+                if (card == null) return null;
+                cards.Add(card);
+            }
+            return cards;
+        }
+
+        /// <summary>지금 화면에 보이는(<see cref="MatchScanner.Shown"/>) 완성 단어인지. 오래된 <see cref="WordMatch"/>를 쓰기 전에 확인한다.</summary>
+        public bool IsShown(WordMatch m)
+        {
+            foreach (var s in Scanner.Shown)
+                if (s.Key == m.Key) return true;
+            return false;
+        }
+
+        /// <summary>이 완성 단어가 지금 장착 중인 무기인지.</summary>
+        public bool IsEquipped(WordMatch m) => EquippedWeapon != null && EquippedWeapon.Matches(m.Word, IdsOf(m));
+
+        /// <summary>
+        /// 완성된 무기 단어를 장착한다(이미 장착 중인 무기가 있으면 그것이 풀리고 이것이 장착된다).
+        /// 무기가 아니거나 지금 완성된 단어가 아니면 아무것도 바꾸지 않고 false.
+        /// </summary>
+        public bool EquipWeapon(WordMatch m)
+        {
+            if (KindOf(m) != ItemKind.Weapon || !IsShown(m)) return false;
+            var ids = IdsOf(m);
+            if (ids == null) return false;
+            if (EquippedWeapon != null && EquippedWeapon.Matches(m.Word, ids)) return true;
+
+            EquippedWeapon = new EquippedItem(m.Word, ids);
+            EquipmentChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>장착을 푼다. 카드는 인벤토리에 그대로 남는다.</summary>
+        public void UnequipWeapon()
+        {
+            if (EquippedWeapon == null) return;
+            EquippedWeapon = null;
+            EquipmentChanged?.Invoke();
+        }
+
+        /// <summary>완성 단어를 먹어서 없앤다: 그 단어를 이루는 카드를 모두 폐기한다. 지금 완성된 단어가 아니면 아무것도 바꾸지 않고 false.</summary>
+        public bool ConsumeWord(WordMatch m)
+        {
+            if (!IsShown(m)) return false;
+            var cards = CardsOf(m);
+            if (cards == null) return false;
+            Discard(cards);
+            return true;
+        }
+
+        // 장착한 단어가 같은 카드들로 아직 무기 단어를 이루고 있는지 확인하고, 아니면 푼다.
+        // 덩어리를 통째로 옮겨 칸이 바뀐 것은 상관없다(카드 아이디로 가린다).
+        void ValidateEquipment()
+        {
+            if (EquippedWeapon == null) return;
+            foreach (var s in Scanner.Shown)
+                if (Words.KindOf(s.Word) == ItemKind.Weapon && EquippedWeapon.Matches(s.Word, IdsOf(s))) return;
+            EquippedWeapon = null;
+            EquipmentChanged?.Invoke();
         }
 
         void Notify(ChangeType type, Card c) => Changed?.Invoke(new CardChange(type, c));
@@ -113,6 +207,7 @@ namespace Hangeul.App
         /// <summary>
         /// 단어의 한글 음절만 카드로 만들어 빈 칸에 놓는다. 금지 음절은 건너뛰고, 남은 칸 수만큼만 놓는다.
         /// Cols글자씩 끊어 한 줄에 연속 배치하고, 한 줄이 안 나오면 흩어서 놓는다.
+        /// anchor가 없으면(아이템 줍기, 단어 입력) <b>맨 위 줄 왼쪽부터</b> 읽는 순서로 빈 자리에 놓고, 있으면(칩을 격자에 놓기) 그 칸 가까이에 놓는다.
         /// </summary>
         public AddWordResult AddWord(string word, (int col, int row)? anchor = null)
         {
@@ -136,8 +231,11 @@ namespace Hangeul.App
                 {
                     foreach (var d in chunk)
                     {
-                        int ac = anchor?.col ?? Grid.Cols >> 1, ar = anchor?.row ?? Grid.Rows >> 1;
-                        if (!Grid.TryFindEmptyNear(ac, ar, out var cell)) break;
+                        (int col, int row) cell;
+                        bool found = anchor.HasValue
+                            ? Grid.TryFindEmptyNear(anchor.Value.col, anchor.Value.row, out cell)
+                            : Grid.TryFindFirstEmpty(out cell);   // 앵커가 없으면 위에서부터 첫 빈 칸
+                        if (!found) break;
                         AddSyllable(d.cho, d.jung, d.jong, cell.col, cell.row);
                     }
                 }
@@ -448,6 +546,11 @@ namespace Hangeul.App
                 mode = Mode == InventoryMode.Bag ? InventorySaveData.ModeBag : InventorySaveData.ModeAssemble,
             };
             foreach (var c in Grid.Cards.OrderBy(c => c.Id)) d.cards.Add(CardSaveData.From(c));
+            if (EquippedWeapon != null)
+            {
+                d.equippedWord = EquippedWeapon.Word;
+                d.equippedCardIds.AddRange(EquippedWeapon.CardIds);
+            }
             return d;
         }
 
@@ -494,7 +597,9 @@ namespace Hangeul.App
             }
             _nextId = Math.Max(_nextId, maxId + 1);
 
-            // 4) 기존 카드를 지우고 새 격자에 배치
+            // 4) 기존 카드를 지우고 새 격자에 배치 (장착 상태도 비우고, 끝에서 저장된 것을 되살린다)
+            var equippedBefore = EquippedWeapon;
+            EquippedWeapon = null;
             Discard(Grid.Cards);
             Grid.SetSize(cols, rows);
 
@@ -515,7 +620,28 @@ namespace Hangeul.App
             foreach (var c in Grid.Cards.ToList()) Notify(ChangeType.Added, c);
             SetMode(data.mode == InventorySaveData.ModeBag ? InventoryMode.Bag : InventoryMode.Assemble);
             Scan(notify: false);
+            RestoreEquipment(data);
+            if (!ReferenceEquals(equippedBefore, EquippedWeapon)) EquipmentChanged?.Invoke();
             return new LoadResult(true, null, cards.Count, skipped, deferred.Count);
+        }
+
+        // 저장된 장착을 되살린다: 같은 카드들이 같은 무기 단어를 이루고 있을 때만(아니면 장착 없음).
+        void RestoreEquipment(InventorySaveData data)
+        {
+            if (string.IsNullOrEmpty(data.equippedWord) || data.equippedCardIds == null || data.equippedCardIds.Count == 0) return;
+            foreach (var s in Scanner.Shown)
+            {
+                if (Words.KindOf(s.Word) != ItemKind.Weapon || !IsSameIds(data.equippedCardIds, IdsOf(s)) || s.Word != data.equippedWord) continue;
+                EquippedWeapon = new EquippedItem(s.Word, IdsOf(s));
+                return;
+            }
+        }
+
+        static bool IsSameIds(IReadOnlyList<int> a, IReadOnlyList<int> b)
+        {
+            if (b == null || a.Count != b.Count) return false;
+            for (int i = 0; i < a.Count; i++) if (a[i] != b[i]) return false;
+            return true;
         }
     }
 }

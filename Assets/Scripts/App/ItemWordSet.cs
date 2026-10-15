@@ -49,12 +49,22 @@ namespace Hangeul.App
             return true;
         }
 
-        public bool Add(string word)
+        /// <summary>단어를 넣는다. category는 DB 카테고리 이름(종류 판정에 쓴다, 없으면 null).</summary>
+        public bool Add(string word, string category = null)
         {
             if (!IsValidWord(word) || !_words.Add(word)) return false;
             MaxLength = Math.Max(MaxLength, word.Length);
+            if (category != null) _categoryOf[word] = category;
             return true;
         }
+
+        readonly Dictionary<string, string> _categoryOf = new Dictionary<string, string>();
+
+        /// <summary>단어의 DB 카테고리. 합성 단어('불화살')는 본체('화살')의 카테고리를 따른다. 모르면 null.</summary>
+        public string CategoryOf(string word) => word != null && _categoryOf.TryGetValue(word, out var c) ? c : null;
+
+        /// <summary>단어의 종류(무기/방어구/음식). 카테고리를 모르거나 쓰임이 없는 카테고리면 <see cref="ItemKind.None"/>.</summary>
+        public ItemKind KindOf(string word) => ItemKinds.FromCategory(CategoryOf(word));
 
         /// <summary>파일 내용으로 집합을 만든다. 버전이 다르거나 비어 있으면 null. 잘못된/중복 단어는 건너뛴다.</summary>
         public static ItemWordSet FromFile(ItemWordsFile file, out int skipped)
@@ -64,14 +74,14 @@ namespace Hangeul.App
 
             var set = new ItemWordSet();
             foreach (var item in file.items)
-                if (item == null || !set.Add(item.word)) skipped++;
+                if (item == null || !set.Add(item.word, item.category)) skipped++;
 
-            // 접두어 규칙으로 생기는 합성 단어("불"+"화살" = "불화살")도 하나의 아이템 단어로 등록한다.
+            // 접두어 규칙으로 생기는 합성 단어("불"+"화살" = "불화살")도 하나의 아이템 단어로 등록한다(카테고리는 본체의 것).
             // 이미 파일에 있는 단어와 겹치면 파일의 단어가 우선이다(합성 단어로 세지 않는다).
             foreach (var item in file.items)
                 foreach (var (prefix, compound) in PrefixPairsOf(file, item))
                 {
-                    if (set.Add(compound)) set._compounds.Add(compound);
+                    if (set.Add(compound, item.category)) set._compounds.Add(compound);
                     if (!set._prefixesByBase.TryGetValue(item.word, out var list)) set._prefixesByBase[item.word] = list = new List<string>();
                     if (!list.Contains(prefix)) list.Add(prefix);   // 위에 얹어도 인정하는 접두어(MatchScanner의 '위 배치')
                 }

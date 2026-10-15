@@ -100,6 +100,7 @@ namespace Hangeul.UI
             public List<Card> GroupCards;
             public List<Vector2> GroupOrigins;
             public int LeadIndex;        // 잡은 카드의 묶음 안 순서
+            public ChunkRef Chunk;       // 끌고 있는 단어 덩어리(단어가 아닌 카드 한 장이면 null)
         }
 
         // 가방 모드에서 한 단어로 묶인 카드들 (카드 아이디 → 소속 묶음과 그 안의 순서)
@@ -109,7 +110,14 @@ namespace Hangeul.UI
             public int Index;
             public bool LinkRight;       // 오른쪽 이웃과 이어짐(같은 줄 안)
             public bool LinkDown;        // 아래 카드와 이어짐(위에 얹은 접두어의 첫 글자 → 본체의 첫 글자)
+            public WordMatch Match;      // 이 덩어리가 이루는 완성 단어
+            public ItemKind Kind;        // 무기/방어구/음식(쓰임이 없으면 None)
+            public bool Equipped;        // 장착 중인 무기인지
+            public ItemFrame Frame;      // 이 카드 몫의 아이템 테두리
         }
+
+        const float FrameThickness = 0.06f;           // 아이템 테두리 굵기 (칸 대비)
+        const float FrameThicknessEquipped = 0.10f;   // 장착 중이면 더 굵게
 
         readonly Dictionary<int, CardView> _views = new Dictionary<int, CardView>();
         readonly HoHoldTracker _hold = new HoHoldTracker();
@@ -133,6 +141,15 @@ namespace Hangeul.UI
 
         public InventoryModel Model { get; private set; }
 
+        /// <summary>인벤토리가 쓰는 글꼴(프로젝트 글꼴). 다른 화면 UI가 같은 글꼴을 쓰고 싶을 때 받아 간다.</summary>
+        public Font Font => font;
+
+        /// <summary>
+        /// 가방 모드에서 완성 단어를 끌어다 놓을 수 있는 월드 쪽 대상(플레이어). 게임 쪽이 등록한다 — 없으면 끌어다 놓기가 없다.
+        /// 무기는 장착/해제, 음식은 먹고 카드가 사라진다. 쓸 수 없으면 카드는 제자리로 돌아온다.
+        /// </summary>
+        public IItemDropTarget DropTarget { get; set; }
+
         void Awake()
         {
             if (cardLayer == null) cardLayer = (RectTransform)transform;
@@ -143,6 +160,7 @@ namespace Hangeul.UI
             Model.WordCompleted += OnWordCompleted;
             Model.ModeChanged += OnModeChanged;
             Model.Scanned += RefreshBag;
+            Model.EquipmentChanged += OnEquipmentChanged;
             // 쓰레기통이 카드 뒤에 그려져야 카드가 그 위로 지나가고, 달라붙을 때도 보인다
             if (trashZone != null) trashZone.transform.SetAsFirstSibling();
             LoadWords();
@@ -177,6 +195,7 @@ namespace Hangeul.UI
             Model.WordCompleted -= OnWordCompleted;
             Model.ModeChanged -= OnModeChanged;
             Model.Scanned -= RefreshBag;
+            Model.EquipmentChanged -= OnEquipmentChanged;
             if (persist && _saveDirty) SaveNow();
         }
 
@@ -351,6 +370,12 @@ namespace Hangeul.UI
                     }
                     if (cards == null) continue;
 
+                    // 쓸 수 있는 아이템(무기/방어구/음식)이면 덩어리를 감싸는 테두리를 카드마다 나눠 그린다
+                    var kind = Model.KindOf(m);
+                    bool equipped = kind == ItemKind.Weapon && Model.IsEquipped(m);
+                    var cells = new HashSet<(int, int)>();
+                    foreach (var c in cards) cells.Add((c.Col, c.Row));
+
                     int p = m.PrefixLength;   // cards[0..p)가 접두어(윗줄), cards[p..)가 본체
                     for (int k = 0; k < cards.Count; k++)
                     {
@@ -362,6 +387,10 @@ namespace Hangeul.UI
                             Index = k,
                             LinkRight = !lastOfRun,
                             LinkDown = p > 0 && k == 0,
+                            Match = m,
+                            Kind = kind,
+                            Equipped = equipped,
+                            Frame = kind == ItemKind.None ? ItemFrame.None : BuildFrame(cards, k, kind, equipped, cells),
                         };
                     }
                 }
@@ -371,7 +400,32 @@ namespace Hangeul.UI
             {
                 _chunks.TryGetValue(v.Card.Id, out var cr);
                 v.SetBag(bag, bag && cr == null, bag && cr != null && cr.LinkRight, bag && cr != null && cr.LinkDown);
+                v.SetItemFrame(bag && cr != null ? cr.Frame : ItemFrame.None);
             }
+        }
+
+        // 한 카드의 테두리: 덩어리 바깥쪽 가장자리에만 선을 긋는다. 첫 카드에는 종류 이름표, 장착 중이면 마지막 카드에 체크 배지.
+        static ItemFrame BuildFrame(List<Card> cards, int index, ItemKind kind, bool equipped, HashSet<(int, int)> cells)
+        {
+            var c = cards[index];
+            var color = ItemFrame.KindColor(kind);
+            if (equipped) color = Color.Lerp(color, Color.white, 0.25f);   // 장착 중이면 더 밝고 굵게
+            return new ItemFrame(
+                top: !cells.Contains((c.Col, c.Row - 1)),
+                right: !cells.Contains((c.Col + 1, c.Row)),
+                bottom: !cells.Contains((c.Col, c.Row + 1)),
+                left: !cells.Contains((c.Col - 1, c.Row)),
+                color: color,
+                thickness: equipped ? FrameThicknessEquipped : FrameThickness,
+                label: index == 0 ? ItemKinds.Label(kind) : null,
+                badge: equipped && index == cards.Count - 1);
+        }
+
+        void OnEquipmentChanged()
+        {
+            _saveDirty = true;               // 장착 상태도 인벤토리 저장에 들어간다
+            _lastChange = Time.unscaledTime;
+            RefreshBag();
         }
 
         // ───── 외부 API ─────
@@ -637,6 +691,7 @@ namespace Hangeul.UI
                 GroupCards = new List<Card>(cards),
                 GroupOrigins = origins,
                 LeadIndex = lead,
+                Chunk = cr,
             };
             _last = v;
             _highlight.transform.SetAsLastSibling();
@@ -668,6 +723,100 @@ namespace Hangeul.UI
                 for (int i = 0; i < _drag.Group.Count; i++)
                     if (_drag.Group[i] != _drag.View) _drag.Group[i].SetPosition(_drag.GroupOrigins[i] + (pos - _drag.Origin));
             UpdateFeedback(0f);
+            if (_drag.Group != null) UpdateDropTarget(e.position);
+        }
+
+        // ───── 가방 모드: 플레이어에게 끌어다 놓기 (무기 장착 / 음식 먹기) ─────
+        static ItemDrop ToDrop(ChunkRef c) => new ItemDrop(c.Match.Word, c.Kind, c.Equipped);
+
+        // 이 덩어리를 플레이어에게 놓을 수 있는지(쓸 수 있는 아이템이고 대상이 등록돼 있는지)
+        bool CanDropOnTarget(DragState d) => d.Chunk != null && d.Chunk.Kind != ItemKind.None && DropTarget != null;
+
+        // 포인터가 플레이어 위에 있는지 확인하고, 놓으면 어떻게 되는지 안내 문구를 덩어리 위에 띄운다
+        void UpdateDropTarget(Vector2 screenPosition)
+        {
+            var d = _drag;
+            var action = ItemUseAction.None;
+            bool over = CanDropOnTarget(d) && DropTarget.Contains(screenPosition);
+            if (over) action = DropTarget.Preview(ToDrop(d.Chunk));
+            ShowHint(over ? ItemUseRules.Hint(action) : null, d.Pos, action == ItemUseAction.Blocked);
+        }
+
+        // 놓았다: 게임 쪽(플레이어)이 효과를 적용하고, 인벤토리는 장착 표시나 카드 없애기를 맡는다. 먹은 게 아니면 카드는 제자리로.
+        void UseItem(DragState d)
+        {
+            var match = d.Chunk.Match;
+            if (!Model.IsShown(match)) { foreach (var gv in d.Group) ReturnHome(gv); return; }   // 그새 단어가 깨졌으면 아무것도 하지 않는다
+
+            switch (DropTarget.Use(ToDrop(d.Chunk)))
+            {
+                case ItemUseAction.Equip:
+                    Model.EquipWeapon(match);
+                    foreach (var gv in d.Group) gv.Pop();
+                    break;
+                case ItemUseAction.Unequip:
+                    Model.UnequipWeapon();
+                    foreach (var gv in d.Group) gv.Pop();
+                    break;
+                case ItemUseAction.Eat:
+                    if (Model.ConsumeWord(match)) return;   // 카드가 사라진다 — 돌아갈 카드가 없다
+                    break;
+                default:   // 쓸 수 없다(방어구, 체력이 가득 찬 음식 등)
+                    foreach (var gv in d.Group) gv.Shake();
+                    break;
+            }
+            foreach (var gv in d.Group) ReturnHome(gv);
+        }
+
+        RectTransform _hintRect;
+        Image _hintBg;
+        Text _hintText;
+
+        // 끌고 있는 덩어리에서 잡은 카드(topLeft, 레이어 좌표) 위에 짧은 안내 문구를 띄운다. text가 비면 숨긴다.
+        void ShowHint(string text, Vector2 topLeft, bool warn)
+        {
+            if (string.IsNullOrEmpty(text) || _cell <= 0f)
+            {
+                if (_hintRect != null) _hintRect.gameObject.SetActive(false);
+                return;
+            }
+            if (_hintRect == null)
+            {
+                var go = new GameObject("DropHint", typeof(RectTransform), typeof(Canvas), typeof(Image));
+                go.transform.SetParent(cardLayer, false);
+                var hintCanvas = go.GetComponent<Canvas>();   // 카드 이름표(CardView, 맨 위 Canvas)보다도 위에 그린다
+                hintCanvas.overrideSorting = true;
+                var rootCanvas = cardLayer.GetComponentInParent<Canvas>();
+                hintCanvas.sortingOrder = (rootCanvas != null ? rootCanvas.rootCanvas.sortingOrder : 0) + 2;
+                _hintRect = (RectTransform)go.transform;
+                _hintRect.anchorMin = _hintRect.anchorMax = new Vector2(0f, 1f);
+                _hintRect.pivot = new Vector2(0.5f, 0f);
+                _hintBg = go.GetComponent<Image>();
+                _hintBg.raycastTarget = false;
+                _hintBg.color = new Color(0.1f, 0.07f, 0.04f, 0.88f);
+
+                var textGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
+                textGo.transform.SetParent(go.transform, false);
+                var trt = (RectTransform)textGo.transform;
+                trt.anchorMin = Vector2.zero;
+                trt.anchorMax = Vector2.one;
+                trt.offsetMin = trt.offsetMax = Vector2.zero;
+                _hintText = textGo.GetComponent<Text>();
+                _hintText.alignment = TextAnchor.MiddleCenter;
+                _hintText.horizontalOverflow = HorizontalWrapMode.Overflow;
+                _hintText.verticalOverflow = VerticalWrapMode.Overflow;
+                _hintText.raycastTarget = false;
+            }
+
+            float h = _cell * 0.42f;
+            _hintText.font = font;
+            _hintText.fontSize = Mathf.Max(8, Mathf.RoundToInt(h * 0.6f));
+            _hintText.color = warn ? new Color(1f, 0.72f, 0.5f) : Color.white;
+            _hintText.text = text;
+            _hintRect.sizeDelta = new Vector2(_hintText.preferredWidth + h * 0.8f, h);
+            _hintRect.anchoredPosition = new Vector2(topLeft.x + _cell * 0.5f, -topLeft.y + _cell * 0.1f);   // 첫 카드 바로 위
+            _hintRect.SetAsLastSibling();
+            _hintRect.gameObject.SetActive(true);
         }
 
         public void EndDrag(PointerEventData e)
@@ -676,6 +825,7 @@ namespace Hangeul.UI
             if (logClickTargets) Debug.Log($"[InventoryView] EndDrag drag={(d == null ? "없음" : "있음")} moved={(d != null && d.Moved)}");
             if (d == null) return;
             _drag = null;
+            ShowHint(null, Vector2.zero, false);
 
             if (d.Rot != null) { FinishRotateDrag(d); return; }
 
@@ -701,7 +851,7 @@ namespace Hangeul.UI
                 return;
             }
 
-            if (d.Group != null) { EndBagDrag(d); return; }
+            if (d.Group != null) { EndBagDrag(d, e.position); return; }
 
             // 카드 중심이 격자 안일 때만 놓을 수 있다. 밖이면 제자리로 돌아간다
             if (!TryCellOf(d.Pos, out int col, out int row)) { ReturnHome(d.View); return; }
@@ -721,9 +871,12 @@ namespace Hangeul.UI
             if (occupant != null && _views.TryGetValue(occupant.Id, out var ov)) ov.Pop();
         }
 
-        // 가방 모드: 잡은 카드의 중심 칸을 기준으로 덩어리 전체(모양 그대로)가 빈 칸에 들어갈 때만 옮긴다(교환 없음). 아니면 모두 제자리로.
-        void EndBagDrag(DragState d)
+        // 가방 모드: 플레이어 위에서 놓으면 아이템 사용(장착/먹기). 아니면 잡은 카드의 중심 칸을 기준으로 덩어리 전체(모양 그대로)가
+        // 빈 칸에 들어갈 때만 옮긴다(교환 없음). 아니면 모두 제자리로.
+        void EndBagDrag(DragState d, Vector2 screenPosition)
         {
+            if (CanDropOnTarget(d) && DropTarget.Contains(screenPosition)) { UseItem(d); return; }
+
             var lead = d.View.Card;   // 잡은 카드가 놓인 칸을 기준으로 덩어리를 모양 그대로 옮긴다
             if (TryCellOf(d.Pos, out int col, out int row) && Model.ShiftGroup(d.GroupCards, col - lead.Col, row - lead.Row)) return;
             foreach (var gv in d.Group) ReturnHome(gv);

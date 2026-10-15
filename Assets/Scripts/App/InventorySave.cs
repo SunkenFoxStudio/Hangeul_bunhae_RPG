@@ -21,6 +21,10 @@ namespace Hangeul.App
         /// <summary>"assemble"(조립) 또는 "bag"(가방). 모르는 값은 조립으로 본다.</summary>
         public string mode = ModeAssemble;
         public List<CardSaveData> cards = new List<CardSaveData>();
+        /// <summary>장착 중인 무기 단어(없으면 ""). 옛 세이브에는 없는 선택 필드라 schemaVersion은 그대로다.</summary>
+        public string equippedWord = "";
+        /// <summary>장착 중인 무기를 이루는 카드 아이디(읽는 순서). 불러올 때 같은 카드들이 같은 단어를 이루고 있을 때만 장착을 되살린다.</summary>
+        public List<int> equippedCardIds = new List<int>();
     }
 
     [Serializable]

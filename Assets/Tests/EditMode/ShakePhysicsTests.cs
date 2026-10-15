@@ -101,8 +101,8 @@ namespace Hangeul.Tests
         {
             var m = new InventoryModel(6, 4);
             m.SetWords(Words("가방"));
-            m.AddWord("가방");
-            m.PlaceJamo('ㄴ', 0, 0);
+            m.AddWord("가방");                  // 맨 위 왼쪽에 놓인다
+            m.PlaceJamo('ㄴ', 5, 3);
             var s = Session(m);
 
             var fixedBodies = s.Bodies.Where(b => b.Fixed).ToList();
@@ -225,8 +225,8 @@ namespace Hangeul.Tests
         {
             var m = new InventoryModel(6, 4);
             m.SetWords(Words("가방"));
-            m.AddWord("가방");
-            var jamo = m.PlaceJamo('ㄴ', 0, 0);
+            m.AddWord("가방");                  // 맨 위 왼쪽에 놓인다
+            var jamo = m.PlaceJamo('ㄴ', 5, 3);
             var ga = m.Grid.Cards.First(c => c.Letter == '가');
             var bang = m.Grid.Cards.First(c => c.Letter == '방');
             var start = ((ga.Col, ga.Row), (bang.Col, bang.Row));

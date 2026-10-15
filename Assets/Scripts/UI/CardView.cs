@@ -166,6 +166,162 @@ namespace Hangeul.UI
         {
             BuildContent();
             UpdateLink();
+            UpdateFrame();
+        }
+
+        // ───── 아이템 테두리 (가방 모드: 무기/방어구/음식) ─────
+        const float BadgeRatio = 0.34f;     // 장착 배지 지름 (칸 대비)
+        const float LabelHeightRatio = 0.30f;   // 종류 이름표 높이 (칸 대비)
+
+        ItemFrame _frame;
+        Image _frameTop, _frameBottom, _frameLeft, _frameRight;
+        RectTransform _labelRect;
+        Image _labelBg;
+        Text _labelText;
+        RectTransform _badgeRect;
+        Image _badgeDisc, _badgeLong, _badgeShort;
+
+        /// <summary>
+        /// 아이템 테두리를 정한다(가방 모드에서 단어 덩어리의 카드마다). <see cref="ItemFrame.None"/>이면 지운다.
+        /// 선은 카드 루트에 붙어 있어 덩어리를 끌 때 카드와 함께 움직인다.
+        /// </summary>
+        public void SetItemFrame(ItemFrame frame)
+        {
+            if (_frame.Same(frame)) return;
+            _frame = frame;
+            UpdateFrame();
+        }
+
+        void UpdateFrame()
+        {
+            bool on = !_frame.IsNone && _cell > 0f;
+            float t = Mathf.Max(2f, _cell * _frame.Thickness);
+            PlaceEdge(ref _frameTop, "FrameTop", on && _frame.Top, new Vector2(0f, 0f), new Vector2(_cell, t));
+            PlaceEdge(ref _frameBottom, "FrameBottom", on && _frame.Bottom, new Vector2(0f, -(_cell - t)), new Vector2(_cell, t));
+            PlaceEdge(ref _frameLeft, "FrameLeft", on && _frame.Left, new Vector2(0f, 0f), new Vector2(t, _cell));
+            PlaceEdge(ref _frameRight, "FrameRight", on && _frame.Right, new Vector2(_cell - t, 0f), new Vector2(t, _cell));
+            UpdateLabel(on && !string.IsNullOrEmpty(_frame.Label));
+            UpdateBadge(on && _frame.Badge);
+        }
+
+        void PlaceEdge(ref Image edge, string name, bool on, Vector2 position, Vector2 size)
+        {
+            if (!on)
+            {
+                if (edge != null) edge.gameObject.SetActive(false);
+                return;
+            }
+            if (edge == null)
+            {
+                var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+                go.transform.SetParent(transform, false);
+                var rt = (RectTransform)go.transform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0f, 1f);
+                edge = go.GetComponent<Image>();
+                edge.raycastTarget = false;
+            }
+            var r = (RectTransform)edge.transform;
+            r.sizeDelta = size;
+            r.anchoredPosition = position;
+            edge.color = _frame.Color;
+            edge.gameObject.SetActive(true);
+        }
+
+        // 테두리 위쪽에 걸쳐 붙는 종류 이름표. 위 카드와 겹쳐도 가려지지 않도록 자기 Canvas로 맨 위에 그린다.
+        void UpdateLabel(bool on)
+        {
+            if (!on)
+            {
+                if (_labelRect != null) _labelRect.gameObject.SetActive(false);
+                return;
+            }
+            if (_labelRect == null)
+            {
+                var go = new GameObject("FrameLabel", typeof(RectTransform), typeof(Canvas), typeof(Image));
+                go.transform.SetParent(transform, false);
+                _labelRect = (RectTransform)go.transform;
+                _labelRect.anchorMin = _labelRect.anchorMax = _labelRect.pivot = new Vector2(0f, 1f);
+                _labelBg = go.GetComponent<Image>();
+                _labelBg.raycastTarget = false;
+
+                var canvas = go.GetComponent<Canvas>();
+                canvas.overrideSorting = true;
+                var root = GetComponentInParent<Canvas>();
+                canvas.sortingOrder = (root != null ? root.rootCanvas.sortingOrder : 0) + 1;
+
+                var textGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
+                textGo.transform.SetParent(go.transform, false);
+                var trt = (RectTransform)textGo.transform;
+                trt.anchorMin = Vector2.zero;
+                trt.anchorMax = Vector2.one;
+                trt.offsetMin = trt.offsetMax = Vector2.zero;
+                _labelText = textGo.GetComponent<Text>();
+                _labelText.alignment = TextAnchor.MiddleCenter;
+                _labelText.horizontalOverflow = HorizontalWrapMode.Overflow;
+                _labelText.verticalOverflow = VerticalWrapMode.Overflow;
+                _labelText.raycastTarget = false;
+                _labelText.color = Color.white;
+            }
+
+            float h = _cell * LabelHeightRatio;
+            _labelText.font = _font;
+            _labelText.fontSize = Mathf.Max(8, Mathf.RoundToInt(h * 0.72f));
+            _labelText.text = _frame.Label;
+            _labelBg.color = new Color(_frame.Color.r * 0.8f, _frame.Color.g * 0.8f, _frame.Color.b * 0.8f, 1f);
+            _labelRect.sizeDelta = new Vector2(_labelText.preferredWidth + h * 0.6f, h);
+            _labelRect.anchoredPosition = new Vector2(_cell * 0.08f, h * 0.5f);   // 윗 테두리선이 이름표의 가운데를 지나간다
+            _labelRect.gameObject.SetActive(true);
+        }
+
+        // 오른쪽 아래 구석의 "장착 중" 체크 배지: 금색 동그라미 위에 체크(회전한 막대 두 개)
+        void UpdateBadge(bool on)
+        {
+            if (!on)
+            {
+                if (_badgeRect != null) _badgeRect.gameObject.SetActive(false);
+                return;
+            }
+            if (_badgeRect == null)
+            {
+                var go = new GameObject("FrameBadge", typeof(RectTransform), typeof(Image));
+                go.transform.SetParent(transform, false);
+                _badgeRect = (RectTransform)go.transform;
+                _badgeRect.anchorMin = _badgeRect.anchorMax = new Vector2(0f, 1f);
+                _badgeRect.pivot = new Vector2(0.5f, 0.5f);
+                _badgeDisc = go.GetComponent<Image>();
+                _badgeDisc.sprite = CircleSprite();
+                _badgeDisc.raycastTarget = false;
+                _badgeDisc.color = new Color(1f, 0.82f, 0.2f);
+                _badgeLong = NewCheckArm("CheckLong");
+                _badgeShort = NewCheckArm("CheckShort");
+            }
+
+            float d = _cell * BadgeRatio;
+            _badgeRect.sizeDelta = new Vector2(d, d);
+            _badgeRect.anchoredPosition = new Vector2(_cell - d * 0.65f, -(_cell - d * 0.65f));
+            PlaceArm(_badgeLong, new Vector2(0.109f, -0.001f) * d, new Vector2(0.62f, 0.13f) * d, 45f);
+            PlaceArm(_badgeShort, new Vector2(-0.216f, -0.114f) * d, new Vector2(0.30f, 0.13f) * d, -45f);
+            _badgeRect.gameObject.SetActive(true);
+        }
+
+        Image NewCheckArm(string name)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(_badgeRect, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            var img = go.GetComponent<Image>();
+            img.raycastTarget = false;
+            img.color = new Color(0.25f, 0.15f, 0.05f);
+            return img;
+        }
+
+        static void PlaceArm(Image arm, Vector2 position, Vector2 size, float degrees)
+        {
+            var rt = (RectTransform)arm.transform;
+            rt.anchoredPosition = position;
+            rt.sizeDelta = size;
+            rt.localEulerAngles = new Vector3(0f, 0f, degrees);
         }
 
         // ───── 가방 모드 표현 ─────
