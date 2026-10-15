@@ -51,6 +51,7 @@ MonoBehaviour:
     - word: "\uAC80"
       category: "\uBB34\uAE30"
       sprite: {fileID: -8227073305135788418, guid: 59fcb270fe5a7d445bba94fe9927dbcd, type: 3}
+      order: 0
       acceptsPrefix: 1
       prefixes:
       - "\uB098\uBB34"
@@ -75,6 +76,7 @@ MonoBehaviour:
     - word: "\uCE7C"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes:
       - "\uB098\uBB34"
@@ -99,6 +101,7 @@ MonoBehaviour:
     - word: "\uD65C"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -114,6 +117,7 @@ MonoBehaviour:
     - word: "\uCC3D"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes:
       - "\uB098\uBB34"
@@ -138,6 +142,7 @@ MonoBehaviour:
     - word: "\uB3C4\uB07C"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes:
       - "\uB098\uBB34"
@@ -162,6 +167,7 @@ MonoBehaviour:
     - word: "\uB2E8\uAC80"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes: []
       useDefaults: 1
@@ -177,6 +183,7 @@ MonoBehaviour:
     - word: "\uC9C0\uD321\uC774"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes:
       - "\uB9C8\uBC95"
@@ -193,6 +200,7 @@ MonoBehaviour:
     - word: "\uD654\uC0B4"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes:
       - "\uD654\uC5FC"
@@ -214,6 +222,7 @@ MonoBehaviour:
     - word: "\uBB34\uAE30"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -229,6 +238,7 @@ MonoBehaviour:
     - word: "\uB098\uBB34\uCE7C"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -244,6 +254,7 @@ MonoBehaviour:
     - word: "\uB454\uAE30"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -259,6 +270,7 @@ MonoBehaviour:
     - word: "\uC591\uC190\uAC80"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -274,6 +286,7 @@ MonoBehaviour:
     - word: "\uB808\uC774\uD53C\uC5B4"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -289,6 +302,7 @@ MonoBehaviour:
     - word: "\uB300\uAC80"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -304,6 +318,7 @@ MonoBehaviour:
     - word: "\uD1B1"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes:
       - "\uD654\uC5FC"
@@ -320,6 +335,7 @@ MonoBehaviour:
     - word: "\uB9DD\uCE58"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes: []
       useDefaults: 1
@@ -335,6 +351,7 @@ MonoBehaviour:
     - word: "\uD574\uBA38"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes: []
       useDefaults: 1
@@ -350,6 +367,7 @@ MonoBehaviour:
     - word: "\uC218\uB9AC\uAC80"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes: []
       useDefaults: 1
@@ -365,6 +383,7 @@ MonoBehaviour:
     - word: "\uCE20\uBC14\uC774\uD578\uB354"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes: []
       useDefaults: 1
@@ -380,6 +399,7 @@ MonoBehaviour:
     - word: "\uD45C\uCC3D"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -395,6 +415,7 @@ MonoBehaviour:
     - word: "\uB300\uD3EC"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -410,6 +431,7 @@ MonoBehaviour:
     - word: "\uD55C\uC190\uAC80"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes: []
       useDefaults: 1
@@ -425,6 +447,7 @@ MonoBehaviour:
     - word: "\uC8FC\uBA39"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes: []
       useDefaults: 1
@@ -440,6 +463,7 @@ MonoBehaviour:
     - word: "\uC8FC\uC0AC"
       category: "\uBB34\uAE30"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -456,6 +480,7 @@ MonoBehaviour:
     - word: "\uD638\uBC15"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 0
@@ -464,6 +489,7 @@ MonoBehaviour:
     - word: "\uACE0\uAE30"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -472,6 +498,7 @@ MonoBehaviour:
     - word: "\uB2ED\uACE0\uAE30"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -480,6 +507,7 @@ MonoBehaviour:
     - word: "\uB3FC\uC9C0\uACE0\uAE30"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -488,6 +516,7 @@ MonoBehaviour:
     - word: "\uC18C\uACE0\uAE30"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -496,6 +525,7 @@ MonoBehaviour:
     - word: "\uC591\uACE0\uAE30"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -504,6 +534,7 @@ MonoBehaviour:
     - word: "\uBBF8\uD2B8\uBCFC"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -512,6 +543,7 @@ MonoBehaviour:
     - word: "\uC2A4\uD29C"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -520,6 +552,7 @@ MonoBehaviour:
     - word: "\uC8FD"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -528,6 +561,7 @@ MonoBehaviour:
     - word: "\uBE75"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -536,6 +570,7 @@ MonoBehaviour:
     - word: "\uC220"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -544,6 +579,7 @@ MonoBehaviour:
     - word: "\uC5F4\uB9E4"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -552,6 +588,7 @@ MonoBehaviour:
     - word: "\uC0AC\uACFC"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -560,6 +597,7 @@ MonoBehaviour:
     - word: "\uACFC\uC790"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -568,6 +606,7 @@ MonoBehaviour:
     - word: "\uACE0\uCD94"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -576,6 +615,7 @@ MonoBehaviour:
     - word: "\uB808\uBAAC"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -584,6 +624,7 @@ MonoBehaviour:
     - word: "\uBC84\uBC88"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -592,6 +633,7 @@ MonoBehaviour:
     - word: "\uC704\uC2A4\uD0A4"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -600,6 +642,7 @@ MonoBehaviour:
     - word: "\uC9C4"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -608,6 +651,7 @@ MonoBehaviour:
     - word: "\uD0A4\uC704"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -616,6 +660,7 @@ MonoBehaviour:
     - word: "\uAC10"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -624,6 +669,7 @@ MonoBehaviour:
     - word: "\uB77C\uBA74"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -632,6 +678,7 @@ MonoBehaviour:
     - word: "\uBC30\uCD94"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -640,6 +687,7 @@ MonoBehaviour:
     - word: "\uBB3C\uACE0\uAE30"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -648,6 +696,7 @@ MonoBehaviour:
     - word: "\uC0DD\uC120"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -656,6 +705,7 @@ MonoBehaviour:
     - word: "\uC219\uC8FC\uB098\uBB3C"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -664,6 +714,7 @@ MonoBehaviour:
     - word: "\uB9E5\uC8FC"
       category: "\uC74C\uC2DD"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
       useDefaults: 1
@@ -673,11 +724,13 @@ MonoBehaviour:
     - word: "\uBC29\uD328"
       category: "\uBC29\uC5B4\uAD6C"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAC11\uC637"
       category: "\uBC29\uC5B4\uAD6C"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 1
       prefixes:
       - "\uAC00\uC8FD"
@@ -688,743 +741,897 @@ MonoBehaviour:
     - word: "\uD22C\uAD6C"
       category: "\uBC29\uC5B4\uAD6C"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC7A5\uAC11"
       category: "\uBC29\uC5B4\uAD6C"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC2E0\uBC1C"
       category: "\uBC29\uC5B4\uAD6C"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uACE8\uBB34"
       category: "\uBC29\uC5B4\uAD6C"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC637"
       category: "\uBC29\uC5B4\uAD6C"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAC00\uBA74"
       category: "\uBC29\uC5B4\uAD6C"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD5EC\uBA67"
       category: "\uBC29\uC5B4\uAD6C"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     plains:
     - word: "\uB2F4\uBC30"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBAA9"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBAFC"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB1CC"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAD34\uBB3C"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBAA8\uAE30"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC9D1"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB2ED"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAFC8"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAC1C\uCD94"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC1A1\uACF3"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD575"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC0AF"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC190"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC778\uAC04"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC704\uD0A4"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uCF00\uC774\uC2A4"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC790"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC0C1"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD034\uC988"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD600"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD608"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC5F4"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB2EC"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC0AC\uC790"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uCCA0\uAC11"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB098\uD314"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD314"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB3FC\uC9C0"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAE30\uC9C0"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC591"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBC14\uC704"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC5B4\uBB35"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBB35"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAD6D\uC218"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAD6D"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAD6D\uC5B4"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC218\uAD6D"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uACF5\uACA9"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uACF5"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC19C"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC12C"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uACE0\uB3D9"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uACFC\uB3C4"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uACFC\uAC70"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB808\uBC84"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB098\uADF8\uB124"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB2E4\uACFC"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC9C0\uAD6C"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAD6D\uC790"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB2E4\uB9AC"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC790\uAD6D"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC7A0\uC790\uB9AC"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAC12"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBC15\uC218"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC218\uBC15"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC21C\uBB34"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBB34\uC21C"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBB34"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC74C\uC545"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC5BC\uAD74"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAC00\uB9C8"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD1B5"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBC84\uD130"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBC84\uD2BC"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBCD1"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC54C"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uADF8\uB298"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD55C\uAE30"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD759"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uCE74\uB4DC"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD3B8\uC9C0"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC232"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB9E4\uC9C1"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC131"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC30D"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC810"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB3C4\uAC80"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC7A5\uCC3D"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC790\uC0C1"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC5F4\uC0C1"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC2DD\uCD08"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC0DD\uAC15"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC1E0\uC57D"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBD84\uC7A5"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC904"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBC15"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC1E0"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBABB"
       category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBB3C\uC57D"
       category: "\uC18C\uBAA8\uD488"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC57D\uCD08"
       category: "\uC18C\uBAA8\uD488"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD683\uBD88"
       category: "\uC18C\uBAA8\uD488"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB450\uB8E8\uB9C8\uB9AC"
       category: "\uC18C\uBAA8\uD488"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD568\uC815"
       category: "\uC18C\uBAA8\uD488"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBA38\uB2C8"
       category: "\uC18C\uBAA8\uD488"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB3C8"
       category: "\uC18C\uBAA8\uD488"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC740\uD654"
       category: "\uC18C\uBAA8\uD488"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAE08\uD654"
       category: "\uC18C\uBAA8\uD488"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC0C1\uC790"
       category: "\uC18C\uBAA8\uD488"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uACE0\uBB34"
       category: "\uC18C\uBAA8\uD488"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBB3C"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB9D0"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBD88\uAF43"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC5F4\uC1E0"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC9C0\uB3C4"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBC18\uC9C0"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBAA9\uAC78\uC774"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBCF4\uC11D"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAC00\uBC29"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBC00"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAE40"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBB38"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uACE0\uB9AC"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAF43"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC6B8"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uCC9C"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC758\uC790"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBC8C"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBC8C\uB808"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uCC28"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC8FC\uBA38\uB2C8"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC7A5\uBBF8"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAE30\uB984"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC870\uBBF8\uB8CC"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC740"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAE08"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC11D\uD0C4"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC7A5\uC2DD"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB098\uBB3C"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD480"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uBAA8\uC774"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uAFC0"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB9C9\uB300"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC560\uBC8C\uB808"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD654\uC11D"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC218\uAC74"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uCC45"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uB9C8\uC57D"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uD3EC\uB300"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     - word: "\uC794\uB514"
       category: "\uC7AC\uB8CC\xB7\uC7A1\uD654"
       sprite: {fileID: 0}
+      order: 0
+      acceptsPrefix: 0
+      prefixes: []
+    - word: "\uADE4"
+      category: "\uCD94\uAC00\uD55C \uB2E8\uC5B4"
+      sprite: {fileID: 0}
+      order: 0
       acceptsPrefix: 0
       prefixes: []
     prefixDamages:
     - word: "\uB808\uC5B4"
       category: "\uC811\uB450\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         mode: 0
@@ -1432,6 +1639,7 @@ MonoBehaviour:
     - word: "\uD76C\uADC0"
       category: "\uC811\uB450\uC5B4"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         mode: 0
@@ -1440,6 +1648,7 @@ MonoBehaviour:
     - word: "\uB098\uBB34"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1447,6 +1656,7 @@ MonoBehaviour:
     - word: "\uB3CC"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1454,6 +1664,7 @@ MonoBehaviour:
     - word: "\uBD88"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1461,6 +1672,7 @@ MonoBehaviour:
     - word: "\uAC00\uC8FD"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1468,6 +1680,7 @@ MonoBehaviour:
     - word: "\uCCA0"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1475,6 +1688,7 @@ MonoBehaviour:
     - word: "\uC5BC\uC74C"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1482,6 +1696,7 @@ MonoBehaviour:
     - word: "\uB3C5"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1489,13 +1704,15 @@ MonoBehaviour:
     - word: "\uD654\uC5FC"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 0
       effect:
-        chancePercent: 30
+        chancePercent: 0
         color: '#FF9E33'
     - word: "\uBD80\uC2DD"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1503,6 +1720,7 @@ MonoBehaviour:
     - word: "\uBE59\uACB0"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 0
       effect:
         chancePercent: 30
@@ -1510,6 +1728,7 @@ MonoBehaviour:
     - word: "\uC99D\uBC1C"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1517,6 +1736,7 @@ MonoBehaviour:
     - word: "\uAC15\uD654"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1524,6 +1744,7 @@ MonoBehaviour:
     - word: "\uC11D\uD654"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1531,6 +1752,7 @@ MonoBehaviour:
     - word: "\uC704\uC7A5"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1538,6 +1760,7 @@ MonoBehaviour:
     - word: "\uB9C8\uBC95"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1545,6 +1768,7 @@ MonoBehaviour:
     - word: "\uB9D0\uC18C"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1552,6 +1776,7 @@ MonoBehaviour:
     - word: "\uD544\uC0B4"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
@@ -1559,6 +1784,7 @@ MonoBehaviour:
     - word: "\uC911\uB3C5"
       category: "\uC18D\uC131"
       sprite: {fileID: 0}
+      order: 0
       useDefaults: 1
       effect:
         chancePercent: 0
