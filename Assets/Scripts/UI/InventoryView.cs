@@ -207,13 +207,21 @@ namespace Hangeul.UI
         // ───── 단어 / 완성 ─────
         void LoadWords()
         {
-            var asset = itemWords != null ? itemWords : Resources.Load<TextAsset>("item_words");
-            if (asset == null)
+            // 빌드에서는 실행 파일 옆의 목록 파일(DB 관리 씬이 고친 것)이 우선이고, 에디터에서는 직접 넣은 파일이나 Resources의 것을 쓴다
+            string json = ItemWordsStore.ReadCurrent(itemWords);
+            if (json == null)
             {
                 Debug.LogWarning("[InventoryView] 아이템 단어 목록(item_words.json)이 없어 단어 완성 판정을 하지 않습니다.");
                 return;
             }
-            var set = ItemWordSet.FromFile(JsonUtility.FromJson<ItemWordsFile>(asset.text), out int skipped);
+            ItemWordsFile file;
+            try { file = JsonUtility.FromJson<ItemWordsFile>(json); }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[InventoryView] 아이템 단어 목록(item_words.json)을 읽을 수 없어 단어 완성 판정을 하지 않습니다: " + e.Message);
+                return;
+            }
+            var set = ItemWordSet.FromFile(file, out int skipped);
             if (set == null) { Debug.LogWarning("[InventoryView] 아이템 단어 목록 형식이 올바르지 않습니다 (schemaVersion 1 필요)."); return; }
             if (skipped > 0) Debug.LogWarning($"[InventoryView] 아이템 단어 {skipped}개를 건너뛰었습니다 (한글 음절이 아니거나 중복).");
             Model.SetWords(set);

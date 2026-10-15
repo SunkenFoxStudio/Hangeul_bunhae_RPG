@@ -1,6 +1,5 @@
 using Hangeul.App;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace Hangeul.UI
@@ -37,21 +36,18 @@ namespace Hangeul.UI
         void OnEnable()
         {
             if (addButton != null) addButton.onClick.AddListener(Submit);
-            if (input != null) input.onEndEdit.AddListener(OnEndEdit);
+            if (input != null) input.onSubmit.AddListener(OnSubmitText);
         }
 
         void OnDisable()
         {
             if (addButton != null) addButton.onClick.RemoveListener(Submit);
-            if (input != null) input.onEndEdit.RemoveListener(OnEndEdit);
+            if (input != null) input.onSubmit.RemoveListener(OnSubmitText);
         }
 
-        // onEndEdit은 포커스를 잃을 때도 오므로 Enter를 눌렀을 때만 추가한다
-        void OnEndEdit(string _)
-        {
-            var kb = Keyboard.current;
-            if (kb != null && (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame)) Submit();
-        }
+        // onSubmit은 입력칸이 Enter를 직접 처리했을 때만 온다(칸 밖을 눌러 포커스를 잃거나 Esc로 취소한 경우는 오지 않는다).
+        // onEndEdit + 키보드 상태(wasPressedThisFrame)로 Enter인지 가리는 방식은 프레임 타이밍에 의존해서 쓰지 않는다.
+        void OnSubmitText(string _) => Submit();
 
         public void Submit()
         {

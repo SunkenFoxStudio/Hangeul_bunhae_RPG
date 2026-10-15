@@ -1,8 +1,7 @@
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using Hangeul.App;
 using Hangeul.Domain;
+using Hangeul.UI;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -10,24 +9,20 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace Hangeul.Game.DevTools
 {
     /// <summary>
-    /// 아이템 단어 DB(Resources/item_words.json)를 보고 고치는 디버그 화면(러프). UI는 실행할 때 코드로 만든다.
+    /// 아이템 단어 DB(item_words.json)를 보고 고치는 디버그 화면(러프). UI는 실행할 때 코드로 만든다.
     /// 왼쪽: 카테고리 목록(클릭하면 그 카테고리만 보기, 빈 카테고리는 ×로 삭제, 새 카테고리 추가).
     /// 오른쪽: 단어 추가 줄(단어 + 카테고리 선택) 아래에 단어 목록(카테고리 버튼을 누르면 다음 카테고리로 바뀜, ×로 삭제).
-    /// 바꿀 때마다 에디터에서는 파일에 바로 저장한다(빌드에서는 저장하지 않는다).
+    /// 바꿀 때마다 파일에 바로 저장한다. 파일 위치는 에디터에서는 Assets/Resources, 빌드에서는 게임 실행 파일 옆이다
+    /// (<see cref="ItemWordsStore"/>) — 화면 아래에 위치가 보이고, 버튼으로 그 폴더를 열 수 있다.
     /// </summary>
     public sealed class ItemDbManagerView : MonoBehaviour
     {
         [SerializeField] Font font;
         [SerializeField] string returnScene = "SampleScene";
-
-        const string ResourceName = "item_words";
 
         static readonly Color Bg = new Color(0.10f, 0.08f, 0.06f, 1f);
         static readonly Color Panel = new Color(0.17f, 0.13f, 0.09f, 1f);
@@ -43,6 +38,7 @@ namespace Hangeul.Game.DevTools
 
         ItemWordsFile _file;
         bool _canSave = true;
+        string _loadMessage;   // 불러오다 생긴 문제: 화면이 만들어진 뒤 상태줄에 보여준다
         string _filter;        // null = 전체
 
         Text _status, _listHeader, _addCategoryLabel;
@@ -61,6 +57,7 @@ namespace Hangeul.Game.DevTools
             Load();
             Build();
             Refresh();
+            if (_loadMessage != null) SetStatus(_loadMessage, Warn);
         }
 
         // 진단용: 마우스를 누르거나 뗄 때 그 자리에 있는 UI를 위에서부터 콘솔에 적는다(클릭이 안 먹는 원인을 찾을 때 켠다).
@@ -93,8 +90,22 @@ namespace Hangeul.Game.DevTools
         // ───── 데이터 ─────
         void Load()
         {
-            var asset = Resources.Load<TextAsset>(ResourceName);
-            _file = asset != null ? JsonUtility.FromJson<ItemWordsFile>(asset.text) : null;
+            // 빌드에서 목록 파일이 아직 없으면 기본 목록을 실행 파일 옆에 복사해 둔다(저장할 파일이 눈에 보이게)
+            if (!ItemWordsStore.EnsureFile(out string ensureError))
+                _loadMessage = "저장 파일을 만들 수 없습니다: " + ensureError;
+
+            string json = ItemWordsStore.ReadCurrent();
+            if (json != null)
+            {
+                try { _file = JsonUtility.FromJson<ItemWordsFile>(json); }
+                catch (System.Exception e)
+                {
+                    _file = null;
+                    _canSave = false;   // 읽지 못한 파일을 빈 목록으로 덮어쓰지 않는다
+                    _loadMessage = "목록 파일을 읽을 수 없어 저장하지 않습니다: " + e.Message;
+                }
+            }
+
             if (_file == null)
             {
                 _file = new ItemWordsFile { schemaVersion = 1 };
@@ -102,6 +113,7 @@ namespace Hangeul.Game.DevTools
             else if (_file.schemaVersion != 1)
             {
                 _canSave = false;   // 모르는 형식을 덮어쓰지 않는다
+                _loadMessage = "파일 형식(schemaVersion)이 달라 저장하지 않습니다.";
             }
             _file.categories ??= new List<string>();
             _file.items ??= new List<ItemWordEntry>();
@@ -123,15 +135,9 @@ namespace Hangeul.Game.DevTools
         void Save(string message)
         {
             PrunePrefixes();
-#if UNITY_EDITOR
-            if (!_canSave) { SetStatus("파일 형식(schemaVersion)이 달라 저장하지 않았습니다.", Warn); return; }
-            string path = Path.Combine(Path.GetDirectoryName(Application.dataPath), "Assets", "Resources", "item_words.json");
-            File.WriteAllText(path, JsonUtility.ToJson(_file, true), new UTF8Encoding(false));
-            AssetDatabase.Refresh();
-            SetStatus(message + "  (저장됨)", Ink);
-#else
-            SetStatus(message + "  (에디터에서만 저장됩니다)", Warn);
-#endif
+            if (!_canSave) { SetStatus("목록 파일을 읽지 못했거나 형식(schemaVersion)이 달라 저장하지 않았습니다.", Warn); return; }
+            if (ItemWordsStore.TryWrite(JsonUtility.ToJson(_file, true), out string error)) SetStatus(message + "  (저장됨)", Ink);
+            else SetStatus($"{message}  (저장 실패: {error})", Warn);
         }
 
         // ───── 동작 ─────
@@ -274,9 +280,6 @@ namespace Hangeul.Game.DevTools
             _status.color = color;
         }
 
-        static bool EnterPressed() =>
-            Keyboard.current != null && (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame);
-
         // ───── 화면 갱신 ─────
         void Refresh()
         {
@@ -396,26 +399,31 @@ namespace Hangeul.Game.DevTools
             Btn(Rect("Back", top, 1, 0.5f, 1, 0.5f, -290, -26, -20, 26), "게임으로 돌아가기", 24, Brown, () => SceneManager.LoadScene(returnScene));
 
             // 왼쪽: 카테고리
-            var left = Rect("Left", root, 0, 0, 0, 1, 20, 20, 440, -100);
+            var left = Rect("Left", root, 0, 0, 0, 1, 20, 70, 440, -100);
             Img(left, Panel);
             Txt(Rect("Header", left, 0, 1, 1, 1, 16, -50, 0, 0), "카테고리", 30, Dim, TextAnchor.MiddleLeft);
             _catContent = MakeScroll(Rect("CatScroll", left, 0, 0, 1, 1, 10, 80, -10, -52));
             var catAdd = Rect("CatAdd", left, 0, 0, 1, 0, 10, 10, -10, 70);
             _categoryInput = MakeInput(Rect("Input", catAdd, 0, 0, 0.68f, 1, 0, 0, -6, 0), "새 카테고리 (Enter)");
-            _categoryInput.onEndEdit.AddListener(_ => { if (EnterPressed()) AddCategory(); });
+            _categoryInput.onSubmit.AddListener(_ => AddCategory());   // onSubmit = 입력칸에서 Enter를 눌렀을 때만(포커스를 잃은 경우는 오지 않는다)
             Btn(Rect("Add", catAdd, 0.68f, 0, 1, 1, 0, 0, 0, 0), "추가", 24, Brown, AddCategory);
 
             // 오른쪽: 단어 추가 + 목록
-            var right = Rect("Right", root, 0, 0, 1, 1, 460, 20, -20, -100);
+            var right = Rect("Right", root, 0, 0, 1, 1, 460, 70, -20, -100);
             Img(right, Panel);
             var addRow = Rect("AddRow", right, 0, 1, 1, 1, 10, -76, -10, -10);
             _wordInput = MakeInput(Rect("Word", addRow, 0, 0, 0.6f, 1, 0, 0, -6, 0), "추가할 단어 (예: 가방) Enter");
-            _wordInput.onEndEdit.AddListener(_ => { if (EnterPressed()) AddWord(); });
+            _wordInput.onSubmit.AddListener(_ => AddWord());
             _addCategoryLabel = Txt(Rect("Target", addRow, 0.6f, 0, 0.82f, 1, 6, 0, -6, 0), "", 24, Dim, TextAnchor.MiddleLeft);
             Btn(Rect("Add", addRow, 0.82f, 0, 1, 1, 0, 0, 0, 0), "단어 추가", 24, Brown, AddWord);
 
             _listHeader = Txt(Rect("ListHeader", right, 0, 1, 1, 1, 16, -124, 0, -80), "", 26, Dim, TextAnchor.MiddleLeft);
             _wordContent = MakeScroll(Rect("WordScroll", right, 0, 0, 1, 1, 10, 10, -10, -130));
+
+            // 아래 줄: 목록 파일이 어디에 저장되는지와, 그 폴더를 여는 버튼(빌드에서는 실행 파일 옆 — 동료에게 보낼 파일)
+            var footer = Rect("Footer", root, 0, 0, 1, 0, 20, 10, -20, 60);
+            Txt(Rect("FilePath", footer, 0, 0, 0.8f, 1, 4, 0, -10, 0), "저장 위치: " + ItemWordsStore.FilePath, 20, Dim, TextAnchor.MiddleLeft);
+            Btn(Rect("OpenFolder", footer, 0.8f, 0, 1, 1, 0, 0, 0, 0), "저장 폴더 열기", 24, Brown, ItemWordsStore.OpenFolder);
 
             // 접두어 선택 창: 화면 전체를 덮는 어두운 막 위에 가운데 패널. 평소에는 꺼 둔다.
             _popup = Rect("PrefixPopup", root, 0, 0, 1, 1, 0, 0, 0, 0);
