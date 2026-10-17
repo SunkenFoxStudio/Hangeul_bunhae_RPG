@@ -237,6 +237,49 @@ namespace Hangeul.Game.Editor
             meleeSo.ApplyModifiedPropertiesWithoutUndo();
         }
 
+        // ───── 플레이어 피격 판정 ─────
+        // 벽에 부딪히는 몸통 콜라이더(발밑의 납작한 상자)와 따로, 공격이 "맞는" 영역을 몸 모양으로 둔다. 자식 오브젝트 "Hurtbox"가 생기고
+        // Scene 뷰에서 그 Box Collider 2D의 크기와 위치를 조절한다. 이 영역이 있으면 적의 접촉 피해·화살·베기는 여기에만 맞는다.
+        [MenuItem("Hangeul/Setup/Player Hurtbox")]
+        static void SetupPlayerHurtbox()
+        {
+            int count = 0;
+            foreach (var player in Object.FindObjectsByType<PlayerController>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (player.GetComponentInChildren<Hurtbox>(true) != null) continue;
+                AddPlayerHurtbox(player.gameObject);
+                count++;
+            }
+            Debug.Log(count > 0 ? $"[Combat] 플레이어 {count}명에 피격 판정(Hurtbox)을 만들었습니다. Scene 뷰에서 Hurtbox 오브젝트의 Box Collider 2D 크기와 위치를 몸에 맞게 조절하고 씬을 저장하세요."
+                                 : "[Combat] 이미 모든 플레이어에 피격 판정이 있습니다.");
+        }
+
+        // 피격 판정 오브젝트를 만든다. 처음 크기는 플레이어 그림(Visual) 한가운데에 그림 폭의 절반, 높이의 3/4 — 그림을 못 찾으면 고정 값.
+        internal static void AddPlayerHurtbox(GameObject player)
+        {
+            var go = new GameObject("Hurtbox");
+            Undo.RegisterCreatedObjectUndo(go, "Create Hurtbox");
+            go.transform.SetParent(player.transform, false);
+            go.layer = player.layer;   // 적의 공격이 찾는 Player 레이어
+
+            var box = go.AddComponent<BoxCollider2D>();
+            box.isTrigger = true;
+            Vector2 center = new Vector2(0f, 0.6f), size = new Vector2(0.5f, 1f);
+            var animator = player.GetComponentInChildren<PlayerSpriteAnimator>();
+            var visual = animator != null ? animator.GetComponent<SpriteRenderer>() : null;
+            if (visual != null && visual.sprite != null)
+            {
+                var bounds = visual.bounds;
+                Vector3 scale = player.transform.lossyScale;
+                center = player.transform.InverseTransformPoint(bounds.center);
+                size = new Vector2(bounds.size.x * 0.5f / Mathf.Max(0.0001f, Mathf.Abs(scale.x)),
+                                   bounds.size.y * 0.75f / Mathf.Max(0.0001f, Mathf.Abs(scale.y)));
+            }
+            box.offset = center;
+            box.size = size;
+            go.AddComponent<Hurtbox>();
+        }
+
         [MenuItem("GameObject/Hangeul/Training Dummy (테스트용)", false, 18)]
         static void CreateTrainingDummy()
         {

@@ -134,6 +134,28 @@ namespace Hangeul.App
             return false;
         }
 
+        /// <summary>
+        /// 활이 쏠 화살: 가방에 완성돼 있는 탄(<see cref="ItemKind.Ammo"/>) 단어 중 <b>격자에서 가장 먼저 읽히는 것</b>(위 줄 → 왼쪽). 어떤 화살을 쓸지는
+        /// 카드를 놓는 자리로 정한다. 쏴도 카드는 줄지 않는다. 가방에 탄이 없으면 null.
+        /// </summary>
+        public WordMatch? PickArrow()
+        {
+            WordMatch? best = null;
+            foreach (var s in Scanner.Shown)
+            {
+                if (Words.KindOf(s.Word) != ItemKind.Ammo) continue;
+                if (best == null || ReadsBefore(s, best.Value)) best = s;
+            }
+            return best;
+        }
+
+        // 읽는 순서로 a가 b보다 앞인지: 맨 윗줄(접두어를 위에 얹었으면 그 윗줄)이 높을수록, 같은 줄이면 왼쪽일수록 앞
+        static bool ReadsBefore(WordMatch a, WordMatch b)
+        {
+            int rowA = a.IsStacked ? a.Row - 1 : a.Row, rowB = b.IsStacked ? b.Row - 1 : b.Row;
+            return rowA != rowB ? rowA < rowB : a.Col < b.Col;
+        }
+
         /// <summary>이 완성 단어가 지금 장착 중인 무기인지.</summary>
         public bool IsEquipped(WordMatch m) => EquippedWeapon != null && EquippedWeapon.Matches(m.Word, IdsOf(m));
 

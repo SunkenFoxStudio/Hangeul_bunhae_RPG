@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Hangeul.App
 {
@@ -55,5 +56,31 @@ namespace Hangeul.App
         /// 속성 묻히기가 아니면 항상 false.
         /// </summary>
         public bool RollElement(double roll) => Kind == PrefixEffectKind.Element && Element != null && roll < ElementChance;
+
+        // ───── 여럿을 겹쳐 쓸 때 (활: 활에 붙은 접두어 + 쏘는 화살에 붙은 접두어) ─────
+        /// <summary>
+        /// 피해량에 효과들을 앞에서부터 차례로 적용한다(null은 건너뛴다). 효과마다 반올림하고 1보다 작아지지 않는다.
+        /// 효과가 하나도 없으면 피해량 그대로(1보다 작으면 1).
+        /// </summary>
+        public static int ApplyDamage(int baseDamage, IEnumerable<WeaponModifier> modifiers)
+        {
+            int damage = Math.Max(1, baseDamage);
+            if (modifiers == null) return damage;
+            foreach (var m in modifiers)
+                if (m != null) damage = m.ApplyDamage(damage);
+            return damage;
+        }
+
+        /// <summary>
+        /// 속성 묻히기 효과들을 앞에서부터 차례로 굴려(효과마다 따로 <paramref name="random"/>을 한 번씩 부른다) 처음으로 묻는 효과를 돌려준다.
+        /// 아무것도 묻지 않으면 null. 속성 묻히기가 아닌 효과와 null은 굴리지 않는다.
+        /// </summary>
+        public static WeaponModifier RollElement(IEnumerable<WeaponModifier> modifiers, Func<double> random)
+        {
+            if (modifiers == null || random == null) return null;
+            foreach (var m in modifiers)
+                if (m != null && m.Kind == PrefixEffectKind.Element && m.RollElement(random())) return m;
+            return null;
+        }
     }
 }

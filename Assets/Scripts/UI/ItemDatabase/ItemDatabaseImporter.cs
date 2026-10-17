@@ -152,6 +152,12 @@ namespace Hangeul.UI
                     FillNormal(r, item, category);
                     return r;
                 }
+                case CategoryType.Ammo:
+                {
+                    var r = new AmmoWordRecord();
+                    FillNormal(r, item, category);
+                    return r;
+                }
                 case CategoryType.Prefix:
                 {
                     // 효과의 종류: 따로 정한 수치가 있으면 그것, 없으면 카테고리로(속성은 속성 묻히기, 그 밖은 대미지 더하기)

@@ -9,6 +9,7 @@ namespace Hangeul.App
         Weapon,   // 무기: 플레이어에게 드래그해 장착한다
         Armor,    // 방어구: 지금은 라벨만 표시한다(장착은 후속)
         Food,     // 음식: 플레이어에게 드래그하면 먹고 사라진다
+        Ammo,     // 탄(화살): 활을 장착하고 가방에 완성돼 있으면 쏠 수 있다. 장착하지 않고 소모되지도 않는다
     }
 
     public static class ItemKinds
@@ -16,6 +17,7 @@ namespace Hangeul.App
         public const string WeaponCategory = "무기";
         public const string ArmorCategory = "방어구";
         public const string FoodCategory = "음식";
+        public const string AmmoLabel = "탄";   // 이름이 정해진 카테고리가 없어(종류는 항상 카테고리 종류로 정한다) 가방 모드 이름표에만 쓴다
 
         /// <summary>카테고리 이름 → 아이템 종류. 모르는 카테고리는 None.</summary>
         public static ItemKind FromCategory(string category)
@@ -37,6 +39,7 @@ namespace Hangeul.App
                 case CategoryType.Weapon: return ItemKind.Weapon;
                 case CategoryType.Armor: return ItemKind.Armor;
                 case CategoryType.Food: return ItemKind.Food;
+                case CategoryType.Ammo: return ItemKind.Ammo;
                 default: return ItemKind.None;
             }
         }
@@ -49,6 +52,7 @@ namespace Hangeul.App
                 case ItemKind.Weapon: return WeaponCategory;
                 case ItemKind.Armor: return ArmorCategory;
                 case ItemKind.Food: return FoodCategory;
+                case ItemKind.Ammo: return AmmoLabel;
                 default: return "";
             }
         }
@@ -77,7 +81,7 @@ namespace Hangeul.App
             {
                 case ItemKind.Weapon: return equipped ? ItemUseAction.Unequip : ItemUseAction.Equip;
                 case ItemKind.Food: return hp < maxHp ? ItemUseAction.Eat : ItemUseAction.Blocked;   // 가득 찼으면 먹지 않고 제자리로
-                default: return ItemUseAction.None;                                                 // 방어구는 아직 장착하지 않는다
+                default: return ItemUseAction.None;                                                 // 방어구는 아직 장착하지 않는다, 탄은 장착하지 않고 가방에 있기만 하면 된다
             }
         }
 

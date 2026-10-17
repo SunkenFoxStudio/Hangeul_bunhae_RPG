@@ -6,7 +6,7 @@ namespace Hangeul.App
     // 음식에 피해량 칸이 없고 무기에 회복량 칸이 없다. 파일(JSON)과 게임 규칙은 모든 칸을 합친 ItemStats를 쓰므로
     // 서로 바꾸는 함수(ToItemStats / From)가 있다. 필드 초기값이 그 종류의 기본값이다(ItemStats의 기본값과 같다).
 
-    /// <summary>무기(근접 공격)의 수치.</summary>
+    /// <summary>무기의 수치. 근접이면 길이·폭·판정 시간을 쓰고, 원거리(활)면 쓰지 않는다(준비·마무리 시간은 둘 다 쓴다). 화살의 속도·사거리는 화살 프리팹이 정한다.</summary>
     [Serializable]
     public sealed class WeaponStats
     {
@@ -18,6 +18,7 @@ namespace Hangeul.App
         public float windup = 0.08f;
         public float active = 0.12f;
         public float recovery = 0.18f;
+        public AttackStyle attackStyle = AttackStyle.Melee;
 
         public WeaponStats Clone() => (WeaponStats)MemberwiseClone();
 
@@ -27,12 +28,14 @@ namespace Hangeul.App
         {
             damage = damage, knockback = knockback, stun = stun, reach = reach, width = width,
             windup = windup, active = active, recovery = recovery,
+            attackStyle = attackStyle,
         };
 
         public static WeaponStats From(ItemStats s) => new WeaponStats
         {
             damage = s.damage, knockback = s.knockback, stun = s.stun, reach = s.reach, width = s.width,
             windup = s.windup, active = s.active, recovery = s.recovery,
+            attackStyle = s.attackStyle,
         };
     }
 

@@ -30,7 +30,7 @@ namespace Hangeul.Game.Combat
         void OnTriggerStay2D(Collider2D other)
         {
             var target = other.GetComponentInParent<IDamageable>();
-            if (target == null) return;
+            if (target == null || !Hurtbox.Accepts(target, other)) return;   // 피격 판정이 따로 있는 대상은 그 영역에만 맞는다
 
             Vector2 away = (Vector2)other.bounds.center - (Vector2)_collider.bounds.center;
             if (away.sqrMagnitude < 1e-6f) away = Vector2.right;

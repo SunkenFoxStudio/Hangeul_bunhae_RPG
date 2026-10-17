@@ -1,3 +1,4 @@
+using Hangeul.App;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -33,6 +34,13 @@ namespace Hangeul.Game.Feedback
         Text _text;
         Outline _outline;
         float _t;
+
+        // 속성 글자 색을 읽지 못했을 때 쓰는 색(주황). 평소에는 속성 단어에 정해 둔 색을 쓴다.
+        static readonly Color FallbackElementColor = new Color(1f, 0.62f, 0.2f);
+
+        /// <summary>속성 묻히기 효과의 글자 색(단어에 정해 둔 #RRGGBB). 읽지 못하면 주황.</summary>
+        public static Color ElementColor(WeaponModifier modifier)
+            => modifier != null && ColorUtility.TryParseHtmlString(modifier.ElementColor, out var color) ? color : FallbackElementColor;
 
         /// <summary>대상의 머리 위에 글자를 띄운다. 대상이나 글자가 없으면 아무것도 하지 않는다.</summary>
         public static PopupText Spawn(Transform target, string message, Color color, int fontSize = 40)

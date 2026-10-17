@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Hangeul.UI
 {
     /// <summary>
-    /// 가방 모드에서 쓸 수 있는 아이템 단어(무기/방어구/음식)를 둘러싸는 테두리의 한 카드 몫.
+    /// 가방 모드에서 쓸 수 있는 아이템 단어(무기/방어구/음식/탄)를 둘러싸는 테두리의 한 카드 몫.
     /// 덩어리를 이루는 카드마다 자기 바깥쪽 가장자리(이웃 카드가 같은 덩어리가 아닌 쪽)에만 선을 긋고,
     /// 덩어리의 첫 카드에는 종류 이름표를, 장착 중이면 마지막 카드의 오른쪽 아래에 체크 배지를 단다.
     /// </summary>
@@ -41,6 +41,7 @@ namespace Hangeul.UI
                 case ItemKind.Weapon: return new Color(0.92f, 0.36f, 0.30f);   // 붉은색
                 case ItemKind.Armor: return new Color(0.36f, 0.58f, 0.95f);    // 푸른색
                 case ItemKind.Food: return new Color(0.96f, 0.68f, 0.22f);     // 주황색
+                case ItemKind.Ammo: return new Color(0.72f, 0.52f, 0.95f);     // 보라색
                 default: return Color.clear;
             }
         }

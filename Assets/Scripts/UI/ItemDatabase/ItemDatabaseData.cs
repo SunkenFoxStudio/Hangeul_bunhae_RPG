@@ -16,6 +16,7 @@ namespace Hangeul.UI
         Food,
         PrefixDamage,    // 접두어 단어 — 대미지 더하기
         PrefixElement,   // 접두어 단어 — 속성 묻히기
+        Ammo,            // 탄(화살) — 활이 쏜다. 접두어('불화살')를 받을 수 있고, 수치는 없다
     }
 
     /// <summary>카테고리 이름과 그 종류. 종류가 그 카테고리의 단어가 어느 목록에 들어가는지, 어떤 수치 칸이 있는지를 정한다.</summary>
@@ -119,6 +120,17 @@ namespace Hangeul.UI
     {
         public override WordKind Kind => WordKind.Armor;
         public override WordRecord Clone() { var c = (ArmorWordRecord)MemberwiseClone(); CloneNormalInto(c); return c; }
+        public override bool JsonEquals(WordRecord o) => SameNormal(o);
+        public override void CopyJsonFieldsFrom(WordRecord s) => CopyNormal(s);
+        public override ItemStats StatsForFile(ItemDatabaseData db, bool includeDefaults) => null;
+    }
+
+    /// <summary>탄(화살). 활이 쏘는 것이라 가방에 완성돼 있기만 하면 되고(장착도 소모도 없다) 수치는 없다 — 접두어('불화살')가 효과를 싣는다.</summary>
+    [Serializable]
+    public sealed class AmmoWordRecord : NormalWordRecord
+    {
+        public override WordKind Kind => WordKind.Ammo;
+        public override WordRecord Clone() { var c = (AmmoWordRecord)MemberwiseClone(); CloneNormalInto(c); return c; }
         public override bool JsonEquals(WordRecord o) => SameNormal(o);
         public override void CopyJsonFieldsFrom(WordRecord s) => CopyNormal(s);
         public override ItemStats StatsForFile(ItemDatabaseData db, bool includeDefaults) => null;
@@ -275,6 +287,7 @@ namespace Hangeul.UI
         public List<WeaponWordRecord> weapons = new List<WeaponWordRecord>();
         public List<FoodWordRecord> foods = new List<FoodWordRecord>();
         public List<ArmorWordRecord> armors = new List<ArmorWordRecord>();
+        public List<AmmoWordRecord> ammos = new List<AmmoWordRecord>();
         public List<PlainWordRecord> plains = new List<PlainWordRecord>();
         public List<PrefixDamageWordRecord> prefixDamages = new List<PrefixDamageWordRecord>();
         public List<PrefixElementWordRecord> prefixElements = new List<PrefixElementWordRecord>();
@@ -285,6 +298,7 @@ namespace Hangeul.UI
             foreach (var r in weapons) if (r != null) yield return r;
             foreach (var r in foods) if (r != null) yield return r;
             foreach (var r in armors) if (r != null) yield return r;
+            foreach (var r in ammos) if (r != null) yield return r;
             foreach (var r in plains) if (r != null) yield return r;
             foreach (var r in prefixDamages) if (r != null) yield return r;
             foreach (var r in prefixElements) if (r != null) yield return r;
@@ -294,6 +308,15 @@ namespace Hangeul.UI
 
         /// <summary>새 단어에 줄 순서 값: 지금 있는 어떤 단어보다 크다(목록의 맨 위에 온다).</summary>
         public int NextOrder() => AllWords().Select(r => r.order).DefaultIfEmpty(0).Max() + 1;
+
+        /// <summary>원거리 무기(공격 방식이 원거리인 무기, 기본값을 따르는 무기는 기본값 기준)가 하나라도 있는지.</summary>
+        public bool HasRangedWeapon()
+        {
+            bool defaultRanged = defaultWeapon != null && defaultWeapon.attackStyle == AttackStyle.Ranged;
+            foreach (var w in weapons)
+                if (w != null && (w.useDefaults ? defaultRanged : w.stats != null && w.stats.attackStyle == AttackStyle.Ranged)) return true;
+            return false;
+        }
 
         /// <summary>단어로 찾는다(어느 목록에 있든). 없으면 null.</summary>
         public WordRecord Find(string word)
@@ -321,6 +344,7 @@ namespace Hangeul.UI
                 case WordKind.Weapon: weapons.Add((WeaponWordRecord)r); break;
                 case WordKind.Food: foods.Add((FoodWordRecord)r); break;
                 case WordKind.Armor: armors.Add((ArmorWordRecord)r); break;
+                case WordKind.Ammo: ammos.Add((AmmoWordRecord)r); break;
                 case WordKind.PrefixDamage: prefixDamages.Add((PrefixDamageWordRecord)r); break;
                 case WordKind.PrefixElement: prefixElements.Add((PrefixElementWordRecord)r); break;
                 default: plains.Add((PlainWordRecord)r); break;
@@ -334,6 +358,7 @@ namespace Hangeul.UI
                 case WordKind.Weapon: return weapons.Remove(r as WeaponWordRecord);
                 case WordKind.Food: return foods.Remove(r as FoodWordRecord);
                 case WordKind.Armor: return armors.Remove(r as ArmorWordRecord);
+                case WordKind.Ammo: return ammos.Remove(r as AmmoWordRecord);
                 case WordKind.PrefixDamage: return prefixDamages.Remove(r as PrefixDamageWordRecord);
                 case WordKind.PrefixElement: return prefixElements.Remove(r as PrefixElementWordRecord);
                 default: return plains.Remove(r as PlainWordRecord);
@@ -347,6 +372,7 @@ namespace Hangeul.UI
                 case WordKind.Weapon: return new WeaponWordRecord();
                 case WordKind.Food: return new FoodWordRecord();
                 case WordKind.Armor: return new ArmorWordRecord();
+                case WordKind.Ammo: return new AmmoWordRecord();
                 case WordKind.PrefixDamage: return new PrefixDamageWordRecord();
                 case WordKind.PrefixElement: return new PrefixElementWordRecord();
                 default: return new PlainWordRecord();
@@ -362,6 +388,7 @@ namespace Hangeul.UI
                 case CategoryType.Weapon: return WordKind.Weapon;
                 case CategoryType.Armor: return WordKind.Armor;
                 case CategoryType.Food: return WordKind.Food;
+                case CategoryType.Ammo: return WordKind.Ammo;
                 case CategoryType.Prefix: return current == WordKind.PrefixDamage || current == WordKind.PrefixElement ? current : WordKind.PrefixDamage;
                 default: return WordKind.Plain;
             }

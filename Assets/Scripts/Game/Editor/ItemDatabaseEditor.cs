@@ -12,14 +12,15 @@ namespace Hangeul.Game.Editor
     /// <summary>
     /// 게임 데이터 에셋(<see cref="ItemDatabase"/>)의 전용 인스펙터. 종류별 목록으로 흩어진 단어를 한 표처럼 보여 준다.
     /// 위에서부터: 요약과 JSON 주고받기 버튼 → 카테고리(이름, 종류) → 종류별 기본값 → 단어 목록(검색·카테고리 필터, 단어마다 접고 펼침).
-    /// 단어를 펼치면 그 단어의 종류에 있는 칸만 보인다(무기는 피해·범위·시간, 음식은 회복량, 접두어는 효과 종류별 값과 글자 색 선택기).
+    /// 단어를 펼치면 그 단어의 종류에 있는 칸만 보인다(무기는 피해·범위·시간 — 원거리 무기는 공격 방식과 시위·쉬는 시간, 음식은 회복량, 탄은 접두어 규칙만, 접두어는 효과 종류별 값과 글자 색 선택기).
     /// "기본값 사용"이 켜진 단어는 에셋의 기본값을 읽기 전용으로 보여 주고, 끄면 그 단어만의 값을 고친다.
     /// 목록 구조가 바뀌는 일(단어 추가·삭제, 카테고리 변경, 종류 바꾸기)은 <see cref="Edit"/>를 거쳐 Undo가 된다.
     /// </summary>
     [CustomEditor(typeof(ItemDatabase))]
     public sealed class ItemDatabaseEditor : UnityEditor.Editor
     {
-        static readonly string[] CategoryTypeLabels = { "일반 (수치 없음)", "무기", "방어구", "음식", "접두어" };
+        static readonly string[] CategoryTypeLabels = { "일반 (수치 없음)", "무기", "방어구", "음식", "접두어", "탄 (화살 등)" };
+        static readonly string[] AttackStyleLabels = { "근접", "원거리 (활)" };
         static readonly string[] DamageModeLabels = { "더하기 (+)", "곱하기 (×)" };
         static readonly string[] PrefixKindLabels = { "대미지 더하기", "속성 묻히기" };
         static readonly string[] SortLabels = { "최근 추가순", "카테고리순" };
@@ -83,7 +84,7 @@ namespace Hangeul.Game.Editor
             var d = Data;
             int noSprite = d.AllWords().Count(r => r.sprite == null);
             EditorGUILayout.HelpBox(
-                $"단어 {d.WordCount}개 — 무기 {d.weapons.Count} · 음식 {d.foods.Count} · 방어구 {d.armors.Count} · 접두어 {d.prefixDamages.Count + d.prefixElements.Count} · 일반 {d.plains.Count}\n" +
+                $"단어 {d.WordCount}개 — 무기 {d.weapons.Count} · 음식 {d.foods.Count} · 방어구 {d.armors.Count} · 탄 {d.ammos.Count} · 접두어 {d.prefixDamages.Count + d.prefixElements.Count} · 일반 {d.plains.Count}\n" +
                 $"아이템 스프라이트가 없는 단어 {noSprite}개",
                 MessageType.None);
 
@@ -343,6 +344,7 @@ namespace Hangeul.Game.Editor
             Collect(rows, "weapons", Data.weapons);
             Collect(rows, "foods", Data.foods);
             Collect(rows, "armors", Data.armors);
+            Collect(rows, "ammos", Data.ammos);
             Collect(rows, "plains", Data.plains);
             Collect(rows, "prefixDamages", Data.prefixDamages);
             Collect(rows, "prefixElements", Data.prefixElements);
@@ -394,6 +396,7 @@ namespace Hangeul.Game.Editor
                 case WordKind.Weapon: return "무기";
                 case WordKind.Food: return "음식";
                 case WordKind.Armor: return "방어구";
+                case WordKind.Ammo: return "탄";
                 case WordKind.PrefixDamage: return "접두어·대미지";
                 case WordKind.PrefixElement: return "접두어·속성";
                 default: return "일반";
@@ -551,12 +554,26 @@ namespace Hangeul.Game.Editor
             if (p != null) EditorGUILayout.PropertyField(p, new GUIContent(label));
         }
 
+        // 무기 칸. 공격 방식이 근접이면 길이·폭·판정 시간, 원거리(활)면 화살 속도·사거리와 시위·쉬는 시간이 보인다.
         void WeaponFields(string basePath)
         {
+            var style = serializedObject.FindProperty(basePath + ".attackStyle");
+            if (style != null)
+                style.enumValueIndex = EditorGUILayout.Popup(new GUIContent("공격 방식", "원거리는 장착하면 가방에 있는 화살(탄 단어)을 쏜다"), style.enumValueIndex, AttackStyleLabels);
+            bool ranged = style != null && style.enumValueIndex == (int)AttackStyle.Ranged;
+
             EditorGUILayout.LabelField("피해", EditorStyles.miniBoldLabel);
             Field(basePath + ".damage", "피해량");
             Field(basePath + ".knockback", "밀어내기 (속도)");
             Field(basePath + ".stun", "경직 (초)");
+            if (ranged)
+            {
+                EditorGUILayout.LabelField("시간 (초)", EditorStyles.miniBoldLabel);
+                Field(basePath + ".windup", "준비 (시위를 당기는 시간)");
+                Field(basePath + ".recovery", "마무리 (쏜 뒤 쉬는 시간)");
+                EditorGUILayout.LabelField("화살의 속도·사거리는 화살 프리팹(Projectile)에서 정한다", EditorStyles.miniLabel);
+                return;
+            }
             EditorGUILayout.LabelField("범위 (유니티 단위)", EditorStyles.miniBoldLabel);
             Field(basePath + ".reach", "길이");
             Field(basePath + ".width", "폭");
@@ -568,10 +585,19 @@ namespace Hangeul.Game.Editor
 
         static void WeaponReadOnly(WeaponStats s)
         {
+            EditorGUILayout.Popup("공격 방식", (int)s.attackStyle, AttackStyleLabels);
             EditorGUILayout.LabelField("피해", EditorStyles.miniBoldLabel);
             EditorGUILayout.IntField("피해량", s.damage);
             EditorGUILayout.FloatField("밀어내기 (속도)", s.knockback);
             EditorGUILayout.FloatField("경직 (초)", s.stun);
+            if (s.attackStyle == AttackStyle.Ranged)
+            {
+                EditorGUILayout.LabelField("시간 (초)", EditorStyles.miniBoldLabel);
+                EditorGUILayout.FloatField("준비 (시위를 당기는 시간)", s.windup);
+                EditorGUILayout.FloatField("마무리 (쏜 뒤 쉬는 시간)", s.recovery);
+                EditorGUILayout.LabelField("화살의 속도·사거리는 화살 프리팹(Projectile)에서 정한다", EditorStyles.miniLabel);
+                return;
+            }
             EditorGUILayout.LabelField("범위 (유니티 단위)", EditorStyles.miniBoldLabel);
             EditorGUILayout.FloatField("길이", s.reach);
             EditorGUILayout.FloatField("폭", s.width);

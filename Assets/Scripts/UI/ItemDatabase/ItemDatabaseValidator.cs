@@ -52,6 +52,7 @@ namespace Hangeul.UI
             CheckCategories(db, report);
             CheckWords(db, report);
             CheckDefaults(db, report);
+            CheckRangedAmmo(db, report);
             CheckSprites(db, report);
 
             // 오류 → 경고 → 안내 (같은 단계 안에서는 찾은 순서 그대로)
@@ -194,6 +195,14 @@ namespace Hangeul.UI
                 CheckStatsRange(db.defaultPrefixElement.ToItemStats(), "접두어(속성) 기본값", null, report);
                 CheckColor(db.defaultPrefixElement.color, "접두어(속성) 기본값", null, report);
             }
+        }
+
+        // ───── 원거리 무기와 탄 ─────
+        // 활(원거리 무기)이 있는데 탄 단어가 하나도 없으면 아무리 가방을 뒤져도 쏠 화살이 없다
+        static void CheckRangedAmmo(ItemDatabaseData db, ValidationReport report)
+        {
+            if (db.HasRangedWeapon() && db.ammos.All(r => r == null))
+                report.Add(IssueLevel.Warning, "ranged-without-ammo", "원거리 무기가 있는데 탄 단어가 없습니다 — 화살을 쏠 수 없습니다. 카테고리 종류가 '탄'인 카테고리에 화살 단어를 넣으세요.");
         }
 
         // ───── 스프라이트 ─────

@@ -53,12 +53,6 @@ namespace Hangeul.Game.Character
         [Tooltip("베기 이펙트를 그리는 오브젝트. 비워 두면 실행할 때 임시 이펙트(반투명 사각형)를 자동으로 만든다.")]
         [SerializeField] AttackEffect effect;
 
-        // 속성 글자 색을 읽지 못했을 때 쓰는 색(주황). 평소에는 속성 단어에 정해 둔 색을 쓴다.
-        static readonly Color FallbackElementColor = new Color(1f, 0.62f, 0.2f);
-
-        static Color ElementColorOf(WeaponModifier modifier)
-            => ColorUtility.TryParseHtmlString(modifier.ElementColor, out var color) ? color : FallbackElementColor;
-
         readonly Collider2D[] _buffer = new Collider2D[24];
 
         /// <summary>공격이 누군가를 실제로 때렸을 때(인자: 때린 대상 수). 타격감 연출(히트스톱, 화면 흔들림)이 받는다.</summary>
@@ -137,6 +131,7 @@ namespace Hangeul.Game.Character
             {
                 var target = _buffer[i].GetComponentInParent<IDamageable>();
                 if (target == null || (target is Component c && c.gameObject == gameObject)) continue;   // 자기 자신은 제외
+                if (!Hurtbox.Accepts(target, _buffer[i])) continue;   // 피격 판정이 따로 있는 대상은 그 영역에만 맞는다
                 if (!already.Add(target)) continue;
 
                 // 속성 묻히기: 맞은 대상마다 확률을 굴린다. 묻으면 피해 정보에 속성이 실리고 대상 머리 위에 "화염!"이 뜬다
@@ -145,7 +140,7 @@ namespace Hangeul.Game.Character
                 if (target.TakeDamage(info))
                 {
                     hits++;
-                    if (element != null && target is Component hitTarget) PopupText.Spawn(hitTarget.transform, element + "!", ElementColorOf(_modifier));
+                    if (element != null && target is Component hitTarget) PopupText.Spawn(hitTarget.transform, element + "!", PopupText.ElementColor(_modifier));
                 }
             }
             if (hits > 0) Struck?.Invoke(hits);

@@ -156,12 +156,16 @@ namespace Hangeul.Game.Character
     /// 근접 공격. 준비 → 판정 → 마무리 시간표(<see cref="PlayerMeleeAttack.Timeline"/>)대로 흐른다. 시간은 애니메이션 프레임 수와 무관하다.
     /// 방향은 시작할 때 정해지면 끝까지 유지된다. 판정 구간에는 앞쪽 상자 안의 피해 가능한 대상을 한 번씩 때린다.
     /// 준비·판정 동안 살짝 앞으로 나아가고(lunge), 마무리에는 멈춘다. 맞으면 Hurt가 이 상태를 끊는다.
+    /// 장착한 무기가 원거리(활)면 제자리에서 시위를 당기고(준비 시간) 그 시간이 끝나는 순간 화살 하나를 쏜 뒤 쉰다(마무리 시간).
+    /// 쏠 화살은 그 순간 가방에서 다시 고른다(그새 가방에서 없어졌으면 쏘지 못한다).
     /// </summary>
     public sealed class PlayerAttackState : PlayerState
     {
         readonly System.Collections.Generic.HashSet<Combat.IDamageable> _hit = new System.Collections.Generic.HashSet<Combat.IDamageable>();
         float _t;
         bool _effectShown;
+        bool _ranged;     // 이번 공격이 활인지(시작할 때 정해진다)
+        bool _fired;
         Vector2 _dir;
 
         public PlayerAttackState(PlayerController owner) : base(owner) { }
@@ -173,20 +177,33 @@ namespace Hangeul.Game.Character
             _dir = FacingUtil.ToVector(Owner.Facing);
             _t = 0f;
             _effectShown = false;
+            _fired = false;
+            _ranged = Owner.Items.WeaponIsRanged;
             _hit.Clear();
             // 프레임이 몇 장이든 공격 한 번(준비+판정+마무리)의 시간 안에 모션 전체가 재생된다
-            Owner.Anim?.PlayFitted(PlayerAnim.Attack, melee.Timeline.Total);
+            Owner.Anim?.PlayFitted(PlayerAnim.Attack, Timeline.Total);
         }
+
+        // 이번 공격의 시간표: 활이면 활의 것(준비 → 쏨 → 마무리), 아니면 근접의 것
+        Hangeul.App.AttackTimeline Timeline => _ranged ? Owner.Ranged.Timeline : Owner.Melee.Timeline;
 
         public override void Tick(float deltaTime)
         {
             var melee = Owner.Melee;
-            var timeline = melee.Timeline;
             _t += deltaTime;
 
-            var phase = timeline.PhaseAt(_t);
+            var phase = Timeline.PhaseAt(_t);
+            if (_ranged)
+            {
+                // 준비가 끝나는 순간 한 번 쏜다(프레임이 길어서 그 순간을 건너뛰어도 한 번은 쏜다)
+                if (!_fired && phase >= Hangeul.App.AttackPhase.Active)
+                {
+                    _fired = true;
+                    if (Owner.Items.TryPickArrow(out _, out var arrowModifier)) Owner.Ranged.Fire(Owner.Facing, arrowModifier);
+                }
+            }
             // 프레임이 길어서 판정 구간을 건너뛰어도 한 번은 반드시 친다
-            if (phase == Hangeul.App.AttackPhase.Active || (phase >= Hangeul.App.AttackPhase.Recovery && !_effectShown))
+            else if (phase == Hangeul.App.AttackPhase.Active || (phase >= Hangeul.App.AttackPhase.Recovery && !_effectShown))
             {
                 if (!_effectShown) { melee.ShowEffect(Owner.Facing); _effectShown = true; }
                 melee.Strike(Owner.Facing, _hit);
@@ -197,9 +214,9 @@ namespace Hangeul.Game.Character
 
         public override void FixedTick(float fixedDeltaTime)
         {
-            var phase = Owner.Melee.Timeline.PhaseAt(_t);
-            if (phase == Hangeul.App.AttackPhase.Recovery || phase == Hangeul.App.AttackPhase.Done)
-                Owner.Decelerate(fixedDeltaTime);
+            var phase = Timeline.PhaseAt(_t);
+            if (_ranged || phase == Hangeul.App.AttackPhase.Recovery || phase == Hangeul.App.AttackPhase.Done)
+                Owner.Decelerate(fixedDeltaTime);   // 활은 앞으로 나아가지 않고 제자리에서 쏜다
             else
                 Owner.ApproachVelocity(_dir * Owner.Melee.LungeSpeed, 40f, fixedDeltaTime);   // 공격하는 쪽으로 살짝 나아간다
         }

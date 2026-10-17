@@ -20,6 +20,7 @@ namespace Hangeul.App
         Armor = 2,
         Food = 3,
         Prefix = 4,   // 접두어·속성: 다른 단어 앞에 붙는 단어
+        Ammo = 5,     // 탄(화살): 원거리 무기가 쏘는 것. 접두어('불화살')를 받을 수 있다
     }
 
     /// <summary>카테고리 이름과 그 종류. 파일에 적혀 있으면 카테고리 이름보다 이것이 우선한다(<see cref="ItemWordsFile.categoryTypes"/>).</summary>

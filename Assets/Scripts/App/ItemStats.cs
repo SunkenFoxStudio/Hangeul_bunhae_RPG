@@ -16,9 +16,16 @@ namespace Hangeul.App
         Multiply = 1,   // 피해량 × 값
     }
 
+    /// <summary>무기가 공격하는 방식.</summary>
+    public enum AttackStyle
+    {
+        Melee = 0,    // 근접: 앞쪽 상자 안을 벤다(길이·폭·판정 시간)
+        Ranged = 1,   // 원거리(활): 가방에 있는 화살을 쏜다(준비·마무리 시간만 쓴다. 화살의 속도·사거리는 화살 프리팹이 정한다)
+    }
+
     /// <summary>
     /// 단어 하나의 상세 수치(DB 관리 씬에서 단어마다 열고 닫으며 고친다). 필드마다 쓰는 단어 종류가 다르다:
-    /// 무기(<see cref="ItemKind.Weapon"/>)는 근접 공격 수치, 음식(<see cref="ItemKind.Food"/>)은 <see cref="heal"/>,
+    /// 무기(<see cref="ItemKind.Weapon"/>)는 근접 공격 수치(원거리 무기는 화살 수치), 음식(<see cref="ItemKind.Food"/>)은 <see cref="heal"/>,
     /// 접두어·속성 카테고리의 단어(<see cref="ItemWordSet.IsPrefixCategory"/>)는 <see cref="prefixKind"/> 이하의 효과.
     /// 필드 초기값이 곧 <b>기본값</b>이다 — 수치를 따로 정하지 않은 단어는 이 값으로 보이지만, 게임은 그런 단어에는 이 값을 쓰지 않고
     /// 원래 설정(플레이어의 근접 공격 컴포넌트, 음식 기본 회복량, 효과 없음)을 그대로 쓴다(<see cref="ItemWordSet.StatsOf"/>가 null).
@@ -45,6 +52,13 @@ namespace Hangeul.App
         /// <summary>마무리 동작 시간(초). 판정은 끝났지만 아직 다시 공격할 수 없다.</summary>
         public float recovery = 0.18f;
 
+        // ───── 무기 (원거리) ─────
+        /// <summary>
+        /// 공격 방식. 원거리면 위의 길이·폭·판정 시간은 쓰지 않는다(준비는 시위를 당기는 시간, 마무리는 쏜 뒤 쉬는 시간).
+        /// 화살의 속도·사거리는 무기가 아니라 화살 프리팹(<c>Projectile</c> 컴포넌트)이 정한다.
+        /// </summary>
+        public AttackStyle attackStyle = AttackStyle.Melee;
+
         // ───── 음식 ─────
         /// <summary>먹었을 때 회복하는 체력. 하트 한 칸 = 체력 2.</summary>
         public int heal = 2;
@@ -68,6 +82,7 @@ namespace Hangeul.App
             damage = o.damage; knockback = o.knockback; stun = o.stun;
             reach = o.reach; width = o.width;
             windup = o.windup; active = o.active; recovery = o.recovery;
+            attackStyle = o.attackStyle;
             heal = o.heal;
             prefixKind = o.prefixKind; damageMode = o.damageMode; damageAmount = o.damageAmount; elementChance = o.elementChance;
             elementColor = o.elementColor;
@@ -75,7 +90,7 @@ namespace Hangeul.App
 
         public bool SameAs(ItemStats o)
             => o != null && damage == o.damage && heal == o.heal
-               && prefixKind == o.prefixKind && damageMode == o.damageMode && elementColor == o.elementColor
+               && prefixKind == o.prefixKind && damageMode == o.damageMode && elementColor == o.elementColor && attackStyle == o.attackStyle
                && Near(knockback, o.knockback) && Near(stun, o.stun) && Near(reach, o.reach) && Near(width, o.width)
                && Near(windup, o.windup) && Near(active, o.active) && Near(recovery, o.recovery)
                && Near(damageAmount, o.damageAmount) && Near(elementChance, o.elementChance);
@@ -87,6 +102,7 @@ namespace Hangeul.App
         {
             var kind = Enum.IsDefined(typeof(PrefixEffectKind), prefixKind) ? prefixKind : PrefixEffectKind.Damage;
             var mode = Enum.IsDefined(typeof(DamageMode), damageMode) ? damageMode : DamageMode.Add;
+            var style = Enum.IsDefined(typeof(AttackStyle), attackStyle) ? attackStyle : AttackStyle.Melee;
             return new ItemStats
             {
                 damage = Clamp(damage, 1, 9999),
@@ -97,6 +113,7 @@ namespace Hangeul.App
                 windup = Clamp(windup, 0f, 10f),
                 active = Clamp(active, 0.01f, 10f),    // 판정 시간이 0이면 공격이 아무도 맞히지 못한다
                 recovery = Clamp(recovery, 0f, 10f),
+                attackStyle = style,
                 heal = Clamp(heal, 1, 9999),
                 prefixKind = kind,
                 damageMode = mode,

@@ -389,6 +389,8 @@ namespace Hangeul.Game.DevTools
         static readonly StatDef WindupDef = new StatDef("준비", false, s => s.windup, (s, v) => s.windup = v);
         static readonly StatDef ActiveDef = new StatDef("판정", false, s => s.active, (s, v) => s.active = v);
         static readonly StatDef RecoveryDef = new StatDef("마무리", false, s => s.recovery, (s, v) => s.recovery = v);
+        static readonly StatDef DrawDef = new StatDef("시위", false, s => s.windup, (s, v) => s.windup = v);        // 활: 준비 시간 = 시위를 당기는 시간
+        static readonly StatDef RestDef = new StatDef("쉼", false, s => s.recovery, (s, v) => s.recovery = v);      // 활: 마무리 시간 = 쏜 뒤 쉬는 시간
         static readonly StatDef HealDef = new StatDef("회복량", true, s => s.heal, (s, v) => s.heal = Mathf.RoundToInt(v));
         static readonly StatDef DamageAmountDef = new StatDef("값", false, s => s.damageAmount, (s, v) => s.damageAmount = v);
         static readonly StatDef ElementChanceDef = new StatDef("확률(%)", false, s => s.elementChance, (s, v) => s.elementChance = v);
@@ -482,9 +484,25 @@ namespace Hangeul.Game.DevTools
             }
             else if (kind == ItemKind.Weapon)
             {
+                // 공격 방식: 근접은 앞쪽 상자(길이·폭·판정 시간), 원거리(활)는 가방에 있는 화살을 쏜다(시위·쉬는 시간. 화살 속도·사거리는 화살 프리팹)
+                var stats = StatsOrDefault(e);
+                var styleRow = NewPlainRow(panel, 52f);
+                AddGroupLabel(styleRow, "공격 방식");
+                AddChoice(styleRow, "근접", stats.attackStyle == AttackStyle.Melee, () => SetAttackStyle(e, AttackStyle.Melee));
+                AddChoice(styleRow, "원거리 (활)", stats.attackStyle == AttackStyle.Ranged, () => SetAttackStyle(e, AttackStyle.Ranged));
+                var styleSpacer = Rect("Spacer", styleRow, 0, 0, 1, 1, 0, 0, 0, 0);
+                SetWidth(styleSpacer.gameObject, 0f, 1f);
+
                 AddStatRow(panel, e, "피해", null, UpdateNote, DamageDef, KnockbackDef, StunDef);
-                AddStatRow(panel, e, "범위 (유닛)", null, UpdateNote, ReachDef, WidthDef);
-                AddStatRow(panel, e, "시간 (초)", null, UpdateNote, WindupDef, ActiveDef, RecoveryDef);
+                if (stats.attackStyle == AttackStyle.Ranged)
+                {
+                    AddStatRow(panel, e, "시간 (초)", "가방에 화살이 있어야 함", UpdateNote, DrawDef, RestDef);
+                }
+                else
+                {
+                    AddStatRow(panel, e, "범위 (유닛)", null, UpdateNote, ReachDef, WidthDef);
+                    AddStatRow(panel, e, "시간 (초)", null, UpdateNote, WindupDef, ActiveDef, RecoveryDef);
+                }
             }
             else if (kind == ItemKind.Food)
             {
@@ -636,6 +654,18 @@ namespace Hangeul.Game.DevTools
             if (kind == PrefixEffectKind.Element) edited.elementChance = 30f;
             else { edited.damageMode = DamageMode.Add; edited.damageAmount = 1f; }
             ApplyEdit(e, edited, $"{e.word}: {(kind == PrefixEffectKind.Element ? "속성 묻히기" : "대미지 더하기")}");
+            RefreshWords();
+        }
+
+        // 근접 ↔ 원거리. 칸이 달라지므로 패널을 다시 그린다. 활은 시위를 당길 시간이 있어야 해서, 준비 시간이 근접 기본값 그대로면 0.25초로 시작한다.
+        void SetAttackStyle(ItemWordEntry e, AttackStyle style)
+        {
+            var current = StatsOrDefault(e);
+            if (current.attackStyle == style) return;
+            var edited = current.Clone();
+            edited.attackStyle = style;
+            if (style == AttackStyle.Ranged && Mathf.Approximately(edited.windup, DefaultStats.windup)) edited.windup = 0.25f;
+            ApplyEdit(e, edited, $"{e.word}: 공격 방식 {(style == AttackStyle.Ranged ? "원거리" : "근접")}");
             RefreshWords();
         }
 
